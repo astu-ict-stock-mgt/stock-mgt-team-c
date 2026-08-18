@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ASTU Stock Management System
 
 A full-stack stock management application for ASTU with a Next.js frontend and a separate Express + Prisma backend. The project includes role-based access control, inventory and supplier administration, stock receiving and issuing workflows, requisitions, reports, and audit tracking.
@@ -330,3 +331,6 @@ Internal project — built per the SRS.docx specification.
 #   S t o c k - M a n a g e m e n t - s y s t e m - i n t e r n - 
  
  
+=======
+# stock-mgt-team-c
+>>>>>>> 67c537bfd3d11bec29a041076eac9ca973ad1ea5
