@@ -1,0 +1,369 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ------------------------------------------------------------------ *
+ * Design tokens → Tailwind utility mapping
+ * ------------------------------------------------------------------ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Surfaces */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+
+  /* Sidebar */
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  /* Charts */
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  /* Core */
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Action link */
+  --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+
+  /* Semantic status: success / warning / info / danger */
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-strong: var(--success-strong);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-strong: var(--warning-strong);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-strong: var(--info-strong);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-strong: var(--danger-strong);
+
+  /* Radius scale */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 3px);
+}
+
+/* ------------------------------------------------------------------ *
+ * "Ledger" — a refined enterprise system.
+ * Clean neutral canvas, a single deep-teal accent, hairline structure.
+ * ------------------------------------------------------------------ */
+:root {
+  --radius: 0.375rem; /* 6px — crisp and precise, not consumer-rounded */
+
+  --background: oklch(1 0 0);                      /* pure white — cards */
+  --foreground: oklch(0.235 0 0);                  /* neutral near-black ink */
+
+  /* Page canvas (behind cards) — clean neutral gray so white panels read as white */
+  --surface: oklch(0.967 0 0);                     /* ~#f2f2f2 light gray */
+  --surface-2: oklch(0.938 0 0);                   /* ~#ebebeb recessed / active / hover */
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.235 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.235 0 0);
+
+  /* Primary — a deepened, confident brand teal (the one accent) */
+  --primary: oklch(0.52 0.083 205);                /* deep teal */
+  --primary-foreground: oklch(0.995 0 0);
+  --primary-strong: oklch(0.445 0.075 205);        /* hover / pressed */
+
+  /* Secondary / muted / accent — clean neutrals */
+  --secondary: oklch(0.955 0 0);
+  --secondary-foreground: oklch(0.30 0 0);
+  --muted: oklch(0.955 0 0);
+  --muted-foreground: oklch(0.525 0 0);            /* neutral gray text */
+  --accent: oklch(0.955 0.022 205);                /* faint teal wash */
+  --accent-foreground: oklch(0.40 0.07 205);
+
+  /* Borders / inputs / focus ring */
+  --border: oklch(0.908 0 0);                      /* neutral hairline */
+  --border-strong: oklch(0.855 0 0);               /* emphasized divider */
+  --input: oklch(0.895 0 0);
+  --ring: oklch(0.52 0.083 205);
+
+  /* Action link — the teal accent, darkened for text legibility (no blue) */
+  --link: oklch(0.47 0.08 205);
+  --link-hover: oklch(0.40 0.075 205);
+
+  /* Semantic — success (green) */
+  --success: oklch(0.6 0.13 155);
+  --success-foreground: oklch(1 0 0);
+  --success-subtle: oklch(0.965 0.035 158);
+  --success-strong: oklch(0.47 0.11 156);
+
+  /* Semantic — warning (amber) */
+  --warning: oklch(0.79 0.14 78);
+  --warning-foreground: oklch(0.3 0.05 80);
+  --warning-subtle: oklch(0.97 0.04 90);
+  --warning-strong: oklch(0.53 0.1 62);
+
+  /* Semantic — info (blue; reserved for informational status only) */
+  --info: oklch(0.55 0.16 250);
+  --info-foreground: oklch(1 0 0);
+  --info-subtle: oklch(0.96 0.03 255);
+  --info-strong: oklch(0.47 0.15 255);
+
+  /* Semantic — danger (red) */
+  --destructive: oklch(0.565 0.19 25);
+  --danger: oklch(0.565 0.19 25);
+  --danger-foreground: oklch(1 0 0);
+  --danger-subtle: oklch(0.96 0.028 22);
+  --danger-strong: oklch(0.47 0.17 26);
+
+  /* Charts — brand-led, muted */
+  --chart-1: oklch(0.52 0.083 205);                /* teal */
+  --chart-2: oklch(0.55 0.14 250);                 /* blue */
+  --chart-3: oklch(0.62 0.13 155);                 /* green */
+  --chart-4: oklch(0.75 0.15 66);                  /* amber */
+  --chart-5: oklch(0.6 0.19 25);                   /* red */
+
+  /* Sidebar — pure white rail against the neutral gray canvas */
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.235 0 0);
+  --sidebar-primary: oklch(0.52 0.083 205);
+  --sidebar-primary-foreground: oklch(0.995 0 0);
+  --sidebar-accent: oklch(0.955 0.022 205);
+  --sidebar-accent-foreground: oklch(0.40 0.07 205);
+  --sidebar-border: oklch(0.908 0 0);
+  --sidebar-ring: oklch(0.52 0.083 205);
+
+  /* Elevation — hairline-first: shadows are a whisper, borders do the work */
+  --shadow-card: 0 1px 1px rgba(15, 17, 20, 0.03);
+  --shadow-pop: 0 6px 20px rgba(15, 17, 20, 0.1), 0 1px 3px rgba(15, 17, 20, 0.06);
+  --shadow-lg: 0 18px 44px rgba(15, 17, 20, 0.17);
+}
+
+/* ------------------------------------------------------------------ *
+ * "Ledger" — dark. The same warm-neutral hue (75) and single deep-teal
+ * accent (205), inverted into a low-glare night surface.
+ * Elevation ladder, deepest → lightest:
+ *   surface (page)  →  surface-2 (recessed / active / hover)  →  card (raised)
+ * ------------------------------------------------------------------ */
+.dark {
+  --background: oklch(0.235 0.006 75);
+  --foreground: oklch(0.94 0.004 75);              /* warm off-white ink */
+
+  --surface: oklch(0.155 0.004 75);                /* page canvas — deepest */
+  --surface-2: oklch(0.255 0.008 75);              /* recessed track / active row / hover */
+
+  --card: oklch(0.235 0.006 75);                   /* raised surface */
+  --card-foreground: oklch(0.94 0.004 75);
+  --popover: oklch(0.235 0.006 75);
+  --popover-foreground: oklch(0.94 0.004 75);
+
+  /* Primary — brightened teal that stays vivid on dark */
+  --primary: oklch(0.72 0.105 205);
+  --primary-foreground: oklch(0.17 0.03 205);      /* dark ink on the bright accent */
+  --primary-strong: oklch(0.79 0.1 205);           /* hover — lifts brighter */
+
+  --secondary: oklch(0.275 0.008 75);
+  --secondary-foreground: oklch(0.94 0.004 75);
+  --muted: oklch(0.275 0.008 75);
+  --muted-foreground: oklch(0.705 0.008 75);       /* warm gray, legible on card */
+  --accent: oklch(0.315 0.042 205);                /* deep teal wash for hovers */
+  --accent-foreground: oklch(0.86 0.06 205);
+
+  /* Borders / inputs / ring — luminous hairlines that adapt to any plane */
+  --border: oklch(1 0 0 / 9%);
+  --border-strong: oklch(1 0 0 / 17%);
+  --input: oklch(1 0 0 / 13%);
+  --ring: oklch(0.72 0.105 205);
+
+  --link: oklch(0.77 0.09 205);
+  --link-hover: oklch(0.85 0.08 205);
+
+  /* Semantic status — bright fills, dark ink, deep-tinted subtles */
+  --success: oklch(0.72 0.14 155);
+  --success-foreground: oklch(0.16 0.03 155);
+  --success-subtle: oklch(0.28 0.055 155);
+  --success-strong: oklch(0.83 0.12 155);
+
+  --warning: oklch(0.82 0.14 80);
+  --warning-foreground: oklch(0.2 0.03 80);
+  --warning-subtle: oklch(0.3 0.06 80);
+  --warning-strong: oklch(0.86 0.12 82);
+
+  --info: oklch(0.7 0.13 250);
+  --info-foreground: oklch(0.16 0.03 258);
+  --info-subtle: oklch(0.29 0.07 255);
+  --info-strong: oklch(0.83 0.1 255);
+
+  --destructive: oklch(0.68 0.18 25);
+  --danger: oklch(0.68 0.18 25);
+  --danger-foreground: oklch(0.16 0.03 25);
+  --danger-subtle: oklch(0.3 0.09 25);
+  --danger-strong: oklch(0.83 0.13 25);
+
+  /* Charts — brand-led, lifted for the dark canvas */
+  --chart-1: oklch(0.72 0.105 205);
+  --chart-2: oklch(0.66 0.14 250);
+  --chart-3: oklch(0.74 0.15 152);
+  --chart-4: oklch(0.8 0.14 70);
+  --chart-5: oklch(0.7 0.19 25);
+
+  /* Sidebar — a plane resting just above the page */
+  --sidebar: oklch(0.175 0.005 75);
+  --sidebar-foreground: oklch(0.94 0.004 75);
+  --sidebar-primary: oklch(0.72 0.105 205);
+  --sidebar-primary-foreground: oklch(0.17 0.03 205);
+  --sidebar-accent: oklch(0.315 0.042 205);
+  --sidebar-accent-foreground: oklch(0.86 0.06 205);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.72 0.105 205);
+
+  /* Elevation — borders carry structure; shadows deepen into the void */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.62);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-surface text-foreground;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings carry a slightly tighter optical rhythm — a designed detail */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.012em;
+  }
+
+  /* Numeric alignment for tables, KPIs, money */
+  th, td, .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 20%, transparent);
+  }
+
+  /* Slim, unobtrusive scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--foreground) 20%, transparent) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--foreground) 16%, transparent);
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--foreground) 26%, transparent);
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Text link — accent color shift only, never underlined */
+  .astu-link {
+    color: var(--link);
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: color 0.12s ease;
+  }
+  .astu-link:hover {
+    color: var(--link-hover);
+  }
+
+  /* Standard content card — hairline border, whisper shadow */
+  .astu-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+  }
+  .astu-card-hover {
+    transition: box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+  .astu-card-hover:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-pop);
+  }
+
+  /* Data table — quiet, precise, tabular. The core enterprise surface. */
+  .astu-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: var(--card);
+    font-size: 0.85rem;
+  }
+  .astu-table thead th {
+    background-color: var(--surface);
+    color: var(--muted-foreground);
+    font-weight: 600;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    white-space: nowrap;
+  }
+  .astu-table tbody td {
+    padding: 0.62rem 0.9rem;
+    border-top: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--foreground);
+  }
+  .astu-table tbody tr {
+    transition: background-color 0.1s ease;
+  }
+  .astu-table tbody tr:hover {
+    background-color: color-mix(in oklab, var(--foreground) 3%, var(--card));
+  }
+  .astu-table tbody tr:first-child td {
+    border-top: none;
+  }
+}

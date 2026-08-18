@@ -1,0 +1,705 @@
+// ===================================================================
+// Stock Management System — Prisma Schema
+// Based on SRS.docx requirements: Users/RBAC, Suppliers, Inventory,
+// FIFO valuation, Stock Receipts/Issues/Transfers, Requisitions,
+// Stock Taking, Damaged/Obsolete, Gate Passes, Audit Logs.
+// ===================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------------
+// AUTH & RBAC
+// -------------------------------------------------------------------
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  username         String     @unique
+  fullName         String
+  passwordHash     String
+  status           UserStatus @default(ACTIVE)
+  failedLoginCount Int        @default(0)
+  lockedUntil      DateTime?
+  lastLoginAt      DateTime?
+  department       String?
+  phoneNumber      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+
+  sessions             UserSession[]
+  userRoles            UserRole[]
+  auditLogs            AuditLog[]
+  stockTransactions    StockTransaction[]
+  receipts             StockReceipt[]
+  issues               StockIssue[]
+  requisitions         Requisition[]
+  requisitionApprovals RequisitionApproval[]
+  stockTakes           StockTake[]
+  gatePasses           GatePass[]            @relation("GatePassRequestedBy")
+  gatePassesApproved   GatePass[]            @relation("GatePassSecurityOfficer")
+  stockTransfers       StockTransfer[]
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  refresh   String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ip        String?
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  LOCKED
+  PENDING
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique // e.g. "users.read"
+  module      String // e.g. "users"
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+// -------------------------------------------------------------------
+// SUPPLIERS
+// -------------------------------------------------------------------
+
+model Supplier {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  status        SupplierStatus @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  receipts StockReceipt[]
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
+}
+
+// -------------------------------------------------------------------
+// CATEGORIES & UOM
+// -------------------------------------------------------------------
+
+model Category {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  name        String     @unique
+  description String?
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  items InventoryItem[]
+
+  @@index([parentId])
+}
+
+model UnitOfMeasure {
+  id        String   @id @default(cuid())
+  code      String   @unique // e.g. "EA", "BOX", "KG"
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  items InventoryItem[]
+}
+
+// -------------------------------------------------------------------
+// WAREHOUSES
+// -------------------------------------------------------------------
+
+model Warehouse {
+  id        String          @id @default(cuid())
+  code      String          @unique
+  name      String          @unique
+  location  String?
+  status    WarehouseStatus @default(ACTIVE)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  deletedAt DateTime?
+
+  stock             WarehouseStock[]
+  receipts          StockReceipt[]
+  issueSources      StockIssue[]       @relation("IssueSourceWarehouse")
+  issueDests        StockIssue[]       @relation("IssueDestWarehouse")
+  transfersFrom     StockTransfer[]    @relation("TransferFrom")
+  transfersTo       StockTransfer[]    @relation("TransferTo")
+  stockTakes        StockTake[]
+  fifoLayers        FifoLayer[]
+  stockTransactions StockTransaction[]
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// -------------------------------------------------------------------
+// INVENTORY ITEMS
+// -------------------------------------------------------------------
+
+model InventoryItem {
+  id           String        @id @default(cuid())
+  code         String        @unique // SKU / item code
+  name         String
+  description  String?
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  uomId        String
+  uom          UnitOfMeasure @relation(fields: [uomId], references: [id])
+  status       ItemStatus    @default(AVAILABLE)
+  minStock     Float         @default(0)
+  maxStock     Float         @default(0)
+  safetyStock  Float         @default(0)
+  reorderLevel Float         @default(0)
+  unitCost     Float         @default(0) // weighted average cost for display
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+
+  warehouseStock   WarehouseStock[]
+  receiptItems     StockReceiptItem[]
+  issueItems       StockIssueItem[]
+  transferItems    StockTransferItem[]
+  fifoLayers       FifoLayer[]
+  transactions     StockTransaction[]
+  stockTakeItems   StockTakeItem[]
+  damagedRecords   DamagedStock[]
+  obsoleteRecords  ObsoleteStock[]
+  requisitionItems RequisitionItem[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+enum ItemStatus {
+  AVAILABLE
+  LOW_STOCK
+  OUT_OF_STOCK
+  DAMAGED
+  OBSOLETE
+  DISPOSED
+}
+
+model WarehouseStock {
+  id          String   @id @default(cuid())
+  itemId      String
+  warehouseId String
+  quantity    Float    @default(0)
+  reservedQty Float    @default(0)
+  updatedAt   DateTime @updatedAt
+
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, warehouseId])
+  @@index([warehouseId])
+}
+
+// -------------------------------------------------------------------
+// FIFO INVENTORY LAYERS
+// Each receipt creates a layer. Each issue consumes from oldest layer.
+// -------------------------------------------------------------------
+
+model FifoLayer {
+  id           String   @id @default(cuid())
+  itemId       String
+  warehouseId  String
+  originalQty  Float
+  remainingQty Float
+  unitCost     Float
+  receiptId    String
+  createdAt    DateTime @default(now())
+
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  receipt   StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@index([itemId, warehouseId, createdAt])
+  @@index([receiptId])
+}
+
+// -------------------------------------------------------------------
+// STOCK RECEIPTS
+// -------------------------------------------------------------------
+
+model StockReceipt {
+  id              String        @id @default(cuid())
+  code            String        @unique // GRN-YYYYMMDD-XXXX
+  supplierId      String
+  warehouseId     String
+  receivedById    String
+  status          ReceiptStatus @default(CONFIRMED)
+  inspectionNotes String?
+  totalAmount     Float         @default(0)
+  totalQuantity   Float         @default(0)
+  receiptDate     DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  supplier   Supplier           @relation(fields: [supplierId], references: [id])
+  warehouse  Warehouse          @relation(fields: [warehouseId], references: [id])
+  receivedBy User               @relation(fields: [receivedById], references: [id])
+  items      StockReceiptItem[]
+  fifoLayers FifoLayer[]
+
+  @@index([supplierId])
+  @@index([warehouseId])
+  @@index([receiptDate])
+}
+
+enum ReceiptStatus {
+  DRAFT
+  INSPECTING
+  CONFIRMED
+  CANCELLED
+}
+
+model StockReceiptItem {
+  id               String  @id @default(cuid())
+  receiptId        String
+  itemId           String
+  quantity         Float
+  unitCost         Float
+  inspected        Boolean @default(false)
+  inspectionPassed Boolean @default(true)
+  remarks          String?
+
+  receipt StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  item    InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([receiptId])
+  @@index([itemId])
+}
+
+// -------------------------------------------------------------------
+// STOCK ISSUES
+// -------------------------------------------------------------------
+
+model StockIssue {
+  id                String      @id @default(cuid())
+  code              String      @unique // ISS-YYYYMMDD-XXXX
+  sourceWarehouseId String
+  destWarehouseId   String? // null for issues to department
+  issuedById        String
+  department        String
+  requisitionId     String?
+  status            IssueStatus @default(COMPLETED)
+  totalQuantity     Float       @default(0)
+  totalCogs         Float       @default(0) // cost of goods sold (FIFO)
+  issueDate         DateTime    @default(now())
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  sourceWarehouse Warehouse        @relation("IssueSourceWarehouse", fields: [sourceWarehouseId], references: [id])
+  destWarehouse   Warehouse?       @relation("IssueDestWarehouse", fields: [destWarehouseId], references: [id])
+  issuedBy        User             @relation(fields: [issuedById], references: [id])
+  items           StockIssueItem[]
+  gatePass        GatePass?
+
+  @@index([sourceWarehouseId])
+  @@index([issueDate])
+}
+
+enum IssueStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model StockIssueItem {
+  id       String  @id @default(cuid())
+  issueId  String
+  itemId   String
+  quantity Float
+  unitCost Float   @default(0) // weighted FIFO cost
+  cogs     Float   @default(0) // quantity * unitCost
+  remarks  String?
+
+  issue StockIssue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  item  InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([issueId])
+  @@index([itemId])
+}
+
+// -------------------------------------------------------------------
+// STOCK TRANSFERS
+// -------------------------------------------------------------------
+
+model StockTransfer {
+  id              String         @id @default(cuid())
+  code            String         @unique // TRF-YYYYMMDD-XXXX
+  fromWarehouseId String
+  toWarehouseId   String
+  transferredById String
+  status          TransferStatus @default(COMPLETED)
+  totalQuantity   Float          @default(0)
+  transferDate    DateTime       @default(now())
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  fromWarehouse Warehouse           @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouse   Warehouse           @relation("TransferTo", fields: [toWarehouseId], references: [id])
+  transferredBy User                @relation(fields: [transferredById], references: [id])
+  items         StockTransferItem[]
+
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+}
+
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model StockTransferItem {
+  id         String @id @default(cuid())
+  transferId String
+  itemId     String
+  quantity   Float
+  unitCost   Float  @default(0)
+
+  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  item     InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([transferId])
+}
+
+// -------------------------------------------------------------------
+// STOCK TRANSACTIONS (LEDGER)
+// Every movement creates a transaction row.
+// -------------------------------------------------------------------
+
+model StockTransaction {
+  id              String          @id @default(cuid())
+  code            String          @unique // TXN-YYYYMMDD-XXXX
+  itemId          String
+  warehouseId     String?
+  type            TransactionType
+  quantity        Float // signed: + for in, - for out
+  unitCost        Float           @default(0)
+  balanceBefore   Float           @default(0)
+  balanceAfter    Float           @default(0)
+  referenceType   String? // "RECEIPT", "ISSUE", "TRANSFER", "ADJUSTMENT"
+  referenceId     String?
+  userId          String
+  remarks         String?
+  transactionDate DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  warehouse Warehouse?    @relation(fields: [warehouseId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@index([itemId, transactionDate])
+  @@index([warehouseId])
+  @@index([type])
+  @@index([referenceType, referenceId])
+}
+
+enum TransactionType {
+  OPENING
+  RECEIPT
+  ISSUE
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  DAMAGE
+  OBSOLETE
+  DISPOSAL
+}
+
+// -------------------------------------------------------------------
+// REQUISITIONS
+// -------------------------------------------------------------------
+
+model Requisition {
+  id            String            @id @default(cuid())
+  code          String            @unique // REQ-YYYYMMDD-XXXX
+  requestedById String
+  department    String
+  status        RequisitionStatus @default(DRAFT)
+  requiredDate  DateTime
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  requestedBy User                  @relation(fields: [requestedById], references: [id])
+  items       RequisitionItem[]
+  approvals   RequisitionApproval[]
+
+  @@index([status])
+  @@index([requestedById])
+}
+
+enum RequisitionStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  PARTIALLY_FULFILLED
+  FULFILLED
+  CANCELLED
+}
+
+model RequisitionItem {
+  id            String @id @default(cuid())
+  requisitionId String
+  itemId        String
+  quantity      Float
+  fulfilledQty  Float  @default(0)
+
+  requisition Requisition   @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  item        InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([requisitionId])
+}
+
+model RequisitionApproval {
+  id            String         @id @default(cuid())
+  requisitionId String
+  approverId    String
+  status        ApprovalStatus
+  comments      String?
+  approvedAt    DateTime       @default(now())
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  approver    User        @relation(fields: [approverId], references: [id])
+
+  @@index([requisitionId])
+}
+
+enum ApprovalStatus {
+  APPROVED
+  REJECTED
+}
+
+// -------------------------------------------------------------------
+// STOCK TAKING
+// -------------------------------------------------------------------
+
+model StockTake {
+  id            String          @id @default(cuid())
+  code          String          @unique // ST-YYYYMMDD-XXXX
+  warehouseId   String
+  conductedById String
+  status        StockTakeStatus @default(DRAFT)
+  startDate     DateTime        @default(now())
+  endDate       DateTime?
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  warehouse   Warehouse       @relation(fields: [warehouseId], references: [id])
+  conductedBy User            @relation(fields: [conductedById], references: [id])
+  items       StockTakeItem[]
+
+  @@index([status])
+  @@index([warehouseId])
+}
+
+enum StockTakeStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  RECONCILED
+}
+
+model StockTakeItem {
+  id          String  @id @default(cuid())
+  stockTakeId String
+  itemId      String
+  systemQty   Float
+  physicalQty Float?
+  variance    Float?
+  remarks     String?
+
+  stockTake StockTake     @relation(fields: [stockTakeId], references: [id], onDelete: Cascade)
+  item      InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([stockTakeId])
+}
+
+// -------------------------------------------------------------------
+// DAMAGED & OBSOLETE STOCK
+// -------------------------------------------------------------------
+
+model DamagedStock {
+  id             String            @id @default(cuid())
+  itemId         String
+  warehouseId    String?
+  quantity       Float
+  reason         String
+  reportedById   String
+  status         DispositionStatus @default(REPORTED)
+  disposalDate   DateTime?
+  disposalMethod String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  item InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([itemId])
+  @@index([status])
+}
+
+model ObsoleteStock {
+  id             String            @id @default(cuid())
+  itemId         String
+  warehouseId    String?
+  quantity       Float
+  reason         String
+  reportedById   String
+  status         DispositionStatus @default(REPORTED)
+  disposalDate   DateTime?
+  disposalMethod String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  item InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([itemId])
+  @@index([status])
+}
+
+enum DispositionStatus {
+  REPORTED
+  APPROVED
+  DISPOSED
+  CANCELLED
+}
+
+// -------------------------------------------------------------------
+// GATE PASSES
+// -------------------------------------------------------------------
+
+model GatePass {
+  id                String         @id @default(cuid())
+  code              String         @unique // GP-YYYYMMDD-XXXX
+  issueId           String?        @unique
+  requestedById     String
+  securityOfficerId String?
+  status            GatePassStatus @default(PENDING)
+  carrier           String?
+  vehiclePlate      String?
+  exitConfirmedAt   DateTime?
+  notes             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  issue           StockIssue? @relation(fields: [issueId], references: [id])
+  requestedBy     User        @relation("GatePassRequestedBy", fields: [requestedById], references: [id])
+  securityOfficer User?       @relation("GatePassSecurityOfficer", fields: [securityOfficerId], references: [id])
+
+  @@index([status])
+}
+
+enum GatePassStatus {
+  PENDING
+  APPROVED
+  EXIT_CONFIRMED
+  REJECTED
+  CANCELLED
+}
+
+// -------------------------------------------------------------------
+// AUDIT LOGS
+// -------------------------------------------------------------------
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String // e.g. "USER_CREATED", "STOCK_RECEIVED"
+  module      String // e.g. "users", "inventory"
+  entity      String?
+  entityId    String?
+  oldValue    String? // JSON
+  newValue    String? // JSON
+  ipAddress   String?
+  description String?
+  timestamp   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([timestamp])
+}

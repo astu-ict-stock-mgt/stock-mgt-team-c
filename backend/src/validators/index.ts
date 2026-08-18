@@ -1,0 +1,134 @@
+import { z } from "zod";
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
+});
+
+export const profileSchema = z.object({
+  fullName: z.string().min(2).optional(),
+  department: z.string().nullable().optional(),
+  phoneNumber: z.string().nullable().optional(),
+});
+
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(3),
+  fullName: z.string().min(2),
+  password: z.string().min(6),
+  department: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  roleIds: z.array(z.string()).default([]),
+});
+
+export const updateUserSchema = z.object({
+  email: z.string().email().optional(),
+  username: z.string().min(3).optional(),
+  fullName: z.string().min(2).optional(),
+  department: z.string().nullable().optional(),
+  phoneNumber: z.string().nullable().optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "LOCKED", "PENDING"]).optional(),
+  roleIds: z.array(z.string()).optional(),
+});
+
+export const supplierSchema = z.object({
+  name: z.string().min(2),
+  contactPerson: z.string().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  status: z.enum(["ACTIVE", "INACTIVE", "BLACKLISTED"]).optional(),
+});
+
+export const categorySchema = z.object({
+  code: z.string().min(2),
+  name: z.string().min(2),
+  description: z.string().optional(),
+});
+
+export const warehouseSchema = z.object({
+  code: z.string().min(2),
+  name: z.string().min(2),
+  location: z.string().optional(),
+});
+
+export const itemSchema = z.object({
+  code: z.string().min(2),
+  name: z.string().min(2),
+  description: z.string().optional(),
+  categoryId: z.string().min(1),
+  uomId: z.string().min(1),
+  minStock: z.coerce.number().min(0).default(0),
+  maxStock: z.coerce.number().min(0).default(0),
+  safetyStock: z.coerce.number().min(0).default(0),
+  reorderLevel: z.coerce.number().min(0).default(0),
+});
+
+export const receiptSchema = z.object({
+  supplierId: z.string().min(1),
+  warehouseId: z.string().min(1),
+  inspectionNotes: z.string().optional(),
+  items: z.array(z.object({
+    itemId: z.string().min(1),
+    quantity: z.number().positive(),
+    unitCost: z.number().min(0),
+    inspected: z.boolean().optional(),
+    inspectionPassed: z.boolean().optional(),
+    remarks: z.string().optional(),
+  })).min(1),
+});
+
+export const issueSchema = z.object({
+  sourceWarehouseId: z.string().min(1),
+  destWarehouseId: z.string().optional(),
+  department: z.string().min(1),
+  requisitionId: z.string().optional(),
+  notes: z.string().optional(),
+  items: z.array(z.object({
+    itemId: z.string().min(1),
+    quantity: z.number().positive(),
+    remarks: z.string().optional(),
+  })).min(1),
+});
+
+export const requisitionSchema = z.object({
+  department: z.string().min(1),
+  requiredDate: z.union([
+    z.string().datetime(),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  ]).optional(),
+  notes: z.string().optional(),
+  items: z.array(z.object({
+    itemId: z.string().min(1),
+    quantity: z.number().positive(),
+  })).min(1),
+});
+
+export const requisitionDecisionSchema = z.object({
+  comments: z.string().optional(),
+});
+
+export const transferSchema = z.object({
+  fromWarehouseId: z.string().min(1),
+  toWarehouseId: z.string().min(1),
+  notes: z.string().optional(),
+  items: z.array(z.object({
+    itemId: z.string().min(1),
+    quantity: z.number().positive(),
+  })).min(1),
+});
+
+export const roleSchema = z.object({
+  name: z.string().min(2).max(50),
+  description: z.string().optional(),
+});
+
+export const togglePermissionSchema = z.object({
+  permission: z.string().min(1),
+  enable: z.boolean(),
+});

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Adama Science and Technology University logo</title>
+  <desc id="desc">Circular red logo with green emblem, atom, book, and blue grid.</desc>
+  <defs>
+    <path id="topArc" d="M 72 256 a 184 184 0 1 1 368 0" />
+    <path id="bottomArc" d="M 440 256 a 184 184 0 1 1 -368 0" />
+    <clipPath id="innerCircle"><circle cx="256" cy="256" r="178" /></clipPath>
+    <clipPath id="lowerHalf"><rect x="78" y="236" width="356" height="190" rx="0" ry="0" /></clipPath>
+  </defs>
+
+  <circle cx="256" cy="256" r="244" fill="#f51d1d" />
+  <circle cx="256" cy="256" r="222" fill="#f51d1d" stroke="#fff" stroke-width="6" />
+  <circle cx="256" cy="256" r="178" fill="#ffffff" />
+
+  <g clip-path="url(#innerCircle)">
+    <path d="M256 98 C 288 98 314 116 324 141 C 345 141 362 159 362 181 C 362 204 344 221 319 223 C 311 198 289 181 256 181 C 223 181 201 198 193 223 C 168 221 150 204 150 181 C 150 159 167 141 188 141 C 198 116 224 98 256 98 Z" fill="#0d7a12"/>
+    <path d="M256 104 C 282 104 304 120 312 142 C 328 142 341 155 341 171 C 341 188 327 201 309 201 C 304 185 287 171 256 171 C 225 171 208 185 203 201 C 185 201 171 188 171 171 C 171 155 184 142 200 142 C 208 120 230 104 256 104 Z" fill="#1a8f1e" opacity="0.95"/>
+
+    <g transform="translate(0 3)">
+      <ellipse cx="256" cy="188" rx="30" ry="66" fill="none" stroke="#f0f4f0" stroke-width="4"/>
+      <ellipse cx="256" cy="188" rx="30" ry="66" fill="none" stroke="#f0f4f0" stroke-width="4" transform="rotate(60 256 188)"/>
+      <ellipse cx="256" cy="188" rx="30" ry="66" fill="none" stroke="#f0f4f0" stroke-width="4" transform="rotate(-60 256 188)"/>
+      <circle cx="256" cy="188" r="10" fill="#f0f4f0"/>
+    </g>
+
+    <rect x="78" y="236" width="356" height="170" fill="#5a5be8"/>
+    <g clip-path="url(#lowerHalf)" stroke="#d7dcff" stroke-width="2">
+      <path d="M78 264H434M78 284H434M78 304H434M78 324H434M78 344H434M78 364H434M78 384H434" />
+      <path d="M98 236V406M128 236V406M158 236V406M188 236V406M218 236V406M248 236V406M278 236V406M308 236V406M338 236V406M368 236V406M398 236V406M428 236V406" />
+      <path d="M78 250L434 250M78 272L434 272M78 294L434 294M78 316L434 316M78 338L434 338M78 360L434 360M78 382L434 382" opacity="0.75" />
+    </g>
+
+    <path d="M170 224 H342 C350 224 356 230 356 238 V292 H156 V238 C156 230 162 224 170 224 Z" fill="#ffffff" stroke="#9c3a12" stroke-width="6" />
+    <path d="M256 228 V302" stroke="#9c3a12" stroke-width="5" />
+    <path d="M170 224 C186 248 196 272 206 302" fill="none" stroke="#9c3a12" stroke-width="3" opacity="0.9"/>
+    <path d="M342 224 C326 248 316 272 306 302" fill="none" stroke="#9c3a12" stroke-width="3" opacity="0.9"/>
+    <path d="M178 234 C200 240 222 244 244 244" fill="none" stroke="#9c3a12" stroke-width="2" opacity="0.45"/>
+    <path d="M268 244 C290 244 312 240 334 234" fill="none" stroke="#9c3a12" stroke-width="2" opacity="0.45"/>
+
+    <path d="M256 206 C 256 194 265 184 277 184 C 265 184 256 174 256 162 C 256 174 247 184 235 184 C 247 184 256 194 256 206 Z" fill="#ffffff" opacity="0.95"/>
+  </g>
+
+  <circle cx="256" cy="256" r="178" fill="none" stroke="#ffffff" stroke-width="6" />
+  <circle cx="256" cy="256" r="216" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.9" />
+
+  <text font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#ffffff" letter-spacing="1.5">
+    <textPath href="#topArc" startOffset="50%" text-anchor="middle">ADAMA SCIENCE AND TECHNOLOGY UNIVERSITY</textPath>
+  </text>
+
+  <text font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#ffffff" letter-spacing="1.2">
+    <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">YUNIVARSITI SAAYINSI TEKNOLOOJII ADAMAA</textPath>
+  </text>
+</svg>
