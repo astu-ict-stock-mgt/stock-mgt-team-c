@@ -52,7 +52,7 @@ import { DashboardSection } from "@/components/app/sections/dashboard-section";
 import { InventorySection } from "@/components/app/sections/inventory-section";
 import { SuppliersSection } from "@/components/app/sections/suppliers-section";
 import { CategoriesSection } from "@/components/app/sections/categories-section";
-import { WarehousesSection } from "@/components/app/sections/warehouses-section";
+import { StoresSection } from "@/components/app/sections/stores-section";
 import { ReceiptsSection } from "@/components/app/sections/receipts-section";
 import { IssuesSection } from "@/components/app/sections/issues-section";
 import { ReportsSection } from "@/components/app/sections/reports-section";
@@ -95,7 +95,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "inventory", label: "Inventory", icon: Package, permission: "inventory.read" },
       { id: "suppliers", label: "Suppliers", icon: Truck, permission: "suppliers.read" },
       { id: "categories", label: "Categories", icon: FolderTree, permission: "categories.read" },
-      { id: "warehouses", label: "Warehouses", icon: WarehouseIcon, permission: "warehouses.read" },
+      { id: "stores", label: "Stores", icon: WarehouseIcon, permission: "warehouses.read" },
     ],
   },
   {
@@ -355,7 +355,7 @@ export function AppShell({
             {section === "inventory" && <InventorySection />}
             {section === "suppliers" && <SuppliersSection />}
             {section === "categories" && <CategoriesSection />}
-            {section === "warehouses" && <WarehousesSection />}
+            {section === "stores" && <StoresSection />}
             {section === "receipts" && <ReceiptsSection />}
             {section === "issues" && <IssuesSection />}
             {section === "requisitions" && <RequisitionsSection />}

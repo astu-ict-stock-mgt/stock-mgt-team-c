@@ -11,20 +11,20 @@ export async function getDashboardStats(roles: Set<string>, userId: string) {
 }
 
 async function adminDashboard() {
-  const [totalItems, lowStockItems, outOfStockItems, totalSuppliers, totalWarehouses, totalReceipts, totalIssues, damagedItems, obsoleteItems, pendingRequisitions, recentTransactions, recentReceipts, recentIssues] = await Promise.all([
+  const [totalItems, lowStockItems, outOfStockItems, totalSuppliers, totalStores, totalReceipts, totalIssues, damagedItems, obsoleteItems, pendingRequisitions, recentTransactions, recentReceipts, recentIssues] = await Promise.all([
     prisma.inventoryItem.count({ where: { deletedAt: null } }),
     prisma.inventoryItem.count({ where: { deletedAt: null, status: "LOW_STOCK" } }),
     prisma.inventoryItem.count({ where: { deletedAt: null, status: "OUT_OF_STOCK" } }),
     prisma.supplier.count({ where: { deletedAt: null } }),
-    prisma.warehouse.count({ where: { deletedAt: null } }),
+    prisma.store.count({ where: { deletedAt: null } }),
     prisma.stockReceipt.count(),
     prisma.stockIssue.count(),
     prisma.damagedStock.count({ where: { status: { in: ["REPORTED", "APPROVED"] } } }),
     prisma.obsoleteStock.count({ where: { status: { in: ["REPORTED", "APPROVED"] } } }),
     prisma.requisition.count({ where: { status: { in: ["SUBMITTED", "PENDING_APPROVAL"] } } }),
-    prisma.stockTransaction.findMany({ orderBy: { transactionDate: "desc" }, take: 10, include: { item: true, user: true, warehouse: true } }),
-    prisma.stockReceipt.findMany({ orderBy: { receiptDate: "desc" }, take: 5, include: { supplier: true, warehouse: true } }),
-    prisma.stockIssue.findMany({ orderBy: { issueDate: "desc" }, take: 5, include: { sourceWarehouse: true } }),
+    prisma.stockTransaction.findMany({ orderBy: { transactionDate: "desc" }, take: 10, include: { item: true, user: true, store: true } }),
+    prisma.stockReceipt.findMany({ orderBy: { receiptDate: "desc" }, take: 5, include: { supplier: true, store: true } }),
+    prisma.stockIssue.findMany({ orderBy: { issueDate: "desc" }, take: 5, include: { sourceStore: true } }),
   ]);
 
   const items = await prisma.inventoryItem.findMany({ where: { deletedAt: null }, select: { id: true } });
@@ -44,7 +44,7 @@ async function adminDashboard() {
       { label: "Low Stock Items", value: lowStockItems, icon: "AlertTriangle", variant: "warning" },
       { label: "Out of Stock", value: outOfStockItems, icon: "PackageX", variant: "danger" },
       { label: "Total Suppliers", value: totalSuppliers, icon: "Truck" },
-      { label: "Total Warehouses", value: totalWarehouses, icon: "Warehouse" },
+      { label: "Total Stores", value: totalStores, icon: "Warehouse" },
       { label: "Total Receipts", value: totalReceipts, icon: "ArrowDownToLine" },
       { label: "Total Issues", value: totalIssues, icon: "ArrowUpFromLine" },
       { label: "Damaged Stock", value: damagedItems, icon: "AlertOctagon", variant: "danger" },
@@ -55,14 +55,14 @@ async function adminDashboard() {
     recentTransactions: recentTransactions.map((t) => ({
       id: t.id, code: t.code, item: t.item?.code ?? null, type: t.type,
       quantity: t.quantity, unitCost: t.unitCost, user: t.user?.fullName ?? null,
-      warehouse: t.warehouse?.code ?? null, transactionDate: t.transactionDate.toISOString(),
+      store: t.store?.code ?? null, transactionDate: t.transactionDate.toISOString(),
     })),
     recentReceipts: recentReceipts.map((r) => ({
-      id: r.id, code: r.code, supplier: r.supplier?.name ?? null, warehouse: r.warehouse?.code ?? null,
+      id: r.id, code: r.code, supplier: r.supplier?.name ?? null, store: r.store?.code ?? null,
       totalAmount: r.totalAmount, totalQuantity: r.totalQuantity, receiptDate: r.receiptDate.toISOString(),
     })),
     recentIssues: recentIssues.map((i) => ({
-      id: i.id, code: i.code, department: i.department, warehouse: i.sourceWarehouse?.code ?? null,
+      id: i.id, code: i.code, department: i.department, store: i.sourceStore?.code ?? null,
       totalQuantity: i.totalQuantity, totalCogs: i.totalCogs, issueDate: i.issueDate.toISOString(),
     })),
   };
@@ -70,14 +70,14 @@ async function adminDashboard() {
 
 async function storekeeperDashboard() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const [todaysReceipts, todaysIssues, pendingRequisitions, readyForIssue, lowStockItems, recentTransactions, warehouseStock, recentApprovedRequisitions] = await Promise.all([
+  const [todaysReceipts, todaysIssues, pendingRequisitions, readyForIssue, lowStockItems, recentTransactions, storeStock, recentApprovedRequisitions] = await Promise.all([
     prisma.stockReceipt.count({ where: { receiptDate: { gte: today } } }),
     prisma.stockIssue.count({ where: { issueDate: { gte: today } } }),
     prisma.requisition.count({ where: { status: { in: ["SUBMITTED", "PENDING_APPROVAL", "APPROVED"] } } }),
     prisma.requisition.count({ where: { status: "APPROVED" } }),
     prisma.inventoryItem.count({ where: { deletedAt: null, status: "LOW_STOCK" } }),
-    prisma.stockTransaction.findMany({ orderBy: { transactionDate: "desc" }, take: 10, include: { item: true, user: true, warehouse: true } }),
-    prisma.warehouseStock.findMany({ where: { quantity: { gt: 0 } }, include: { item: { include: { uom: true } }, warehouse: true }, orderBy: { updatedAt: "desc" }, take: 10 }),
+    prisma.stockTransaction.findMany({ orderBy: { transactionDate: "desc" }, take: 10, include: { item: true, user: true, store: true } }),
+    prisma.storeStock.findMany({ where: { quantity: { gt: 0 } }, include: { item: { include: { uom: true } }, store: true }, orderBy: { updatedAt: "desc" }, take: 10 }),
     prisma.requisition.findMany({
       where: { status: "APPROVED" },
       orderBy: { updatedAt: "desc" },
@@ -102,11 +102,11 @@ async function storekeeperDashboard() {
     ],
     recentTransactions: recentTransactions.map((t) => ({
       id: t.id, code: t.code, item: t.item?.code ?? null, type: t.type, quantity: t.quantity,
-      user: t.user?.fullName ?? null, warehouse: t.warehouse?.code ?? null, transactionDate: t.transactionDate.toISOString(),
+      user: t.user?.fullName ?? null, store: t.store?.code ?? null, transactionDate: t.transactionDate.toISOString(),
     })),
-    warehouseStock: warehouseStock.map((ws) => ({
+    storeStock: storeStock.map((ws) => ({
       id: ws.id, itemCode: ws.item.code, itemName: ws.item.name, uom: ws.item.uom.code,
-      warehouse: ws.warehouse.code, quantity: ws.quantity, reservedQty: ws.reservedQty,
+      store: ws.store.code, quantity: ws.quantity, reservedQty: ws.reservedQty,
     })),
     recentApprovedRequisitions: recentApprovedRequisitions.map((r) => ({
       id: r.id,
@@ -159,10 +159,10 @@ async function departmentHeadDashboard(userId: string) {
       where: department ? { department, status: "COMPLETED" } : { status: "COMPLETED" },
       orderBy: { issueDate: "desc" },
       take: 5,
-      include: { sourceWarehouse: true, _count: { select: { items: true } } },
+      include: { sourceStore: true, _count: { select: { items: true } } },
     }),
   ]);
-  
+
   return {
     role: "DEPARTMENT_HEAD", department,
     kpis: [
@@ -174,7 +174,7 @@ async function departmentHeadDashboard(userId: string) {
       id: issue.id,
       code: issue.code,
       department: issue.department,
-      warehouse: issue.sourceWarehouse?.code ?? null,
+      store: issue.sourceStore?.code ?? null,
       totalQuantity: issue.totalQuantity,
       totalCogs: issue.totalCogs,
       issueDate: issue.issueDate.toISOString(),

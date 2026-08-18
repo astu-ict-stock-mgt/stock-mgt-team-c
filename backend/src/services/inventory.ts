@@ -19,8 +19,8 @@ export async function listUoms() {
   return prisma.unitOfMeasure.findMany({ orderBy: { name: "asc" } });
 }
 
-export async function listWarehouses() {
-  const items = await prisma.warehouse.findMany({
+export async function listStores() {
+  const items = await prisma.store.findMany({
     where: { deletedAt: null }, orderBy: { name: "asc" },
     include: { stock: { select: { quantity: true } }, _count: { select: { stock: true } } },
   });
@@ -30,9 +30,9 @@ export async function listWarehouses() {
   }));
 }
 
-export async function createWarehouse(input: any, auditCtx?: { userId?: string }) {
-  const w = await prisma.warehouse.create({ data: { code: input.code.toUpperCase(), name: input.name, location: input.location ?? null } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "WAREHOUSE_CREATED", module: "warehouses", entity: "warehouse", entityId: w.id, newValue: w });
+export async function createStore(input: any, auditCtx?: { userId?: string }) {
+  const w = await prisma.store.create({ data: { code: input.code.toUpperCase(), name: input.name, location: input.location ?? null } });
+  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "STORE_CREATED", module: "stores", entity: "store", entityId: w.id, newValue: w });
   return w;
 }
 
@@ -69,20 +69,20 @@ export async function listInventory(params: { page: number; limit: number; searc
 export async function getInventoryItem(id: string) {
   const it = await prisma.inventoryItem.findFirst({
     where: { id, deletedAt: null },
-    include: { category: true, uom: true, warehouseStock: { include: { warehouse: true } } },
+    include: { category: true, uom: true, storeStock: { include: { store: true } } },
   });
   if (!it) throw Errors.notFound("Inventory item", id);
   const val = await computeStockValue(it.id);
   const recentTx = await prisma.stockTransaction.findMany({
     where: { itemId: id }, orderBy: { transactionDate: "desc" }, take: 20,
-    include: { user: true, warehouse: true },
+    include: { user: true, store: true },
   });
   return {
     id: it.id, code: it.code, name: it.name, description: it.description, status: it.status,
     minStock: it.minStock, maxStock: it.maxStock, safetyStock: it.safetyStock, reorderLevel: it.reorderLevel,
     unitCost: val.avgUnitCost || it.unitCost, category: it.category, uom: it.uom,
-    warehouseStock: it.warehouseStock.map((ws) => ({
-      id: ws.id, warehouseId: ws.warehouseId, warehouseCode: ws.warehouse.code, warehouseName: ws.warehouse.name,
+    storeStock: it.storeStock.map((ws) => ({
+      id: ws.id, storeId: ws.storeId, storeCode: ws.store.code, storeName: ws.store.name,
       quantity: ws.quantity, reservedQty: ws.reservedQty,
     })),
     totalQuantity: val.quantity, totalValue: val.value, avgUnitCost: val.avgUnitCost, fifoLayers: val.layers,
@@ -90,7 +90,7 @@ export async function getInventoryItem(id: string) {
       id: t.id, code: t.code, type: t.type, quantity: t.quantity, unitCost: t.unitCost,
       balanceAfter: t.balanceAfter, referenceType: t.referenceType, referenceId: t.referenceId,
       remarks: t.remarks, transactionDate: t.transactionDate.toISOString(),
-      user: t.user?.fullName ?? null, warehouse: t.warehouse?.code ?? null,
+      user: t.user?.fullName ?? null, store: t.store?.code ?? null,
     })),
   };
 }

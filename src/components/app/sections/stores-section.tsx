@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Warehouse as WarehouseIcon } from "lucide-react";
-import { useWarehouses, useCreateWarehouse } from "@/lib/api/hooks";
+import { useStores, useCreateStore } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,9 +23,9 @@ const Schema = z.object({
 
 type Form = z.infer<typeof Schema>;
 
-export function WarehousesSection() {
-  const { data, isLoading, isError, refetch } = useWarehouses();
-  const create = useCreateWarehouse();
+export function StoresSection() {
+  const { data, isLoading, isError, refetch } = useStores();
+  const create = useCreateStore();
   const [open, setOpen] = useState(false);
 
   const form = useForm<Form>({ resolver: zodResolver(Schema), defaultValues: { code: "", name: "", location: "" } });
@@ -33,7 +33,7 @@ export function WarehousesSection() {
   const onSubmit = async (values: Form) => {
     try {
       await create.mutateAsync(values);
-      toast.success("Warehouse created");
+      toast.success("Store created");
       setOpen(false);
       form.reset();
       refetch();
@@ -45,18 +45,18 @@ export function WarehousesSection() {
   return (
     <div>
       <PageHeader
-        title="Warehouses"
+        title="Stores"
         description="Manage storage locations"
         icon={WarehouseIcon}
         action={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="h-4 w-4" /> New Warehouse
+                <Plus className="h-4 w-4" /> New Store
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle className="text-primary">New Warehouse</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle className="text-primary">New Store</DialogTitle></DialogHeader>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
                 <div className="space-y-1">
                   <Label className="text-xs font-semibold">Code *</Label>
@@ -81,7 +81,7 @@ export function WarehousesSection() {
       />
       {isLoading ? <SectionLoading /> :
        isError ? <SectionError message="Failed to load" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No warehouses yet" /> : (
+       !data || data.items.length === 0 ? <SectionEmpty title="No stores yet" /> : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {data.items.map((w) => (
             <div key={w.id} className="astu-card astu-card-hover overflow-hidden">

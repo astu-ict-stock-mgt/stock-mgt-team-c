@@ -7,7 +7,7 @@ export type Section =
   | "inventory"
   | "suppliers"
   | "categories"
-  | "warehouses"
+  | "stores"
   | "receipts"
   | "issues"
   | "requisitions"

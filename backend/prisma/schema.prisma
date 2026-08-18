@@ -167,23 +167,23 @@ model UnitOfMeasure {
 }
 
 // -------------------------------------------------------------------
-// WAREHOUSES
+// STORES  (physical table still named "Warehouse" via @@map)
 // -------------------------------------------------------------------
 
-model Warehouse {
-  id        String          @id @default(cuid())
-  code      String          @unique
-  name      String          @unique
+model Store {
+  id        String      @id @default(cuid())
+  code      String      @unique
+  name      String      @unique
   location  String?
-  status    WarehouseStatus @default(ACTIVE)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  status    StoreStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   deletedAt DateTime?
 
-  stock             WarehouseStock[]
+  stock             StoreStock[]
   receipts          StockReceipt[]
-  issueSources      StockIssue[]       @relation("IssueSourceWarehouse")
-  issueDests        StockIssue[]       @relation("IssueDestWarehouse")
+  issueSources      StockIssue[]       @relation("IssueSourceStore")
+  issueDests        StockIssue[]       @relation("IssueDestStore")
   transfersFrom     StockTransfer[]    @relation("TransferFrom")
   transfersTo       StockTransfer[]    @relation("TransferTo")
   stockTakes        StockTake[]
@@ -192,9 +192,10 @@ model Warehouse {
 
   @@index([status])
   @@index([deletedAt])
+  @@map("Warehouse")
 }
 
-enum WarehouseStatus {
+enum StoreStatus {
   ACTIVE
   INACTIVE
 }
@@ -222,7 +223,7 @@ model InventoryItem {
   updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
 
-  warehouseStock   WarehouseStock[]
+  storeStock       StoreStock[]
   receiptItems     StockReceiptItem[]
   issueItems       StockIssueItem[]
   transferItems    StockTransferItem[]
@@ -247,19 +248,20 @@ enum ItemStatus {
   DISPOSED
 }
 
-model WarehouseStock {
+model StoreStock {
   id          String   @id @default(cuid())
   itemId      String
-  warehouseId String
+  storeId     String   @map("warehouseId")
   quantity    Float    @default(0)
   reservedQty Float    @default(0)
   updatedAt   DateTime @updatedAt
 
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item  InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  store Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
-  @@unique([itemId, warehouseId])
-  @@index([warehouseId])
+  @@unique([itemId, storeId])
+  @@index([storeId])
+  @@map("WarehouseStock")
 }
 
 // -------------------------------------------------------------------
@@ -269,18 +271,18 @@ model WarehouseStock {
 model FifoLayer {
   id           String   @id @default(cuid())
   itemId       String
-  warehouseId  String
+  storeId      String   @map("warehouseId")
   originalQty  Float
   remainingQty Float
   unitCost     Float
   receiptId    String
   createdAt    DateTime @default(now())
 
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  receipt   StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  item    InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  store   Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  receipt StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
-  @@index([itemId, warehouseId, createdAt])
+  @@index([itemId, storeId, createdAt])
   @@index([receiptId])
 }
 
@@ -292,7 +294,7 @@ model StockReceipt {
   id              String        @id @default(cuid())
   code            String        @unique
   supplierId      String
-  warehouseId     String
+  storeId         String        @map("warehouseId")
   receivedById    String
   status          ReceiptStatus @default(CONFIRMED)
   inspectionNotes String?
@@ -303,13 +305,13 @@ model StockReceipt {
   updatedAt       DateTime      @updatedAt
 
   supplier   Supplier           @relation(fields: [supplierId], references: [id])
-  warehouse  Warehouse          @relation(fields: [warehouseId], references: [id])
+  store      Store              @relation(fields: [storeId], references: [id])
   receivedBy User               @relation(fields: [receivedById], references: [id])
   items      StockReceiptItem[]
   fifoLayers FifoLayer[]
 
   @@index([supplierId])
-  @@index([warehouseId])
+  @@index([storeId])
   @@index([receiptDate])
 }
 
@@ -342,28 +344,28 @@ model StockReceiptItem {
 // -------------------------------------------------------------------
 
 model StockIssue {
-  id                String      @id @default(cuid())
-  code              String      @unique
-  sourceWarehouseId String
-  destWarehouseId   String?
-  issuedById        String
-  department        String
-  requisitionId     String?
-  status            IssueStatus @default(COMPLETED)
-  totalQuantity     Float       @default(0)
-  totalCogs         Float       @default(0)
-  issueDate         DateTime    @default(now())
-  notes             String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  code          String      @unique
+  sourceStoreId String      @map("sourceWarehouseId")
+  destStoreId   String?     @map("destWarehouseId")
+  issuedById    String
+  department    String
+  requisitionId String?
+  status        IssueStatus @default(COMPLETED)
+  totalQuantity Float       @default(0)
+  totalCogs     Float       @default(0)
+  issueDate     DateTime    @default(now())
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  sourceWarehouse Warehouse        @relation("IssueSourceWarehouse", fields: [sourceWarehouseId], references: [id])
-  destWarehouse   Warehouse?       @relation("IssueDestWarehouse", fields: [destWarehouseId], references: [id])
-  issuedBy        User             @relation(fields: [issuedById], references: [id])
-  items           StockIssueItem[]
-  gatePass        GatePass?
+  sourceStore Store            @relation("IssueSourceStore", fields: [sourceStoreId], references: [id])
+  destStore   Store?           @relation("IssueDestStore", fields: [destStoreId], references: [id])
+  issuedBy    User             @relation(fields: [issuedById], references: [id])
+  items       StockIssueItem[]
+  gatePass    GatePass?
 
-  @@index([sourceWarehouseId])
+  @@index([sourceStoreId])
   @@index([issueDate])
 }
 
@@ -396,8 +398,8 @@ model StockIssueItem {
 model StockTransfer {
   id              String         @id @default(cuid())
   code            String         @unique
-  fromWarehouseId String
-  toWarehouseId   String
+  fromStoreId     String         @map("fromWarehouseId")
+  toStoreId       String         @map("toWarehouseId")
   transferredById String
   status          TransferStatus @default(COMPLETED)
   totalQuantity   Float          @default(0)
@@ -406,13 +408,13 @@ model StockTransfer {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  fromWarehouse Warehouse           @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
-  toWarehouse   Warehouse           @relation("TransferTo", fields: [toWarehouseId], references: [id])
+  fromStore     Store               @relation("TransferFrom", fields: [fromStoreId], references: [id])
+  toStore       Store               @relation("TransferTo", fields: [toStoreId], references: [id])
   transferredBy User                @relation(fields: [transferredById], references: [id])
   items         StockTransferItem[]
 
-  @@index([fromWarehouseId])
-  @@index([toWarehouseId])
+  @@index([fromStoreId])
+  @@index([toStoreId])
 }
 
 enum TransferStatus {
@@ -443,7 +445,7 @@ model StockTransaction {
   id              String          @id @default(cuid())
   code            String          @unique
   itemId          String
-  warehouseId     String?
+  storeId         String?         @map("warehouseId")
   type            TransactionType
   quantity        Float
   unitCost        Float           @default(0)
@@ -456,12 +458,12 @@ model StockTransaction {
   transactionDate DateTime        @default(now())
   createdAt       DateTime        @default(now())
 
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse?    @relation(fields: [warehouseId], references: [id])
-  user      User          @relation(fields: [userId], references: [id])
+  item  InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  store Store?        @relation(fields: [storeId], references: [id])
+  user  User          @relation(fields: [userId], references: [id])
 
   @@index([itemId, transactionDate])
-  @@index([warehouseId])
+  @@index([storeId])
   @@index([type])
   @@index([referenceType, referenceId])
 }
@@ -552,7 +554,7 @@ enum ApprovalStatus {
 model StockTake {
   id            String          @id @default(cuid())
   code          String          @unique
-  warehouseId   String
+  storeId       String          @map("warehouseId")
   conductedById String
   status        StockTakeStatus @default(DRAFT)
   startDate     DateTime        @default(now())
@@ -561,12 +563,12 @@ model StockTake {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
-  warehouse   Warehouse       @relation(fields: [warehouseId], references: [id])
+  store       Store           @relation(fields: [storeId], references: [id])
   conductedBy User            @relation(fields: [conductedById], references: [id])
   items       StockTakeItem[]
 
   @@index([status])
-  @@index([warehouseId])
+  @@index([storeId])
 }
 
 enum StockTakeStatus {
@@ -598,7 +600,7 @@ model StockTakeItem {
 model DamagedStock {
   id             String            @id @default(cuid())
   itemId         String
-  warehouseId    String?
+  storeId        String?           @map("warehouseId")
   quantity       Float
   reason         String
   reportedById   String
@@ -617,7 +619,7 @@ model DamagedStock {
 model ObsoleteStock {
   id             String            @id @default(cuid())
   itemId         String
-  warehouseId    String?
+  storeId        String?           @map("warehouseId")
   quantity       Float
   reason         String
   reportedById   String

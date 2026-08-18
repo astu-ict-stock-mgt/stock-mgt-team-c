@@ -10,8 +10,8 @@ const router = Router();
 router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const params = {
     page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 20),
-    search: qp(req, "search"), fromWarehouseId: qp(req, "fromWarehouseId"),
-    toWarehouseId: qp(req, "toWarehouseId"), status: qp(req, "status"),
+    search: qp(req, "search"), fromStoreId: qp(req, "fromStoreId"),
+    toStoreId: qp(req, "toStoreId"), status: qp(req, "status"),
   };
   const result = await svc.listTransfers(params);
   res.json(ok(paginate(result.items, result.total, params.page, params.limit)));

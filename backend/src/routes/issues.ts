@@ -8,7 +8,7 @@ import * as val from "../validators";
 const router = Router();
 
 router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const params = { page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 20), search: qp(req, "search"), warehouseId: qp(req, "warehouseId"), status: qp(req, "status") };
+  const params = { page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 20), search: qp(req, "search"), storeId: qp(req, "storeId"), status: qp(req, "status") };
   const result = await svc.listIssues(params);
   res.json(ok(paginate(result.items, result.total, params.page, params.limit)));
 }));

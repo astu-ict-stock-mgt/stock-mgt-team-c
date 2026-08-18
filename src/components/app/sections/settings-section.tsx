@@ -286,7 +286,7 @@ function SystemTab() {
       icon: Database, title: "Database", items: [
         "Prisma ORM with normalized relational schema",
         "UUIDs (cuid) for all primary keys",
-        "Soft-delete on users, suppliers, inventory, warehouses",
+        "Soft-delete on users, suppliers, inventory, stores",
         "Atomic transactions for stock movements",
         "FIFO layers maintain full inventory history",
         "Indexed on frequently queried fields",

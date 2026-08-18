@@ -39,7 +39,7 @@ export function AuditLogsSection() {
               <SelectItem value="users">Users</SelectItem>
               <SelectItem value="suppliers">Suppliers</SelectItem>
               <SelectItem value="categories">Categories</SelectItem>
-              <SelectItem value="warehouses">Warehouses</SelectItem>
+              <SelectItem value="stores">Stores</SelectItem>
               <SelectItem value="inventory">Inventory</SelectItem>
               <SelectItem value="receipts">Receipts</SelectItem>
               <SelectItem value="issues">Issues</SelectItem>

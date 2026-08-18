@@ -90,7 +90,7 @@ app.get("/api/v1/health", async (_req: Request, res: Response) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/suppliers", suppliersRoutes);
-app.use("/api/v1", inventoryRoutes); // categories, warehouses, inventory
+app.use("/api/v1", inventoryRoutes); // categories, stores, inventory
 app.use("/api/v1/receipts", receiptsRoutes);
 app.use("/api/v1/issues", issuesRoutes);
 app.use("/api/v1/transfers", transfersRoutes);

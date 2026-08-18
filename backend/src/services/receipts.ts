@@ -4,11 +4,11 @@ import { Errors } from "../utils/errors";
 import { recordAudit } from "./audit";
 import { nextTxnCode } from "./fifo-consume";
 
-export async function listReceipts(params: { page: number; limit: number; search?: string; supplierId?: string; warehouseId?: string; status?: string }) {
+export async function listReceipts(params: { page: number; limit: number; search?: string; supplierId?: string; storeId?: string; status?: string }) {
   const where: Prisma.StockReceiptWhereInput = {};
   if (params.search) where.code = { contains: params.search };
   if (params.supplierId) where.supplierId = params.supplierId;
-  if (params.warehouseId) where.warehouseId = params.warehouseId;
+  if (params.storeId) where.storeId = params.storeId;
   if (params.status) where.status = params.status as any;
 
   const [total, rows] = await Promise.all([
@@ -16,14 +16,14 @@ export async function listReceipts(params: { page: number; limit: number; search
     prisma.stockReceipt.findMany({
       where, orderBy: { receiptDate: "desc" },
       skip: (params.page - 1) * params.limit, take: params.limit,
-      include: { supplier: true, warehouse: true, receivedBy: true, _count: { select: { items: true } } },
+      include: { supplier: true, store: true, receivedBy: true, _count: { select: { items: true } } },
     }),
   ]);
 
   return { total, items: rows.map((r) => ({
     id: r.id, code: r.code,
     supplier: { id: r.supplier.id, code: r.supplier.code, name: r.supplier.name },
-    warehouse: { id: r.warehouse.id, code: r.warehouse.code, name: r.warehouse.name },
+    store: { id: r.store.id, code: r.store.code, name: r.store.name },
     receivedBy: { id: r.receivedBy.id, fullName: r.receivedBy.fullName },
     status: r.status, totalAmount: r.totalAmount, totalQuantity: r.totalQuantity,
     itemCount: r._count.items, receiptDate: r.receiptDate.toISOString(), inspectionNotes: r.inspectionNotes,
@@ -33,11 +33,11 @@ export async function listReceipts(params: { page: number; limit: number; search
 export async function getReceipt(id: string) {
   const r = await prisma.stockReceipt.findUnique({
     where: { id },
-    include: { supplier: true, warehouse: true, receivedBy: true, items: { include: { item: { include: { uom: true } } } }, fifoLayers: true },
+    include: { supplier: true, store: true, receivedBy: true, items: { include: { item: { include: { uom: true } } } }, fifoLayers: true },
   });
   if (!r) throw Errors.notFound("Receipt", id);
   return {
-    id: r.id, code: r.code, supplier: r.supplier, warehouse: r.warehouse,
+    id: r.id, code: r.code, supplier: r.supplier, store: r.store,
     receivedBy: { id: r.receivedBy.id, fullName: r.receivedBy.fullName },
     status: r.status, totalAmount: r.totalAmount, totalQuantity: r.totalQuantity,
     inspectionNotes: r.inspectionNotes, receiptDate: r.receiptDate.toISOString(), createdAt: r.createdAt.toISOString(),
@@ -66,7 +66,7 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
   const receipt = await prisma.$transaction(async (tx) => {
     const r = await tx.stockReceipt.create({
       data: {
-        code, supplierId: input.supplierId, warehouseId: input.warehouseId, receivedById: input.receivedById,
+        code, supplierId: input.supplierId, storeId: input.storeId, receivedById: input.receivedById,
         status: "CONFIRMED", inspectionNotes: input.inspectionNotes ?? null, totalQuantity, totalAmount,
         items: { create: input.items.map((it: any) => ({
           itemId: it.itemId, quantity: it.quantity, unitCost: it.unitCost,
@@ -77,23 +77,23 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
     });
 
     for (const ri of r.items) {
-      const existing = await tx.warehouseStock.findUnique({ where: { itemId_warehouseId: { itemId: ri.itemId, warehouseId: input.warehouseId } } });
+      const existing = await tx.storeStock.findUnique({ where: { itemId_storeId: { itemId: ri.itemId, storeId: input.storeId } } });
       const balanceBefore = existing?.quantity ?? 0;
       const balanceAfter = balanceBefore + ri.quantity;
       if (existing) {
-        await tx.warehouseStock.update({ where: { id: existing.id }, data: { quantity: balanceAfter } });
+        await tx.storeStock.update({ where: { id: existing.id }, data: { quantity: balanceAfter } });
       } else {
-        await tx.warehouseStock.create({ data: { itemId: ri.itemId, warehouseId: input.warehouseId, quantity: balanceAfter } });
+        await tx.storeStock.create({ data: { itemId: ri.itemId, storeId: input.storeId, quantity: balanceAfter } });
       }
 
       await tx.fifoLayer.create({
-        data: { itemId: ri.itemId, warehouseId: input.warehouseId, receiptId: r.id, originalQty: ri.quantity, remainingQty: ri.quantity, unitCost: ri.unitCost },
+        data: { itemId: ri.itemId, storeId: input.storeId, receiptId: r.id, originalQty: ri.quantity, remainingQty: ri.quantity, unitCost: ri.unitCost },
       });
 
       const txnCode = await nextTxnCode(tx);
       await tx.stockTransaction.create({
         data: {
-          code: txnCode, itemId: ri.itemId, warehouseId: input.warehouseId, type: "RECEIPT",
+          code: txnCode, itemId: ri.itemId, storeId: input.storeId, type: "RECEIPT",
           quantity: ri.quantity, unitCost: ri.unitCost, balanceBefore, balanceAfter,
           referenceType: "RECEIPT", referenceId: r.id, userId: input.receivedById, remarks: `Receipt ${code}`,
         },
@@ -111,7 +111,7 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
   await recordAudit({
     ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
     action: "STOCK_RECEIVED", module: "receipts", entity: "receipt", entityId: receipt.id,
-    newValue: { code, supplierId: input.supplierId, warehouseId: input.warehouseId, totalQuantity, totalAmount, itemCount: input.items.length },
+    newValue: { code, supplierId: input.supplierId, storeId: input.storeId, totalQuantity, totalAmount, itemCount: input.items.length },
   });
 
   return getReceipt(receipt.id);

@@ -8,7 +8,7 @@ import type {
   Paginated,
   Supplier,
   Category,
-  Warehouse,
+  Store,
   Uom,
   InventoryItem,
   InventoryItemDetail,
@@ -198,7 +198,7 @@ export function useUpdateSupplier() {
   });
 }
 
-// ---------------- Categories & Warehouses ----------------
+// ---------------- Categories & Stores ----------------
 export function useCategoriesAndUoms() {
   return useQuery({
     queryKey: ["categories-uoms"],
@@ -215,19 +215,19 @@ export function useCreateCategory() {
   });
 }
 
-export function useWarehouses() {
+export function useStores() {
   return useQuery({
-    queryKey: ["warehouses"],
-    queryFn: () => apiClient.get<{ items: Warehouse[] }>("/api/v1/warehouses"),
+    queryKey: ["stores"],
+    queryFn: () => apiClient.get<{ items: Store[] }>("/api/v1/stores"),
   });
 }
 
-export function useCreateWarehouse() {
+export function useCreateStore() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { code: string; name: string; location?: string }) =>
-      apiClient.post("/api/v1/warehouses", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["warehouses"] }),
+      apiClient.post("/api/v1/stores", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["stores"] }),
   });
 }
 
@@ -273,11 +273,11 @@ export function useUpdateItem() {
 }
 
 // ---------------- Receipts ----------------
-export function useReceipts(params: { page: number; limit: number; search?: string; supplierId?: string; warehouseId?: string; status?: string }) {
+export function useReceipts(params: { page: number; limit: number; search?: string; supplierId?: string; storeId?: string; status?: string }) {
   const search = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
   if (params.search) search.set("search", params.search);
   if (params.supplierId) search.set("supplierId", params.supplierId);
-  if (params.warehouseId) search.set("warehouseId", params.warehouseId);
+  if (params.storeId) search.set("storeId", params.storeId);
   if (params.status) search.set("status", params.status);
   return useQuery({
     queryKey: ["receipts", params],
@@ -298,7 +298,7 @@ export function useCreateReceipt() {
   return useMutation({
     mutationFn: (body: {
       supplierId: string;
-      warehouseId: string;
+      storeId: string;
       inspectionNotes?: string;
       items: Array<{ itemId: string; quantity: number; unitCost: number; inspected?: boolean; inspectionPassed?: boolean; remarks?: string }>;
     }) => apiClient.post<ReceiptDetail>("/api/v1/receipts", body),
@@ -311,10 +311,10 @@ export function useCreateReceipt() {
 }
 
 // ---------------- Issues ----------------
-export function useIssues(params: { page: number; limit: number; search?: string; warehouseId?: string; status?: string }) {
+export function useIssues(params: { page: number; limit: number; search?: string; storeId?: string; status?: string }) {
   const search = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
   if (params.search) search.set("search", params.search);
-  if (params.warehouseId) search.set("warehouseId", params.warehouseId);
+  if (params.storeId) search.set("storeId", params.storeId);
   if (params.status) search.set("status", params.status);
   return useQuery({
     queryKey: ["issues", params],
@@ -334,8 +334,8 @@ export function useCreateIssue() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: {
-      sourceWarehouseId: string;
-      destWarehouseId?: string;
+      sourceStoreId: string;
+      destStoreId?: string;
       department: string;
       notes?: string;
       items: Array<{ itemId: string; quantity: number; remarks?: string }>;
@@ -420,10 +420,10 @@ export function useAuditLogs(params: { page: number; limit: number; search?: str
 }
 
 // ---------------- Reports ----------------
-export function useInventoryReport(params: { categoryId?: string; warehouseId?: string; lowStockOnly?: boolean }) {
+export function useInventoryReport(params: { categoryId?: string; storeId?: string; lowStockOnly?: boolean }) {
   const search = new URLSearchParams();
   if (params.categoryId) search.set("categoryId", params.categoryId);
-  if (params.warehouseId) search.set("warehouseId", params.warehouseId);
+  if (params.storeId) search.set("storeId", params.storeId);
   if (params.lowStockOnly) search.set("lowStockOnly", "true");
   return useQuery({
     queryKey: ["reports", "inventory", params],
@@ -431,21 +431,21 @@ export function useInventoryReport(params: { categoryId?: string; warehouseId?: 
   });
 }
 
-export function useValuationReport(params: { categoryId?: string; warehouseId?: string }) {
+export function useValuationReport(params: { categoryId?: string; storeId?: string }) {
   const search = new URLSearchParams();
   if (params.categoryId) search.set("categoryId", params.categoryId);
-  if (params.warehouseId) search.set("warehouseId", params.warehouseId);
+  if (params.storeId) search.set("storeId", params.storeId);
   return useQuery({
     queryKey: ["reports", "valuation", params],
     queryFn: () => apiClient.get<ValuationReport>(`/api/v1/reports/valuation?${search}`),
   });
 }
 
-export function useMovementReport(params: { page: number; limit: number; startDate?: string; endDate?: string; warehouseId?: string; itemId?: string; type?: string; userId?: string }) {
+export function useMovementReport(params: { page: number; limit: number; startDate?: string; endDate?: string; storeId?: string; itemId?: string; type?: string; userId?: string }) {
   const search = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
   if (params.startDate) search.set("startDate", params.startDate);
   if (params.endDate) search.set("endDate", params.endDate);
-  if (params.warehouseId) search.set("warehouseId", params.warehouseId);
+  if (params.storeId) search.set("storeId", params.storeId);
   if (params.itemId) search.set("itemId", params.itemId);
   if (params.type) search.set("type", params.type);
   if (params.userId) search.set("userId", params.userId);

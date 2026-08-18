@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Search, ArrowUpFromLine, X, Eye } from "lucide-react";
-import { useIssues, useCreateIssue, useWarehouses, useInventory, useIssue } from "@/lib/api/hooks";
+import { useIssues, useCreateIssue, useStores, useInventory, useIssue } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -62,7 +62,7 @@ export function IssuesSection() {
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Warehouse</th>
+                <th>Store</th>
                 <th>Department</th>
                 <th className="text-right">Qty</th>
                 <th className="text-right">COGS</th>
@@ -76,7 +76,7 @@ export function IssuesSection() {
               {data.items.map((i) => (
                 <tr key={i.id}>
                   <td className="font-mono text-xs">{i.code}</td>
-                  <td className="text-xs">{i.sourceWarehouse.name}</td>
+                  <td className="text-xs">{i.sourceStore.name}</td>
                   <td className="text-xs">{i.department}</td>
                   <td className="text-right font-semibold">{formatNumber(i.totalQuantity)}</td>
                   <td className="text-right text-danger font-semibold">{formatCurrency(i.totalCogs)}</td>
@@ -109,13 +109,13 @@ export function IssuesSection() {
 }
 
 function CreateIssueDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const warehouses = useWarehouses();
+  const stores = useStores();
   const inventory = useInventory({ page: 1, limit: 100 });
   const create = useCreateIssue();
   const issueDraftRequisition = useUIStore((s) => s.issueDraftRequisition);
   const setIssueDraftRequisition = useUIStore((s) => s.setIssueDraftRequisition);
 
-  const [sourceWarehouseId, setSourceWarehouseId] = useState("");
+  const [sourceStoreId, setSourceStoreId] = useState("");
   const [department, setDepartment] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
@@ -134,13 +134,13 @@ function CreateIssueDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const totalQty = items.reduce((s, i) => s + (i.quantity || 0), 0);
 
   const onSubmit = async () => {
-    if (!sourceWarehouseId) return toast.error("Select source warehouse");
+    if (!sourceStoreId) return toast.error("Select source store");
     if (!department.trim()) return toast.error("Department is required");
     if (items.length === 0) return toast.error("Add at least one item");
     if (items.some((i) => !i.itemId || i.quantity <= 0)) return toast.error("Check item details");
     try {
       const result = await create.mutateAsync({
-        sourceWarehouseId,
+        sourceStoreId,
         department,
         requisitionId: issueDraftRequisition?.id,
         notes: notes || undefined,
@@ -148,7 +148,7 @@ function CreateIssueDialog({ open, onOpenChange }: { open: boolean; onOpenChange
       });
       toast.success(`Stock issued — COGS: ${formatCurrency(result.totalCogs)}`);
       onOpenChange(false);
-      setSourceWarehouseId(""); setDepartment(""); setNotes(""); setItems([]);
+      setSourceStoreId(""); setDepartment(""); setNotes(""); setItems([]);
       setIssueDraftRequisition(null);
     } catch (e) {
       toast.error(e instanceof ApiClientError ? e.message : "Failed");
@@ -162,7 +162,7 @@ function CreateIssueDialog({ open, onOpenChange }: { open: boolean; onOpenChange
           <DialogTitle className="text-danger flex items-center gap-2">
             <ArrowUpFromLine className="h-4 w-4" /> Issue Stock
           </DialogTitle>
-          <DialogDescription>Consumes FIFO layers (oldest first), updates warehouse stock, computes COGS</DialogDescription>
+          <DialogDescription>Consumes FIFO layers (oldest first), updates store stock, computes COGS</DialogDescription>
         </DialogHeader>
         {issueDraftRequisition ? (
           <div className="rounded border border-primary/30 bg-accent px-3 py-2 text-xs text-primary-strong">
@@ -172,11 +172,11 @@ function CreateIssueDialog({ open, onOpenChange }: { open: boolean; onOpenChange
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Source Warehouse *</Label>
-              <Select value={sourceWarehouseId} onValueChange={setSourceWarehouseId}>
-                <SelectTrigger><SelectValue placeholder="Select warehouse" /></SelectTrigger>
+              <Label className="text-xs font-semibold">Source Store *</Label>
+              <Select value={sourceStoreId} onValueChange={setSourceStoreId}>
+                <SelectTrigger><SelectValue placeholder="Select store" /></SelectTrigger>
                 <SelectContent>
-                  {warehouses.data?.items.map((w) => (
+                  {stores.data?.items.map((w) => (
                     <SelectItem key={w.id} value={w.id}>{w.code} — {w.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -251,7 +251,7 @@ function IssueDetailDrawer() {
             <DialogHeader>
               <DialogTitle className="font-mono text-base text-danger">{issue.code}</DialogTitle>
               <DialogDescription>
-                Issued {formatDate(issue.issueDate, true)} · {issue.sourceWarehouse.name} → {issue.department}
+                Issued {formatDate(issue.issueDate, true)} · {issue.sourceStore.name} → {issue.department}
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-3 gap-2 mb-4">

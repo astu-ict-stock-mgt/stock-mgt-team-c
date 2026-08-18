@@ -60,7 +60,7 @@ export type Category = {
   itemCount: number;
 };
 
-export type Warehouse = {
+export type Store = {
   id: string;
   code: string;
   name: string;
@@ -90,11 +90,11 @@ export type InventoryItem = {
 };
 
 export type InventoryItemDetail = InventoryItem & {
-  warehouseStock: Array<{
+  storeStock: Array<{
     id: string;
-    warehouseId: string;
-    warehouseCode: string;
-    warehouseName: string;
+    storeId: string;
+    storeCode: string;
+    storeName: string;
     quantity: number;
     reservedQty: number;
   }>;
@@ -118,7 +118,7 @@ export type InventoryItemDetail = InventoryItem & {
     remarks: string | null;
     transactionDate: string;
     user: string | null;
-    warehouse: string | null;
+    store: string | null;
   }>;
 };
 
@@ -126,7 +126,7 @@ export type Receipt = {
   id: string;
   code: string;
   supplier: { id: string; code: string; name: string };
-  warehouse: { id: string; code: string; name: string };
+  store: { id: string; code: string; name: string };
   receivedBy: { id: string; fullName: string };
   status: string;
   totalAmount: number;
@@ -162,8 +162,8 @@ export type ReceiptDetail = Receipt & {
 export type Issue = {
   id: string;
   code: string;
-  sourceWarehouse: { id: string; code: string; name: string };
-  destWarehouse: { id: string; code: string; name: string } | null;
+  sourceStore: { id: string; code: string; name: string };
+  destStore: { id: string; code: string; name: string } | null;
   issuedBy: { id: string; fullName: string };
   department: string;
   status: string;
@@ -247,7 +247,7 @@ export type DashboardStats = {
   recentTransactions?: Array<Record<string, unknown>>;
   recentReceipts?: Array<Record<string, unknown>>;
   recentIssues?: Array<Record<string, unknown>>;
-  warehouseStock?: Array<Record<string, unknown>>;
+  storeStock?: Array<Record<string, unknown>>;
   recentRequisitions?: Array<Record<string, unknown>>;
   recentApprovedRequisitions?: Array<Record<string, unknown>>;
   recentGatePasses?: Array<Record<string, unknown>>;
@@ -317,7 +317,7 @@ export type MovementReportItem = {
   referenceType: string | null;
   referenceId: string | null;
   user: string | null;
-  warehouse: string | null;
+  store: string | null;
   remarks: string | null;
   transactionDate: string;
 };

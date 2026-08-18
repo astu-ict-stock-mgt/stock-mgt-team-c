@@ -11,7 +11,7 @@ router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: Au
   const params = {
     page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 20),
     search: qp(req, "search"), supplierId: qp(req, "supplierId"),
-    warehouseId: qp(req, "warehouseId"), status: qp(req, "status"),
+    storeId: qp(req, "storeId"), status: qp(req, "status"),
   };
   const result = await svc.listReceipts(params);
   res.json(ok(paginate(result.items, result.total, params.page, params.limit)));

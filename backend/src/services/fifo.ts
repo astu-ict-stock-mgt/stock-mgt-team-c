@@ -1,8 +1,8 @@
 import { prisma } from "../config/db";
 
-export async function computeStockValue(itemId: string, warehouseId?: string) {
+export async function computeStockValue(itemId: string, storeId?: string) {
   const where: any = { itemId };
-  if (warehouseId) where.warehouseId = warehouseId;
+  if (storeId) where.storeId = storeId;
   const layers = await prisma.fifoLayer.findMany({ where, orderBy: { createdAt: "asc" } });
   const totalQty = layers.reduce((s, l) => s + l.remainingQty, 0);
   const totalValue = layers.reduce((s, l) => s + l.remainingQty * l.unitCost, 0);

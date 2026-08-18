@@ -150,10 +150,10 @@ export function DashboardSection() {
               </ChartCard>
             )}
 
-            {data.charts.stockValueByWarehouse && data.charts.stockValueByWarehouse.length > 0 && (
-              <ChartCard title="Stock Value by Warehouse" icon={WarehouseIcon}>
+            {data.charts.stockValueByStore && data.charts.stockValueByStore.length > 0 && (
+              <ChartCard title="Stock Value by Store" icon={WarehouseIcon}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.charts.stockValueByWarehouse.map((d) => ({ name: d.label, value: d.value }))}>
+                  <BarChart data={data.charts.stockValueByStore.map((d) => ({ name: d.label, value: d.value }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
                     <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} />
@@ -204,7 +204,7 @@ export function DashboardSection() {
                     <td className="font-mono text-[11px]">{r.code}</td>
                     <td className="text-xs">
                       <div className="font-medium truncate max-w-[120px]">{r.supplier ?? "—"}</div>
-                      <div className="text-[10px] text-muted-foreground">{r.warehouse}</div>
+                      <div className="text-[10px] text-muted-foreground">{r.store}</div>
                     </td>
                     <td className="text-right font-semibold text-xs">{formatCurrency(r.totalAmount)}</td>
                     <td className="text-right text-xs">{formatNumber(r.totalQuantity)}</td>
@@ -227,7 +227,7 @@ export function DashboardSection() {
                     <td className="font-mono text-[11px]">{i.code}</td>
                     <td className="text-xs">
                       <div className="font-medium">{i.department}</div>
-                      <div className="text-[10px] text-muted-foreground">{i.warehouse}</div>
+                      <div className="text-[10px] text-muted-foreground">{i.store}</div>
                     </td>
                     <td className="text-right font-semibold text-xs">{formatCurrency(i.totalCogs)}</td>
                     <td className="text-right text-xs">{formatNumber(i.totalQuantity)}</td>
@@ -238,20 +238,20 @@ export function DashboardSection() {
           </ActivityCard>
         )}
 
-        {data.warehouseStock && data.warehouseStock.length > 0 && (
-          <ActivityCard title="Warehouse Stock Snapshot" icon={WarehouseIcon} tone="primary" footer={<AstuAction onClick={() => setSection("inventory")}>View Inventory →</AstuAction>}>
+        {data.storeStock && data.storeStock.length > 0 && (
+          <ActivityCard title="Store Stock Snapshot" icon={WarehouseIcon} tone="primary" footer={<AstuAction onClick={() => setSection("inventory")}>View Inventory →</AstuAction>}>
             <table className="astu-table">
               <thead>
-                <tr><th>Item</th><th>Warehouse</th><th className="text-right">Qty</th></tr>
+                <tr><th>Item</th><th>Store</th><th className="text-right">Qty</th></tr>
               </thead>
               <tbody>
-                {data.warehouseStock.slice(0, 8).map((ws: Record<string, any>) => (
+                {data.storeStock.slice(0, 8).map((ws: Record<string, any>) => (
                   <tr key={ws.id}>
                     <td className="text-xs">
                       <div className="font-medium">{ws.itemName}</div>
                       <div className="text-[10px] text-muted-foreground">{ws.itemCode}</div>
                     </td>
-                    <td className="text-xs">{ws.warehouse}</td>
+                    <td className="text-xs">{ws.store}</td>
                     <td className="text-right font-semibold">{formatNumber(ws.quantity)} <span className="text-[10px] text-muted-foreground">{ws.uom}</span></td>
                   </tr>
                 ))}
@@ -304,14 +304,14 @@ export function DashboardSection() {
           <ActivityCard title="Received Stock" icon={ArrowUpFromLine} tone="danger">
             <table className="astu-table">
               <thead>
-                <tr><th>Code</th><th>Warehouse</th><th className="text-right">COGS</th><th className="text-right">Qty</th></tr>
+                <tr><th>Code</th><th>Store</th><th className="text-right">COGS</th><th className="text-right">Qty</th></tr>
               </thead>
               <tbody>
                 {data.recentIssues.slice(0, 8).map((issue: Record<string, any>) => (
                   <tr key={issue.id}>
                     <td className="font-mono text-[11px]">{issue.code}</td>
                     <td className="text-xs">
-                      <div className="font-medium">{issue.warehouse ?? "—"}</div>
+                      <div className="font-medium">{issue.store ?? "—"}</div>
                       <div className="text-[10px] text-muted-foreground">{issue.department}</div>
                     </td>
                     <td className="text-right font-semibold text-xs">{formatCurrency(issue.totalCogs)}</td>

@@ -51,7 +51,7 @@ export const categorySchema = z.object({
   description: z.string().optional(),
 });
 
-export const warehouseSchema = z.object({
+export const storeSchema = z.object({
   code: z.string().min(2),
   name: z.string().min(2),
   location: z.string().optional(),
@@ -71,7 +71,7 @@ export const itemSchema = z.object({
 
 export const receiptSchema = z.object({
   supplierId: z.string().min(1),
-  warehouseId: z.string().min(1),
+  storeId: z.string().min(1),
   inspectionNotes: z.string().optional(),
   items: z.array(z.object({
     itemId: z.string().min(1),
@@ -84,8 +84,8 @@ export const receiptSchema = z.object({
 });
 
 export const issueSchema = z.object({
-  sourceWarehouseId: z.string().min(1),
-  destWarehouseId: z.string().optional(),
+  sourceStoreId: z.string().min(1),
+  destStoreId: z.string().optional(),
   department: z.string().min(1),
   requisitionId: z.string().optional(),
   notes: z.string().optional(),
@@ -114,8 +114,8 @@ export const requisitionDecisionSchema = z.object({
 });
 
 export const transferSchema = z.object({
-  fromWarehouseId: z.string().min(1),
-  toWarehouseId: z.string().min(1),
+  fromStoreId: z.string().min(1),
+  toStoreId: z.string().min(1),
   notes: z.string().optional(),
   items: z.array(z.object({
     itemId: z.string().min(1),

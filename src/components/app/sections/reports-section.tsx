@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { BarChart3, Package } from "lucide-react";
 import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuCardTable, TabBar } from "@/components/app/section-utils";
-import { useInventoryReport, useValuationReport, useMovementReport, useCategoriesAndUoms, useWarehouses } from "@/lib/api/hooks";
+import { useInventoryReport, useValuationReport, useMovementReport, useCategoriesAndUoms, useStores } from "@/lib/api/hooks";
 import { formatCurrency, formatNumber, statusColor } from "@/lib/utils/format";
 
 export function ReportsSection() {
@@ -39,11 +39,11 @@ export function ReportsSection() {
 
 function InventoryReportView() {
   const cats = useCategoriesAndUoms();
-  const whs = useWarehouses();
+  const stores = useStores();
   const [categoryId, setCategoryId] = useState("");
-  const [warehouseId, setWarehouseId] = useState("");
+  const [storeId, setStoreId] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
-  const { data, isLoading, isError, refetch } = useInventoryReport({ categoryId: categoryId || undefined, warehouseId: warehouseId || undefined, lowStockOnly });
+  const { data, isLoading, isError, refetch } = useInventoryReport({ categoryId: categoryId || undefined, storeId: storeId || undefined, lowStockOnly });
 
   return (
     <div>
@@ -56,11 +56,11 @@ function InventoryReportView() {
               {cats.data?.categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={warehouseId || "ALL"} onValueChange={(v) => setWarehouseId(v === "ALL" ? "" : v)}>
-            <SelectTrigger className="h-9"><SelectValue placeholder="Warehouse" /></SelectTrigger>
+          <Select value={storeId || "ALL"} onValueChange={(v) => setStoreId(v === "ALL" ? "" : v)}>
+            <SelectTrigger className="h-9"><SelectValue placeholder="Store" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Warehouses</SelectItem>
-              {whs.data?.items.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+              <SelectItem value="ALL">All Stores</SelectItem>
+              {stores.data?.items.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Button
@@ -123,10 +123,10 @@ function InventoryReportView() {
 
 function ValuationReportView() {
   const cats = useCategoriesAndUoms();
-  const whs = useWarehouses();
+  const stores = useStores();
   const [categoryId, setCategoryId] = useState("");
-  const [warehouseId, setWarehouseId] = useState("");
-  const { data, isLoading, isError, refetch } = useValuationReport({ categoryId: categoryId || undefined, warehouseId: warehouseId || undefined });
+  const [storeId, setStoreId] = useState("");
+  const { data, isLoading, isError, refetch } = useValuationReport({ categoryId: categoryId || undefined, storeId: storeId || undefined });
 
   const chartData = (data?.items ?? []).slice(0, 10).map((i) => ({ name: i.code, value: i.totalValue }));
 
@@ -141,11 +141,11 @@ function ValuationReportView() {
               {cats.data?.categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Select value={warehouseId || "ALL"} onValueChange={(v) => setWarehouseId(v === "ALL" ? "" : v)}>
-            <SelectTrigger className="h-9"><SelectValue placeholder="Warehouse" /></SelectTrigger>
+          <Select value={storeId || "ALL"} onValueChange={(v) => setStoreId(v === "ALL" ? "" : v)}>
+            <SelectTrigger className="h-9"><SelectValue placeholder="Store" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Warehouses</SelectItem>
-              {whs.data?.items.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+              <SelectItem value="ALL">All Stores</SelectItem>
+              {stores.data?.items.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Button variant="outline" className="h-9" onClick={() => refetch()}>Refresh</Button>
@@ -214,22 +214,22 @@ function ValuationReportView() {
 }
 
 function MovementReportView() {
-  const whs = useWarehouses();
-  const [warehouseId, setWarehouseId] = useState("");
+  const stores = useStores();
+  const [storeId, setStoreId] = useState("");
   const [type, setType] = useState("");
   const [page, setPage] = useState(1);
   const limit = 30;
-  const { data, isLoading, isError, refetch } = useMovementReport({ page, limit, warehouseId: warehouseId || undefined, type: type || undefined });
+  const { data, isLoading, isError, refetch } = useMovementReport({ page, limit, storeId: storeId || undefined, type: type || undefined });
 
   return (
     <div>
       <Card className="mb-4 p-3 border border-border shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <Select value={warehouseId || "ALL"} onValueChange={(v) => { setWarehouseId(v === "ALL" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="h-9"><SelectValue placeholder="Warehouse" /></SelectTrigger>
+          <Select value={storeId || "ALL"} onValueChange={(v) => { setStoreId(v === "ALL" ? "" : v); setPage(1); }}>
+            <SelectTrigger className="h-9"><SelectValue placeholder="Store" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">All Warehouses</SelectItem>
-              {whs.data?.items.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+              <SelectItem value="ALL">All Stores</SelectItem>
+              {stores.data?.items.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={type || "ALL"} onValueChange={(v) => { setType(v === "ALL" ? "" : v); setPage(1); }}>
@@ -260,7 +260,7 @@ function MovementReportView() {
                 <th className="text-right">Qty</th>
                 <th className="text-right">Balance</th>
                 <th>User</th>
-                <th>Warehouse</th>
+                <th>Store</th>
                 <th>Date</th>
               </tr>
             </thead>
@@ -273,7 +273,7 @@ function MovementReportView() {
                   <td className="text-right font-semibold">{formatNumber(Math.abs(t.quantity))}</td>
                   <td className="text-right">{formatNumber(t.balanceAfter)}</td>
                   <td className="text-xs">{t.user ?? "—"}</td>
-                  <td className="text-xs">{t.warehouse ?? "—"}</td>
+                  <td className="text-xs">{t.store ?? "—"}</td>
                   <td className="text-xs whitespace-nowrap">{new Date(t.transactionDate).toLocaleString()}</td>
                 </tr>
               ))}

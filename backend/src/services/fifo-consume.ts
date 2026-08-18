@@ -6,13 +6,13 @@ import { Errors } from "../utils/errors";
 // Must be called inside a Prisma $transaction.
 export async function consumeFifoTx(
   tx: Prisma.TransactionClient,
-  params: { itemId: string; warehouseId: string; quantity: number }
+  params: { itemId: string; storeId: string; quantity: number }
 ): Promise<{ consumptions: Array<{ layerId: string; quantity: number; unitCost: number; cogs: number }>; totalCogs: number; avgUnitCost: number }> {
-  const { itemId, warehouseId, quantity } = params;
+  const { itemId, storeId, quantity } = params;
   if (quantity <= 0) return { consumptions: [], totalCogs: 0, avgUnitCost: 0 };
 
   const layers = await tx.fifoLayer.findMany({
-    where: { itemId, warehouseId, remainingQty: { gt: 0 } },
+    where: { itemId, storeId, remainingQty: { gt: 0 } },
     orderBy: { createdAt: "asc" },
   });
 

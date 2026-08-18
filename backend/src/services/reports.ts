@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { computeStockValue } from "./fifo";
 
-export async function inventoryReport(params: { categoryId?: string; warehouseId?: string; status?: string; lowStockOnly?: boolean }) {
+export async function inventoryReport(params: { categoryId?: string; storeId?: string; status?: string; lowStockOnly?: boolean }) {
   const where: Prisma.InventoryItemWhereInput = { deletedAt: null };
   if (params.categoryId) where.categoryId = params.categoryId;
   if (params.status) where.status = params.status as any;
@@ -11,7 +11,7 @@ export async function inventoryReport(params: { categoryId?: string; warehouseId
 
   const out = [];
   for (const it of items) {
-    const val = await computeStockValue(it.id, params.warehouseId);
+    const val = await computeStockValue(it.id, params.storeId);
     if (params.lowStockOnly && val.quantity > it.reorderLevel) continue;
     out.push({
       code: it.code, name: it.name, category: it.category.name, uom: it.uom.code, status: it.status,
@@ -30,14 +30,14 @@ export async function inventoryReport(params: { categoryId?: string; warehouseId
   };
 }
 
-export async function valuationReport(params: { categoryId?: string; warehouseId?: string }) {
+export async function valuationReport(params: { categoryId?: string; storeId?: string }) {
   const where: Prisma.InventoryItemWhereInput = { deletedAt: null };
   if (params.categoryId) where.categoryId = params.categoryId;
   const items = await prisma.inventoryItem.findMany({ where, include: { category: true, uom: true } });
 
   const out = [];
   for (const it of items) {
-    const v = await computeStockValue(it.id, params.warehouseId);
+    const v = await computeStockValue(it.id, params.storeId);
     out.push({
       code: it.code, name: it.name, category: it.category.name, uom: it.uom.code,
       quantity: v.quantity, avgUnitCost: v.avgUnitCost, totalValue: v.value,
@@ -52,14 +52,14 @@ export async function valuationReport(params: { categoryId?: string; warehouseId
   };
 }
 
-export async function movementReport(params: { startDate?: string; endDate?: string; warehouseId?: string; itemId?: string; type?: string; userId?: string; page: number; limit: number }) {
+export async function movementReport(params: { startDate?: string; endDate?: string; storeId?: string; itemId?: string; type?: string; userId?: string; page: number; limit: number }) {
   const where: Prisma.StockTransactionWhereInput = {};
   if (params.startDate || params.endDate) {
     where.transactionDate = {};
     if (params.startDate) where.transactionDate.gte = new Date(params.startDate);
     if (params.endDate) where.transactionDate.lte = new Date(params.endDate);
   }
-  if (params.warehouseId) where.warehouseId = params.warehouseId;
+  if (params.storeId) where.storeId = params.storeId;
   if (params.itemId) where.itemId = params.itemId;
   if (params.type) where.type = params.type as any;
   if (params.userId) where.userId = params.userId;
@@ -69,7 +69,7 @@ export async function movementReport(params: { startDate?: string; endDate?: str
     prisma.stockTransaction.findMany({
       where, orderBy: { transactionDate: "desc" },
       skip: (params.page - 1) * params.limit, take: params.limit,
-      include: { item: { include: { uom: true } }, user: true, warehouse: true },
+      include: { item: { include: { uom: true } }, user: true, store: true },
     }),
   ]);
 
@@ -78,7 +78,7 @@ export async function movementReport(params: { startDate?: string; endDate?: str
     uom: t.item?.uom?.code ?? null, quantity: t.quantity, unitCost: t.unitCost,
     balanceBefore: t.balanceBefore, balanceAfter: t.balanceAfter,
     referenceType: t.referenceType, referenceId: t.referenceId,
-    user: t.user?.fullName ?? null, warehouse: t.warehouse?.code ?? null,
+    user: t.user?.fullName ?? null, store: t.store?.code ?? null,
     remarks: t.remarks, transactionDate: t.transactionDate.toISOString(),
   })) };
 }

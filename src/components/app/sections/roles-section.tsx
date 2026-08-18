@@ -24,7 +24,7 @@ const ALL_PERMISSIONS_BY_MODULE: Record<string, string[]> = {
   "Users & RBAC": ["users.read", "users.create", "users.update", "users.delete", "roles.read", "roles.manage", "permissions.read"],
   "Suppliers": ["suppliers.read", "suppliers.create", "suppliers.update", "suppliers.delete"],
   "Categories & UoM": ["categories.read", "categories.create", "categories.update", "categories.delete"],
-  "Warehouses": ["warehouses.read", "warehouses.create", "warehouses.update", "warehouses.delete"],
+  "Stores": ["warehouses.read", "warehouses.create", "warehouses.update", "warehouses.delete"],
   "Inventory": ["inventory.read", "inventory.create", "inventory.update", "inventory.delete"],
   "Stock Operations": ["stock.receive", "stock.issue", "stock.transfer", "stock.adjust"],
   "Requisitions": ["requisition.create", "requisition.approve", "requisition.read"],

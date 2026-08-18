@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Search, ArrowDownToLine, X, Eye } from "lucide-react";
-import { useReceipts, useCreateReceipt, useSuppliers, useWarehouses, useInventory, useReceipt } from "@/lib/api/hooks";
+import { useReceipts, useCreateReceipt, useSuppliers, useStores, useInventory, useReceipt } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,7 @@ export function ReceiptsSection() {
               <tr>
                 <th>Code</th>
                 <th>Supplier</th>
-                <th>Warehouse</th>
+                <th>Store</th>
                 <th className="text-right">Qty</th>
                 <th className="text-right">Amount</th>
                 <th>Items</th>
@@ -70,7 +70,7 @@ export function ReceiptsSection() {
                 <tr key={r.id}>
                   <td className="font-mono text-xs">{r.code}</td>
                   <td className="text-xs">{r.supplier.name}</td>
-                  <td className="text-xs">{r.warehouse.name}</td>
+                  <td className="text-xs">{r.store.name}</td>
                   <td className="text-right font-semibold">{formatNumber(r.totalQuantity)}</td>
                   <td className="text-right">{formatCurrency(r.totalAmount)}</td>
                   <td className="text-xs">{r.itemCount}</td>
@@ -97,12 +97,12 @@ export function ReceiptsSection() {
 
 function CreateReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const suppliers = useSuppliers({ page: 1, limit: 100 });
-  const warehouses = useWarehouses();
+  const stores = useStores();
   const inventory = useInventory({ page: 1, limit: 100 });
   const create = useCreateReceipt();
 
   const [supplierId, setSupplierId] = useState("");
-  const [warehouseId, setWarehouseId] = useState("");
+  const [storeId, setStoreId] = useState("");
   const [inspectionNotes, setInspectionNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
 
@@ -115,14 +115,14 @@ function CreateReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   const onSubmit = async () => {
     if (!supplierId) return toast.error("Select a supplier");
-    if (!warehouseId) return toast.error("Select a warehouse");
+    if (!storeId) return toast.error("Select a store");
     if (items.length === 0) return toast.error("Add at least one item");
     if (items.some((i) => !i.itemId || i.quantity <= 0 || i.unitCost < 0)) return toast.error("Check item details");
     try {
-      await create.mutateAsync({ supplierId, warehouseId, inspectionNotes: inspectionNotes || undefined, items });
+      await create.mutateAsync({ supplierId, storeId, inspectionNotes: inspectionNotes || undefined, items });
       toast.success("Stock received successfully — FIFO layers created");
       onOpenChange(false);
-      setSupplierId(""); setWarehouseId(""); setInspectionNotes(""); setItems([]);
+      setSupplierId(""); setStoreId(""); setInspectionNotes(""); setItems([]);
     } catch (e) {
       toast.error(e instanceof ApiClientError ? e.message : "Failed");
     }
@@ -135,7 +135,7 @@ function CreateReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           <DialogTitle className="text-primary flex items-center gap-2">
             <ArrowDownToLine className="h-4 w-4" /> Receive Stock
           </DialogTitle>
-          <DialogDescription>Creates FIFO layers + warehouse stock + transaction log (atomic)</DialogDescription>
+          <DialogDescription>Creates FIFO layers + store stock + transaction log (atomic)</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -151,11 +151,11 @@ function CreateReceiptDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-semibold">Warehouse *</Label>
-              <Select value={warehouseId} onValueChange={setWarehouseId}>
-                <SelectTrigger><SelectValue placeholder="Select warehouse" /></SelectTrigger>
+              <Label className="text-xs font-semibold">Store *</Label>
+              <Select value={storeId} onValueChange={setStoreId}>
+                <SelectTrigger><SelectValue placeholder="Select store" /></SelectTrigger>
                 <SelectContent>
-                  {warehouses.data?.items.map((w) => (
+                  {stores.data?.items.map((w) => (
                     <SelectItem key={w.id} value={w.id}>{w.code} — {w.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -237,7 +237,7 @@ function ReceiptDetailDrawer() {
             <DialogHeader>
               <DialogTitle className="font-mono text-base text-primary">{receipt.code}</DialogTitle>
               <DialogDescription>
-                Received {formatDate(receipt.receiptDate, true)} · {receipt.supplier.name} → {receipt.warehouse.name}
+                Received {formatDate(receipt.receiptDate, true)} · {receipt.supplier.name} → {receipt.store.name}
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-3 gap-2 mb-4">

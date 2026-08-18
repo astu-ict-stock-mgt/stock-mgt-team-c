@@ -39,13 +39,13 @@ async function main() {
   const uoms = [{ code: "EA", name: "Each" }, { code: "BOX", name: "Box" }, { code: "KG", name: "Kilogram" }, { code: "L", name: "Liter" }];
   for (const u of uoms) await prisma.unitOfMeasure.upsert({ where: { code: u.code }, create: u, update: {} });
 
-  // Warehouses
-  console.log("• Seeding warehouses...");
-  const warehouses = [
+  // Stores
+  console.log("• Seeding stores...");
+  const stores = [
     { code: "WH-MAIN", name: "Main Warehouse", location: "Building A" },
     { code: "WH-IT", name: "IT Storage", location: "Building B" },
   ];
-  for (const w of warehouses) await prisma.warehouse.upsert({ where: { code: w.code }, create: w, update: {} });
+  for (const w of stores) await prisma.store.upsert({ where: { code: w.code }, create: w, update: {} });
 
   // Suppliers
   console.log("• Seeding suppliers...");

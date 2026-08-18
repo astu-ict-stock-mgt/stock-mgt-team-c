@@ -266,25 +266,25 @@ function ItemDetailDrawer() {
               <Stat label="Reorder Level" value={formatNumber(item.reorderLevel)} />
             </div>
 
-            {/* Warehouse stock */}
+            {/* Store stock */}
             <div className="mb-4">
-              <h4 className="text-xs font-semibold text-primary mb-2 uppercase tracking-wider">Warehouse Stock</h4>
+              <h4 className="text-xs font-semibold text-primary mb-2 uppercase tracking-wider">Store Stock</h4>
               <AstuCardTable>
                 <table className="astu-table">
                   <thead>
                     <tr>
-                      <th>Warehouse</th>
+                      <th>Store</th>
                       <th className="text-right">Quantity</th>
                       <th className="text-right">Reserved</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {item.warehouseStock.length === 0 ? (
+                    {item.storeStock.length === 0 ? (
                       <tr><td colSpan={3} className="text-center text-xs text-muted-foreground py-6">No stock recorded</td></tr>
                     ) : (
-                      item.warehouseStock.map((ws) => (
+                      item.storeStock.map((ws) => (
                         <tr key={ws.id}>
-                          <td className="text-sm font-medium">{ws.warehouseCode} — {ws.warehouseName}</td>
+                          <td className="text-sm font-medium">{ws.storeCode} — {ws.storeName}</td>
                           <td className="text-right font-semibold">{formatNumber(ws.quantity)}</td>
                           <td className="text-right text-xs">{formatNumber(ws.reservedQty)}</td>
                         </tr>

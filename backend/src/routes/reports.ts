@@ -8,7 +8,7 @@ const router = Router();
 
 router.get("/inventory", requirePermission("reports.view"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const params = {
-    categoryId: qp(req, "categoryId"), warehouseId: qp(req, "warehouseId"),
+    categoryId: qp(req, "categoryId"), storeId: qp(req, "storeId"),
     status: qp(req, "status"), lowStockOnly: qp(req, "lowStockOnly") === "true",
   };
   const result = await svc.inventoryReport(params);
@@ -16,7 +16,7 @@ router.get("/inventory", requirePermission("reports.view"), asyncHandler(async (
 }));
 
 router.get("/valuation", requirePermission("reports.view"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const params = { categoryId: qp(req, "categoryId"), warehouseId: qp(req, "warehouseId") };
+  const params = { categoryId: qp(req, "categoryId"), storeId: qp(req, "storeId") };
   const result = await svc.valuationReport(params);
   res.json(ok(result));
 }));
@@ -24,7 +24,7 @@ router.get("/valuation", requirePermission("reports.view"), asyncHandler(async (
 router.get("/movement", requirePermission("reports.view"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const params = {
     startDate: qp(req, "startDate"), endDate: qp(req, "endDate"),
-    warehouseId: qp(req, "warehouseId"), itemId: qp(req, "itemId"),
+    storeId: qp(req, "storeId"), itemId: qp(req, "itemId"),
     type: qp(req, "type"), userId: qp(req, "userId"),
     page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 50),
   };
