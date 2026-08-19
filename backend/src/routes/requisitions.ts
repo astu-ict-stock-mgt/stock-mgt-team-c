@@ -6,6 +6,7 @@ import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/au
 import { qp, qpInt } from "../utils/query";
 import * as val from "../validators";
 import { recordAudit } from "../services/audit";
+import { Errors } from "../utils/errors";
 
 const router = Router();
 
@@ -78,12 +79,12 @@ router.get(
       })),
       latestApproval: requisition.approvals[0]
         ? {
-            id: requisition.approvals[0].id,
-            status: requisition.approvals[0].status,
-            approver: requisition.approvals[0].approver,
-            approvedAt: requisition.approvals[0].approvedAt.toISOString(),
-            comments: requisition.approvals[0].comments,
-          }
+          id: requisition.approvals[0].id,
+          status: requisition.approvals[0].status,
+          approver: requisition.approvals[0].approver,
+          approvedAt: requisition.approvals[0].approvedAt.toISOString(),
+          comments: requisition.approvals[0].comments,
+        }
         : null,
     })), total, page, limit)));
   })
@@ -94,7 +95,7 @@ router.post(
   requirePermission("requisition.create"),
   asyncHandler(async (req: AuthedRequest, res: Response) => {
     const body = val.requisitionSchema.parse(req.body);
-    if (!req.userId) throw new Error("Authenticated user is required");
+    if (!req.userId) throw Errors.unauthorized();
 
     const requiredDate = body.requiredDate ? new Date(body.requiredDate) : new Date();
     const code = `REQ-${Date.now().toString().slice(-8)}`;
@@ -160,12 +161,12 @@ router.post(
       })),
       latestApproval: requisition.approvals[0]
         ? {
-            id: requisition.approvals[0].id,
-            status: requisition.approvals[0].status,
-            approver: requisition.approvals[0].approver,
-            approvedAt: requisition.approvals[0].approvedAt.toISOString(),
-            comments: requisition.approvals[0].comments,
-          }
+          id: requisition.approvals[0].id,
+          status: requisition.approvals[0].status,
+          approver: requisition.approvals[0].approver,
+          approvedAt: requisition.approvals[0].approvedAt.toISOString(),
+          comments: requisition.approvals[0].comments,
+        }
         : null,
     }, "Requisition created successfully"));
   })
@@ -175,15 +176,15 @@ router.post(
   "/:id/submit",
   requirePermission("requisition.create"),
   asyncHandler(async (req: AuthedRequest, res: Response) => {
-    if (!req.userId) throw new Error("Authenticated user is required");
+    if (!req.userId) throw Errors.unauthorized();
 
     const requisition = await prisma.requisition.findUnique({ where: { id: req.params.id } });
-    if (!requisition) throw new Error("Requisition not found");
+    if (!requisition) throw Errors.notFound("Requisition", req.params.id);
     if (requisition.requestedById !== req.userId && !req.roles.has("ADMINISTRATOR")) {
-      throw new Error("You can only submit your own requisitions");
+      throw Errors.forbidden("You can only submit your own requisitions");
     }
     if (requisition.status !== "DRAFT") {
-      throw new Error("Only draft requisitions can be submitted");
+      throw Errors.invalidRequisition("Only draft requisitions can be submitted");
     }
 
     const updated = await prisma.requisition.update({
@@ -230,12 +231,12 @@ router.post(
       })),
       latestApproval: updated.approvals[0]
         ? {
-            id: updated.approvals[0].id,
-            status: updated.approvals[0].status,
-            approver: updated.approvals[0].approver,
-            approvedAt: updated.approvals[0].approvedAt.toISOString(),
-            comments: updated.approvals[0].comments,
-          }
+          id: updated.approvals[0].id,
+          status: updated.approvals[0].status,
+          approver: updated.approvals[0].approver,
+          approvedAt: updated.approvals[0].approvedAt.toISOString(),
+          comments: updated.approvals[0].comments,
+        }
         : null,
     }, "Requisition submitted successfully"));
   })
@@ -245,20 +246,20 @@ router.post(
   "/:id/decision",
   requirePermission("requisition.approve"),
   asyncHandler(async (req: AuthedRequest, res: Response) => {
-    if (!req.userId) throw new Error("Authenticated user is required");
+    if (!req.userId) throw Errors.unauthorized();
     const body = val.requisitionDecisionSchema.parse(req.body);
     const decision = String((req.body as any)?.decision || "").toUpperCase();
-    if (!["APPROVED", "REJECTED"].includes(decision)) throw new Error("Decision must be APPROVED or REJECTED");
+    if (!["APPROVED", "REJECTED"].includes(decision)) throw Errors.invalidRequisition("Decision must be APPROVED or REJECTED");
 
     const requisition = await prisma.requisition.findUnique({ where: { id: req.params.id }, include: { approvals: true } });
-    if (!requisition) throw new Error("Requisition not found");
+    if (!requisition) throw Errors.notFound("Requisition", req.params.id);
     if (!["SUBMITTED", "PENDING_APPROVAL"].includes(requisition.status)) {
-      throw new Error("Only submitted requisitions can be approved or rejected");
+      throw Errors.invalidRequisition("Only submitted requisitions can be approved or rejected");
     }
 
     const existingDecision = requisition.approvals.find((approval) => approval.approverId === req.userId);
     if (existingDecision) {
-      throw new Error("You have already reviewed this requisition");
+      throw Errors.conflict("You have already reviewed this requisition");
     }
 
     await prisma.$transaction(async (tx) => {
@@ -300,7 +301,7 @@ router.post(
       },
     });
 
-    if (!updated) throw new Error("Requisition not found after update");
+    if (!updated) throw Errors.notFound("Requisition", req.params.id);
 
     await recordAudit({
       ctx: { userId: req.userId, ipAddress: (req as any)._clientIp },
@@ -335,12 +336,12 @@ router.post(
       })),
       latestApproval: updated.approvals[0]
         ? {
-            id: updated.approvals[0].id,
-            status: updated.approvals[0].status,
-            approver: updated.approvals[0].approver,
-            approvedAt: updated.approvals[0].approvedAt.toISOString(),
-            comments: updated.approvals[0].comments,
-          }
+          id: updated.approvals[0].id,
+          status: updated.approvals[0].status,
+          approver: updated.approvals[0].approver,
+          approvedAt: updated.approvals[0].approvedAt.toISOString(),
+          comments: updated.approvals[0].comments,
+        }
         : null,
     }, `Requisition ${decision === "APPROVED" ? "approved" : "rejected"}`));
   })
