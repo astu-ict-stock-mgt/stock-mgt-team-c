@@ -19,7 +19,7 @@ router.post("/logout", asyncHandler(async (req: Request, res: Response) => {
   const auth = req.headers.authorization || "";
   const headerToken = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   let bodyToken: string | undefined;
-  try { bodyToken = (req.body as any)?.token; } catch {}
+  try { bodyToken = (req.body as any)?.token; } catch { }
   const token = bodyToken ?? headerToken ?? "";
   await logout(token);
   res.json(ok({ loggedOut: true }, "Logout successful"));
@@ -28,7 +28,9 @@ router.post("/logout", asyncHandler(async (req: Request, res: Response) => {
 router.post("/change-password", asyncHandler(async (req: AuthedRequest, res: Response) => {
   if (!req.userId) throw Errors.unauthorized();
   const body = val.changePasswordSchema.parse(req.body);
-  await changePassword(req.userId, body.currentPassword, body.newPassword);
+  const auth = req.headers.authorization || "";
+  const currentToken = auth.startsWith("Bearer ") ? auth.slice(7) : undefined;
+  await changePassword(req.userId, body.currentPassword, body.newPassword, currentToken);
   res.json(ok({ changed: true }, "Password changed successfully"));
 }));
 

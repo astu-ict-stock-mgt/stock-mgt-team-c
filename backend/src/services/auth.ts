@@ -17,8 +17,15 @@ export async function login(email: string, password: string, ip?: string) {
     throw Errors.invalidCredentials();
   }
 
-  if (user.status === "LOCKED" || (user.lockedUntil && user.lockedUntil > new Date())) {
+  const now = new Date();
+  if (user.status === "LOCKED" && (!user.lockedUntil || user.lockedUntil > now)) {
     throw Errors.accountLocked();
+  }
+  if (user.status === "LOCKED" && user.lockedUntil && user.lockedUntil <= now) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { status: "ACTIVE", failedLoginCount: 0, lockedUntil: null },
+    });
   }
   if (user.status === "INACTIVE" || user.status === "PENDING") {
     throw Errors.accountInactive();
@@ -54,7 +61,7 @@ export async function login(email: string, password: string, ip?: string) {
 }
 
 export async function logout(token: string) {
-  if (token) await prisma.userSession.deleteMany({ where: { token } }).catch(() => {});
+  if (token) await prisma.userSession.deleteMany({ where: { token } }).catch(() => { });
   return true;
 }
 
@@ -71,8 +78,12 @@ export async function resolveSession(token: string | null | undefined) {
     },
   });
   if (!session) return null;
-  if (session.expiresAt < new Date()) {
-    await prisma.userSession.delete({ where: { id: session.id } }).catch(() => {});
+  if (
+    session.expiresAt < new Date() ||
+    session.user.deletedAt ||
+    session.user.status !== "ACTIVE"
+  ) {
+    await prisma.userSession.delete({ where: { id: session.id } }).catch(() => { });
     return null;
   }
   return session;
@@ -97,7 +108,7 @@ export function publicUser(user: any) {
   };
 }
 
-export async function changePassword(userId: string, currentPassword: string, newPassword: string) {
+export async function changePassword(userId: string, currentPassword: string, newPassword: string, currentToken?: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw Errors.notFound("User");
   const ok = await verifyPassword(currentPassword, user.passwordHash);
@@ -105,6 +116,9 @@ export async function changePassword(userId: string, currentPassword: string, ne
   const { hashPassword } = await import("../utils/crypto");
   const hash = await hashPassword(newPassword);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
+  await prisma.userSession.deleteMany({
+    where: currentToken ? { userId, token: { not: currentToken } } : { userId },
+  });
   await recordAudit({ ctx: { userId }, action: "PASSWORD_CHANGED", module: "auth", entity: "user", entityId: userId });
   return true;
 }
