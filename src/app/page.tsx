@@ -16,7 +16,7 @@ export default function Page() {
     return () => window.removeEventListener("focus", onFocus);
   }, [refetch]);
 
-  if (isLoading) return <FullScreenSpinner label="Loading Stock Management System..." />;
+  if (isLoading) return <FullScreenSpinner label="Loading ASTU Stock Management System..." />;
   if (isError || !data) return <LoginPage />;
 
   return <AppShell user={data.user} permissions={new Set(data.permissions)} roles={new Set(data.roles)} />;
