@@ -37,6 +37,25 @@ const ALL_PERMISSIONS_BY_MODULE: Record<string, string[]> = {
 
 const SYSTEM_ROLES = ["ADMINISTRATOR", "PAO", "STOREKEEPER", "STOCK_CLERK", "ACCOUNTANT", "DEPARTMENT_HEAD", "SECURITY_OFFICER", "SUPPLIER"];
 
+const PERMISSION_LABELS: Record<string, string> = {
+  read: "View",
+  create: "Create",
+  update: "Edit",
+  delete: "Delete",
+  manage: "Manage",
+  receive: "Receive",
+  issue: "Issue",
+  transfer: "Transfer",
+  adjust: "Adjust",
+  approve: "Approve",
+  export: "Export",
+};
+
+function permissionLabel(permission: string): string {
+  const [, action] = permission.split(".");
+  return PERMISSION_LABELS[action] ?? action.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 const CreateSchema = z.object({
   name: z.string().min(2, "Role name is required"),
   description: z.string().optional(),
@@ -105,7 +124,7 @@ export function RolesSection() {
     <div>
       <PageHeader
         title="Roles & Permissions"
-        description="Role-based access control matrix — click permission badges to toggle"
+        description="Choose what each role can view and manage"
         icon={Shield}
         action={
           <Button size="sm" onClick={openCreate}>
@@ -126,38 +145,38 @@ export function RolesSection() {
       </div>
 
       {isLoading ? <SectionLoading /> :
-       isError ? <SectionError message="Failed to load roles" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No roles defined" /> : (
-        <div className="space-y-3">
-          {filteredRoles.map((r) => {
-            const isSystem = SYSTEM_ROLES.includes(r.name);
-            const isAdmin = r.name === "ADMINISTRATOR";
-            const isEditing = editingRole === r.id;
-            return (
-              <RoleCard
-                key={r.id}
-                role={r}
-                isSystem={isSystem}
-                isAdmin={isAdmin}
-                isEditing={isEditing}
-                onTogglePermission={onTogglePermission}
-                onToggleEdit={() => setEditingRole(isEditing ? null : r.id)}
-                onDelete={() => onDeleteRole(r.id, r.name)}
-                onUpdate={async (description) => {
-                  try {
-                    await updateRole.mutateAsync({ id: r.id, description });
-                    toast.success("Description updated");
-                    setEditingRole(null);
-                  } catch (e) {
-                    toast.error(e instanceof ApiClientError ? e.message : "Failed");
-                  }
-                }}
-                togglingPermission={togglePermission.isPending}
-              />
-            );
-          })}
-        </div>
-      )}
+        isError ? <SectionError message="Failed to load roles" onRetry={() => refetch()} /> :
+          !data || data.items.length === 0 ? <SectionEmpty title="No roles defined" /> : (
+            <div className="space-y-3">
+              {filteredRoles.map((r) => {
+                const isSystem = SYSTEM_ROLES.includes(r.name);
+                const isAdmin = r.name === "ADMINISTRATOR";
+                const isEditing = editingRole === r.id;
+                return (
+                  <RoleCard
+                    key={r.id}
+                    role={r}
+                    isSystem={isSystem}
+                    isAdmin={isAdmin}
+                    isEditing={isEditing}
+                    onTogglePermission={onTogglePermission}
+                    onToggleEdit={() => setEditingRole(isEditing ? null : r.id)}
+                    onDelete={() => onDeleteRole(r.id, r.name)}
+                    onUpdate={async (description) => {
+                      try {
+                        await updateRole.mutateAsync({ id: r.id, description });
+                        toast.success("Description updated");
+                        setEditingRole(null);
+                      } catch (e) {
+                        toast.error(e instanceof ApiClientError ? e.message : "Failed");
+                      }
+                    }}
+                    togglingPermission={togglePermission.isPending}
+                  />
+                );
+              })}
+            </div>
+          )}
 
       {/* Create role dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -279,7 +298,7 @@ function RoleCard({
           </div>
         ) : (
           <div className="rounded-md bg-warning-subtle border border-warning/40 p-2 mb-3 text-xs text-warning-strong">
-            💡 Click any permission badge below to <strong>toggle</strong> it on/off for this role. Green = enabled, gray = disabled.
+            Select a permission to grant or revoke it. Green permissions are enabled; gray permissions are disabled.
           </div>
         )}
 
@@ -302,14 +321,13 @@ function RoleCard({
                         onClick={() => !isAdmin && onTogglePermission(role.id, role.name, perm, !isEnabled)}
                         disabled={isDisabled}
                         title={isEnabled ? "Click to revoke" : "Click to grant"}
-                        className={`text-[10px] font-mono px-2 py-1 rounded border transition-all ${
-                          isEnabled
-                            ? "bg-success text-success-foreground border-success hover:bg-success-strong"
-                            : "bg-card text-muted-foreground border-border hover:bg-surface-2 hover:border-muted-foreground"
-                        } ${isAdmin ? "cursor-not-allowed opacity-90" : "cursor-pointer"}`}
+                        className={`text-[10px] font-mono px-2 py-1 rounded border transition-all ${isEnabled
+                          ? "bg-success text-success-foreground border-success hover:bg-success-strong"
+                          : "bg-card text-muted-foreground border-border hover:bg-surface-2 hover:border-muted-foreground"
+                          } ${isAdmin ? "cursor-not-allowed opacity-90" : "cursor-pointer"}`}
                       >
                         {isEnabled && <Check className="h-2.5 w-2.5 inline mr-1" />}
-                        {perm}
+                        {permissionLabel(perm)}
                       </button>
                     );
                   })}
