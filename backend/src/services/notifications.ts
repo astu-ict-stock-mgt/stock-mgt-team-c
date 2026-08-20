@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { computeStockValue } from "./fifo";
 
@@ -7,7 +8,7 @@ export type Notification = {
   title: string;
   message: string;
   severity: "info" | "warning" | "danger" | "success";
-  link?: { section: string; itemId?: string };
+  link?: { section: string; itemId?: string; filter?: string };
   createdAt: string;
 };
 
@@ -32,19 +33,38 @@ export async function getNotificationsForUser(userId: string, roles: Set<string>
     }
   }
 
-  const canSeeRequisitions = roles.has("ADMINISTRATOR") || roles.has("PAO") || roles.has("DEPARTMENT_HEAD") || permissions.has("requisition.read");
-  if (canSeeRequisitions) {
-    const pendingReqs = await prisma.requisition.count({ where: { status: { in: ["SUBMITTED", "PENDING_APPROVAL"] } } });
+  const canApproveRequisitions = roles.has("ADMINISTRATOR") || permissions.has("requisition.approve");
+  if (canApproveRequisitions) {
+    const requisitionWhere: Prisma.RequisitionWhereInput = {
+      status: { in: ["SUBMITTED", "PENDING_APPROVAL"] },
+    };
+
+    // Department heads approve requests from their own department only.
+    if (roles.has("DEPARTMENT_HEAD") && !roles.has("ADMINISTRATOR")) {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { department: true } });
+      if (user?.department) requisitionWhere.department = user.department;
+      else requisitionWhere.requestedById = userId;
+    }
+
+    const pendingReqs = await prisma.requisition.count({ where: requisitionWhere });
     if (pendingReqs > 0) {
-      items.push({ id: "pending_requisitions", type: "pending_requisition", title: "Pending Requisitions", message: `${pendingReqs} requisition${pendingReqs === 1 ? "" : "s"} awaiting approval`, severity: "warning", link: { section: "requisitions" }, createdAt: new Date().toISOString() });
+      items.push({ id: "pending_requisitions", type: "pending_requisition", title: "Pending Requisitions", message: `${pendingReqs} requisition${pendingReqs === 1 ? "" : "s"} awaiting approval`, severity: "warning", link: { section: "requisitions", filter: "pending" }, createdAt: new Date().toISOString() });
     }
   }
 
-  const canSeeGatePasses = roles.has("ADMINISTRATOR") || roles.has("SECURITY_OFFICER") || permissions.has("gatepass.read");
-  if (canSeeGatePasses) {
+  const canApproveGatePasses = roles.has("ADMINISTRATOR") || permissions.has("gatepass.approve");
+  if (canApproveGatePasses) {
     const pendingGatePasses = await prisma.gatePass.count({ where: { status: "PENDING" } });
     if (pendingGatePasses > 0) {
-      items.push({ id: "pending_gate_passes", type: "pending_gate_pass", title: "Pending Gate Passes", message: `${pendingGatePasses} gate pass${pendingGatePasses === 1 ? "" : "es"} awaiting approval`, severity: "warning", link: { section: "audit-logs" }, createdAt: new Date().toISOString() });
+      items.push({ id: "pending_gate_passes", type: "pending_gate_pass", title: "Pending Gate Passes", message: `${pendingGatePasses} gate pass${pendingGatePasses === 1 ? "" : "es"} awaiting approval`, severity: "warning", link: { section: "audit-logs", filter: "gate-pass" }, createdAt: new Date().toISOString() });
+    }
+  }
+
+  const canSeeStockTakes = roles.has("ADMINISTRATOR") || permissions.has("stocktake.read");
+  if (canSeeStockTakes) {
+    const pendingStockTakes = await prisma.stockTake.count({ where: { status: { in: ["DRAFT", "IN_PROGRESS"] } } });
+    if (pendingStockTakes > 0) {
+      items.push({ id: "pending_stocktakes", type: "pending_stocktake", title: "Active Stock Takes", message: `${pendingStockTakes} stock take${pendingStockTakes === 1 ? "" : "s"} in progress`, severity: "info", link: { section: "audit-logs", filter: "stock-take" }, createdAt: new Date().toISOString() });
     }
   }
 
@@ -53,7 +73,7 @@ export async function getNotificationsForUser(userId: string, roles: Set<string>
     const since = new Date(); since.setHours(since.getHours() - 24);
     const failedLogins = await prisma.auditLog.count({ where: { action: "LOGIN_FAILED", timestamp: { gte: since } } });
     if (failedLogins > 0) {
-      items.push({ id: "failed_logins_24h", type: "failed_login", title: "Failed Login Attempts", message: `${failedLogins} failed login attempt${failedLogins === 1 ? "" : "s"} in the last 24 hours`, severity: failedLogins >= 5 ? "danger" : "warning", link: { section: "audit-logs" }, createdAt: new Date().toISOString() });
+      items.push({ id: "failed_logins_24h", type: "failed_login", title: "Failed Login Attempts", message: `${failedLogins} failed login attempt${failedLogins === 1 ? "" : "s"} in the last 24 hours`, severity: failedLogins >= 5 ? "danger" : "warning", link: { section: "audit-logs", filter: "failed-login" }, createdAt: new Date().toISOString() });
     }
   }
 
