@@ -8,6 +8,7 @@
 // - Recent audit events (failed logins, stock adjustments)
 // - Items below safety stock
 
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { computeStockValue } from "@/lib/services/fifo";
 
@@ -17,7 +18,7 @@ export type Notification = {
   title: string;
   message: string;
   severity: "info" | "warning" | "danger" | "success";
-  link?: { section: string; itemId?: string };
+  link?: { section: string; itemId?: string; filter?: string };
   createdAt: string;
 };
 
@@ -83,16 +84,24 @@ export async function getNotificationsForUser(
     }
   }
 
-  // Pending requisitions — visible to PAO, Department Head, Administrator
-  const canSeeRequisitions =
-    roles.has("ADMINISTRATOR") ||
-    roles.has("PAO") ||
-    roles.has("DEPARTMENT_HEAD") ||
-    permissions.has("requisition.read");
+  // Pending requisitions are actionable only for users who can approve them.
+  const canApproveRequisitions =
+    roles.has("ADMINISTRATOR") || permissions.has("requisition.approve");
 
-  if (canSeeRequisitions) {
+  if (canApproveRequisitions) {
+    const requisitionWhere: Prisma.RequisitionWhereInput = {
+      status: { in: ["SUBMITTED", "PENDING_APPROVAL"] },
+    };
+
+    // Department heads approve requests from their own department only.
+    if (roles.has("DEPARTMENT_HEAD") && !roles.has("ADMINISTRATOR")) {
+      const user = await db.user.findUnique({ where: { id: userId }, select: { department: true } });
+      if (user?.department) requisitionWhere.department = user.department;
+      else requisitionWhere.requestedById = userId;
+    }
+
     const pendingReqs = await db.requisition.count({
-      where: { status: { in: ["SUBMITTED", "PENDING_APPROVAL"] } },
+      where: requisitionWhere,
     });
     if (pendingReqs > 0) {
       items.push({
@@ -101,19 +110,17 @@ export async function getNotificationsForUser(
         title: "Pending Requisitions",
         message: `${pendingReqs} requisition${pendingReqs === 1 ? "" : "s"} awaiting approval`,
         severity: "warning",
-        link: { section: "requisitions" },
+        link: { section: "requisitions", filter: "pending" },
         createdAt: new Date().toISOString(),
       });
     }
   }
 
-  // Pending gate passes — Security Officer + Administrator
-  const canSeeGatePasses =
-    roles.has("ADMINISTRATOR") ||
-    roles.has("SECURITY_OFFICER") ||
-    permissions.has("gatepass.read");
+  // Pending gate passes are actionable only for approvers.
+  const canApproveGatePasses =
+    roles.has("ADMINISTRATOR") || permissions.has("gatepass.approve");
 
-  if (canSeeGatePasses) {
+  if (canApproveGatePasses) {
     const pendingGatePasses = await db.gatePass.count({ where: { status: "PENDING" } });
     if (pendingGatePasses > 0) {
       items.push({
@@ -122,16 +129,15 @@ export async function getNotificationsForUser(
         title: "Pending Gate Passes",
         message: `${pendingGatePasses} gate pass${pendingGatePasses === 1 ? "" : "es"} awaiting approval`,
         severity: "warning",
-        link: { section: "audit-logs" },
+        link: { section: "audit-logs", filter: "gate-pass" },
         createdAt: new Date().toISOString(),
       });
     }
   }
 
-  // Pending stock takes — Administrator, PAO, Storekeeper
+  // Pending stock takes — users who can read stock-take work.
   const canSeeStockTakes =
     roles.has("ADMINISTRATOR") ||
-    roles.has("PAO") ||
     permissions.has("stocktake.read");
 
   if (canSeeStockTakes) {
@@ -145,7 +151,7 @@ export async function getNotificationsForUser(
         title: "Active Stock Takes",
         message: `${pendingStockTakes} stock take${pendingStockTakes === 1 ? "" : "s"} in progress`,
         severity: "info",
-        link: { section: "audit-logs" },
+        link: { section: "audit-logs", filter: "stock-take" },
         createdAt: new Date().toISOString(),
       });
     }
@@ -169,7 +175,7 @@ export async function getNotificationsForUser(
         title: "Failed Login Attempts",
         message: `${failedLogins} failed login attempt${failedLogins === 1 ? "" : "s"} in the last 24 hours`,
         severity: failedLogins >= 5 ? "danger" : "warning",
-        link: { section: "audit-logs" },
+        link: { section: "audit-logs", filter: "failed-login" },
         createdAt: new Date().toISOString(),
       });
     }

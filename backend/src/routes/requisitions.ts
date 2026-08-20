@@ -38,7 +38,8 @@ router.get(
         { notes: { contains: search } },
       ];
     }
-    if (status && allowedStatuses.includes(status as RequisitionStatus)) where.status = status as RequisitionStatus;
+    if (status === "PENDING") where.status = { in: ["SUBMITTED", "PENDING_APPROVAL"] };
+    else if (status && allowedStatuses.includes(status as RequisitionStatus)) where.status = status as RequisitionStatus;
     if (department) where.department = department;
 
     const [total, rows] = await Promise.all([

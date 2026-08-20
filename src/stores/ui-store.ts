@@ -22,6 +22,8 @@ type UIState = {
   setSection: (s: Section) => void;
   selectedItemId: string | null;
   setSelectedItemId: (id: string | null) => void;
+  notificationTarget: string | null;
+  setNotificationTarget: (target: string | null) => void;
   issueDraftRequisition: {
     id: string;
     code: string;
@@ -42,6 +44,8 @@ export const useUIStore = create<UIState>((set) => ({
   setSection: (section) => set({ section, selectedItemId: null }),
   selectedItemId: null,
   setSelectedItemId: (selectedItemId) => set({ selectedItemId }),
+  notificationTarget: null,
+  setNotificationTarget: (notificationTarget) => set({ notificationTarget }),
   issueDraftRequisition: null,
   setIssueDraftRequisition: (issueDraftRequisition) => set({ issueDraftRequisition }),
   settingsTab: "profile",

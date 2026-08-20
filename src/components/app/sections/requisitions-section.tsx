@@ -25,6 +25,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { z } from "zod";
+import { useUIStore } from "@/stores/ui-store";
 
 const RequisitionFormSchema = z.object({
   department: z.string().min(1, "Department is required"),
@@ -56,6 +57,8 @@ export function RequisitionsSection() {
   const [limit] = useState(10);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const notificationTarget = useUIStore((s) => s.notificationTarget);
+  const setNotificationTarget = useUIStore((s) => s.setNotificationTarget);
 
   const inventory = useInventory({ page: 1, limit: 200 });
   const { data, isLoading, isError, refetch } = useRequisitions({
@@ -123,6 +126,13 @@ export function RequisitionsSection() {
 
   const canSubmit = (requisition: any) => me.data?.user.id === requisition.requestedBy.id || me.data?.roles?.includes("ADMINISTRATOR");
   const canApprove = me.data?.permissions?.includes("requisition.approve") || false;
+
+  useEffect(() => {
+    if (notificationTarget !== "pending") return;
+    setStatus("PENDING");
+    setPage(1);
+    setNotificationTarget(null);
+  }, [notificationTarget, setNotificationTarget]);
 
   return (
     <div>

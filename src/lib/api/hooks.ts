@@ -146,7 +146,7 @@ export type AppNotification = {
   title: string;
   message: string;
   severity: "info" | "warning" | "danger" | "success";
-  link?: { section: string; itemId?: string };
+  link?: { section: string; itemId?: string; filter?: string };
   createdAt: string;
 };
 

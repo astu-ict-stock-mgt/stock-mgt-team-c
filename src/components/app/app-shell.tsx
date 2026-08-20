@@ -163,7 +163,7 @@ export function AppShell({
   );
 
   const onLogout = async () => {
-    await logout.mutateAsync().catch(() => {});
+    await logout.mutateAsync().catch(() => { });
     window.location.reload();
   };
 
@@ -413,6 +413,7 @@ function NotificationsBell() {
   const { data, isLoading } = useNotifications();
   const setSection = useUIStore((s) => s.setSection);
   const setSelectedItemId = useUIStore((s) => s.setSelectedItemId);
+  const setNotificationTarget = useUIStore((s) => s.setNotificationTarget);
   const [open, setOpen] = useState(false);
 
   const unreadCount = data?.unreadCount ?? 0;
@@ -421,6 +422,7 @@ function NotificationsBell() {
   const handleClick = (n: AppNotification) => {
     if (n.link) {
       setSection(n.link.section as Section);
+      setNotificationTarget(n.link.filter ?? null);
       if (n.link.itemId) setSelectedItemId(n.link.itemId);
       setOpen(false);
     }

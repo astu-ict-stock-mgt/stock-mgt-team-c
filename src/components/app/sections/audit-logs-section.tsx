@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, ScrollText } from "lucide-react";
 import { useAuditLogs } from "@/lib/api/hooks";
 import { Card } from "@/components/ui/card";
@@ -9,13 +9,29 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuCardTable } from "@/components/app/section-utils";
 import { formatRelative, formatDate } from "@/lib/utils/format";
+import { useUIStore } from "@/stores/ui-store";
 
 export function AuditLogsSection() {
   const [page, setPage] = useState(1);
   const [limit] = useState(25);
   const [search, setSearch] = useState("");
   const [module, setModule] = useState("");
+  const notificationTarget = useUIStore((s) => s.notificationTarget);
+  const setNotificationTarget = useUIStore((s) => s.setNotificationTarget);
   const { data, isLoading, isError, refetch } = useAuditLogs({ page, limit, search: search || undefined, module: module || undefined });
+
+  useEffect(() => {
+    const filters: Record<string, string> = {
+      "gate-pass": "GATE_PASS",
+      "stock-take": "STOCK_TAKE",
+      "failed-login": "LOGIN_FAILED",
+    };
+    if (!notificationTarget || !filters[notificationTarget]) return;
+    setSearch(filters[notificationTarget]);
+    setModule("");
+    setPage(1);
+    setNotificationTarget(null);
+  }, [notificationTarget, setNotificationTarget]);
 
   return (
     <div>
@@ -49,40 +65,40 @@ export function AuditLogsSection() {
       </Card>
 
       {isLoading ? <SectionLoading /> :
-       isError ? <SectionError message="Failed to load audit logs" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? (
-        <SectionEmpty title="No audit logs" message="System mutations will be logged here" />
-       ) : (
-        <AstuCardTable>
-          <table className="astu-table">
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>Module</th>
-                <th>Entity</th>
-                <th>User</th>
-                <th>Description</th>
-                <th>IP</th>
-                <th>Timestamp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((a) => (
-                <tr key={a.id}>
-                  <td><Badge variant="secondary" className="text-[10px] font-mono">{a.action}</Badge></td>
-                  <td className="text-xs font-medium">{a.module}</td>
-                  <td className="text-xs text-muted-foreground">{a.entity ?? "—"}{a.entityId ? ` · ${a.entityId.slice(-8)}` : ""}</td>
-                  <td className="text-xs">{a.user?.fullName ?? "system"}</td>
-                  <td className="text-xs max-w-[200px] truncate">{a.description ?? "—"}</td>
-                  <td className="text-xs font-mono">{a.ipAddress ?? "—"}</td>
-                  <td className="text-xs whitespace-nowrap" title={formatDate(a.timestamp, true)}>{formatRelative(a.timestamp)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
-      )}
+        isError ? <SectionError message="Failed to load audit logs" onRetry={() => refetch()} /> :
+          !data || data.items.length === 0 ? (
+            <SectionEmpty title="No audit logs" message="System mutations will be logged here" />
+          ) : (
+            <AstuCardTable>
+              <table className="astu-table">
+                <thead>
+                  <tr>
+                    <th>Action</th>
+                    <th>Module</th>
+                    <th>Entity</th>
+                    <th>User</th>
+                    <th>Description</th>
+                    <th>IP</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.map((a) => (
+                    <tr key={a.id}>
+                      <td><Badge variant="secondary" className="text-[10px] font-mono">{a.action}</Badge></td>
+                      <td className="text-xs font-medium">{a.module}</td>
+                      <td className="text-xs text-muted-foreground">{a.entity ?? "—"}{a.entityId ? ` · ${a.entityId.slice(-8)}` : ""}</td>
+                      <td className="text-xs">{a.user?.fullName ?? "system"}</td>
+                      <td className="text-xs max-w-[200px] truncate">{a.description ?? "—"}</td>
+                      <td className="text-xs font-mono">{a.ipAddress ?? "—"}</td>
+                      <td className="text-xs whitespace-nowrap" title={formatDate(a.timestamp, true)}>{formatRelative(a.timestamp)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
+            </AstuCardTable>
+          )}
     </div>
   );
 }
