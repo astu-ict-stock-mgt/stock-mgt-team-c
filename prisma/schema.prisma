@@ -1,8 +1,6 @@
 // ===================================================================
-// Stock Management System — Prisma Schema
-// Based on SRS.docx requirements: Users/RBAC, Suppliers, Inventory,
-// FIFO valuation, Stock Receipts/Issues/Transfers, Requisitions,
-// Stock Taking, Damaged/Obsolete, Gate Passes, Audit Logs.
+// Stock Management System — Prisma Schema (PostgreSQL)
+// Phase 1: Domain Foundation (Store Hierarchy, Documents, Stock)
 // ===================================================================
 
 generator client {
@@ -38,14 +36,22 @@ model User {
   userRoles            UserRole[]
   auditLogs            AuditLog[]
   stockTransactions    StockTransaction[]
-  receipts             StockReceipt[]
-  issues               StockIssue[]
-  requisitions         Requisition[]
+  requisitions         Requisition[]         @relation("RequisitionRequestedBy")
   requisitionApprovals RequisitionApproval[]
   stockTakes           StockTake[]
   gatePasses           GatePass[]            @relation("GatePassRequestedBy")
   gatePassesApproved   GatePass[]            @relation("GatePassSecurityOfficer")
-  stockTransfers       StockTransfer[]
+
+  // Documents
+  receipts             GoodsReceipt[]        @relation("ReceiptReceivedBy")
+  grns                 GRN[]                 @relation("GRNGeneratedBy")
+  evaluations          TechnicalEvaluation[] @relation("EvaluatedBy")
+  sivsCreated          StoreIssueVoucher[]   @relation("SIVCreatedBy")
+  sivsApproved         StoreIssueVoucher[]   @relation("SIVApprovedBy")
+  returnsRequested     StoreReturnNote[]     @relation("ReturnRequestedBy")
+  transfersRequested   TransferRequest[]     @relation("TransferRequestedBy")
+  assets               FixedAsset[]          @relation("AssetResponsibleUser")
+  userCard             UserCard?
 
   @@index([status])
   @@index([deletedAt])
@@ -86,8 +92,8 @@ model Role {
 
 model Permission {
   id          String   @id @default(cuid())
-  name        String   @unique // e.g. "users.read"
-  module      String // e.g. "users"
+  name        String   @unique
+  module      String
   description String?
   createdAt   DateTime @default(now())
 
@@ -129,7 +135,7 @@ model Supplier {
   updatedAt     DateTime       @updatedAt
   deletedAt     DateTime?
 
-  receipts StockReceipt[]
+  receipts GoodsReceipt[]
 
   @@index([status])
   @@index([deletedAt])
@@ -163,7 +169,7 @@ model Category {
 
 model UnitOfMeasure {
   id        String   @id @default(cuid())
-  code      String   @unique // e.g. "EA", "BOX", "KG"
+  code      String   @unique
   name      String   @unique
   createdAt DateTime @default(now())
 
@@ -171,36 +177,82 @@ model UnitOfMeasure {
 }
 
 // -------------------------------------------------------------------
-// WAREHOUSES
+// MASTER DATA: STORE HIERARCHY
+// Store -> Location -> Shelf -> Bin
 // -------------------------------------------------------------------
 
-model Warehouse {
-  id        String          @id @default(cuid())
-  code      String          @unique
-  name      String          @unique
-  location  String?
-  status    WarehouseStatus @default(ACTIVE)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
-  deletedAt DateTime?
+model Store {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  name        String      @unique
+  type        String?     // e.g. "MAIN", "DEPARTMENT"
+  department  String?
+  location    String?
+  status      StoreStatus @default(ACTIVE)
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
 
-  stock             WarehouseStock[]
-  receipts          StockReceipt[]
-  issueSources      StockIssue[]       @relation("IssueSourceWarehouse")
-  issueDests        StockIssue[]       @relation("IssueDestWarehouse")
-  transfersFrom     StockTransfer[]    @relation("TransferFrom")
-  transfersTo       StockTransfer[]    @relation("TransferTo")
-  stockTakes        StockTake[]
-  fifoLayers        FifoLayer[]
-  stockTransactions StockTransaction[]
+  locations          StoreLocation[]
+  storeStocks        StoreStock[]
+  receipts           GoodsReceipt[]
+  sivs               StoreIssueVoucher[]
+  transfersFrom      TransferRequest[]   @relation("TransferRequestFrom")
+  transfersTo        TransferRequest[]   @relation("TransferRequestTo")
+  stockTakes         StockTake[]
+  fifoLayers         FifoLayer[]
+  stockTransactions  StockTransaction[]
+  stockCards         StockCard[]
 
   @@index([status])
   @@index([deletedAt])
 }
 
-enum WarehouseStatus {
+enum StoreStatus {
   ACTIVE
   INACTIVE
+}
+
+model StoreLocation {
+  id        String   @id @default(cuid())
+  storeId   String
+  code      String
+  name      String
+  createdAt DateTime @default(now())
+
+  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  shelves Shelf[]
+
+  @@unique([storeId, code])
+}
+
+model Shelf {
+  id         String   @id @default(cuid())
+  locationId String
+  code       String
+  name       String
+  createdAt  DateTime @default(now())
+
+  location StoreLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  bins     Bin[]
+
+  @@unique([locationId, code])
+}
+
+model Bin {
+  id        String   @id @default(cuid())
+  shelfId   String
+  code      String
+  name      String
+  createdAt DateTime @default(now())
+
+  shelf Shelf @relation(fields: [shelfId], references: [id], onDelete: Cascade)
+  
+  binStocks BinStock[]
+  binCards  BinCard[]
+
+  @@unique([shelfId, code])
 }
 
 // -------------------------------------------------------------------
@@ -208,38 +260,58 @@ enum WarehouseStatus {
 // -------------------------------------------------------------------
 
 model InventoryItem {
-  id           String        @id @default(cuid())
-  code         String        @unique // SKU / item code
-  name         String
-  description  String?
-  categoryId   String
-  category     Category      @relation(fields: [categoryId], references: [id])
-  uomId        String
-  uom          UnitOfMeasure @relation(fields: [uomId], references: [id])
-  status       ItemStatus    @default(AVAILABLE)
-  minStock     Float         @default(0)
-  maxStock     Float         @default(0)
-  safetyStock  Float         @default(0)
-  reorderLevel Float         @default(0)
-  unitCost     Float         @default(0) // weighted average cost for display
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  deletedAt    DateTime?
+  id             String        @id @default(cuid())
+  code           String        @unique // SKU
+  name           String
+  description    String?
+  categoryId     String
+  uomId          String
+  materialType   MaterialType  @default(CONSUMABLE)
+  status         ItemStatus    @default(AVAILABLE)
+  
+  // Stock Control
+  minStock       Float         @default(0)
+  maxStock       Float         @default(0)
+  safetyStock    Float         @default(0)
+  reorderLevel   Float         @default(0)
+  
+  // Shelf Life (template data)
+  hasShelfLife   Boolean       @default(false)
+  shelfLifeDays  Int?
 
-  warehouseStock   WarehouseStock[]
-  receiptItems     StockReceiptItem[]
-  issueItems       StockIssueItem[]
-  transferItems    StockTransferItem[]
+  unitCost       Float         @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  category Category      @relation(fields: [categoryId], references: [id])
+  uom      UnitOfMeasure @relation(fields: [uomId], references: [id])
+
+  storeStocks      StoreStock[]
+  binStocks        BinStock[]
   fifoLayers       FifoLayer[]
+  receiptItems     GoodsReceiptItem[]
+  sivItems         SIVItem[]
   transactions     StockTransaction[]
-  stockTakeItems   StockTakeItem[]
-  damagedRecords   DamagedStock[]
-  obsoleteRecords  ObsoleteStock[]
+  stockCards       StockCard[]
+  binCards         BinCard[]
   requisitionItems RequisitionItem[]
+  transferItems    TransferRequestItem[]
+  stockTakeItems   StockTakeItem[]
+  fixedAssets      FixedAsset[]
+  returnItems      StoreReturnItem[]
+  disposalItems    DisposalItem[]
 
   @@index([categoryId])
   @@index([status])
   @@index([deletedAt])
+}
+
+enum MaterialType {
+  CONSUMABLE
+  NON_CONSUMABLE
+  FIXED_ASSET
+  OTHER
 }
 
 enum ItemStatus {
@@ -251,242 +323,152 @@ enum ItemStatus {
   DISPOSED
 }
 
-model WarehouseStock {
+// -------------------------------------------------------------------
+// STOCK TRACKING (STORE & BIN LEVEL)
+// -------------------------------------------------------------------
+
+model StoreStock {
   id          String   @id @default(cuid())
   itemId      String
-  warehouseId String
+  storeId     String
   quantity    Float    @default(0)
   reservedQty Float    @default(0)
   updatedAt   DateTime @updatedAt
 
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  item  InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  store Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
-  @@unique([itemId, warehouseId])
-  @@index([warehouseId])
+  @@unique([itemId, storeId])
+  @@index([storeId])
 }
 
-// -------------------------------------------------------------------
-// FIFO INVENTORY LAYERS
-// Each receipt creates a layer. Each issue consumes from oldest layer.
-// -------------------------------------------------------------------
+model BinStock {
+  id          String   @id @default(cuid())
+  itemId      String
+  binId       String
+  quantity    Float    @default(0)
+  reservedQty Float    @default(0)
+  updatedAt   DateTime @updatedAt
+
+  item InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  bin  Bin           @relation(fields: [binId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, binId])
+  @@index([binId])
+}
 
 model FifoLayer {
-  id           String   @id @default(cuid())
-  itemId       String
-  warehouseId  String
-  originalQty  Float
-  remainingQty Float
-  unitCost     Float
-  receiptId    String
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  itemId         String
+  storeId        String
+  grnId          String?  
+  batchNumber    String?
+  manufactureDate DateTime?
+  expiryDate     DateTime?
+  originalQty    Float
+  remainingQty   Float
+  unitCost       Float
+  createdAt      DateTime @default(now())
 
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  receipt   StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  item  InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  store Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  grn   GRN?          @relation(fields: [grnId], references: [id], onDelete: SetNull)
 
-  @@index([itemId, warehouseId, createdAt])
-  @@index([receiptId])
+  @@index([itemId, storeId, createdAt])
+  @@index([grnId])
+  @@index([expiryDate])
 }
 
 // -------------------------------------------------------------------
-// STOCK RECEIPTS
+// RECEIVING WORKFLOW: Goods Receipt -> TEC -> GRN
 // -------------------------------------------------------------------
 
-model StockReceipt {
+model GoodsReceipt {
   id              String        @id @default(cuid())
-  code            String        @unique // GRN-YYYYMMDD-XXXX
+  code            String        @unique // RECP-YYYYMMDD-XXXX
   supplierId      String
-  warehouseId     String
+  storeId         String
   receivedById    String
-  status          ReceiptStatus @default(CONFIRMED)
+  status          ReceiptStatus @default(DRAFT)
+  deliveryNote    String?
+  purchaseOrder   String?
   inspectionNotes String?
-  totalAmount     Float         @default(0)
-  totalQuantity   Float         @default(0)
   receiptDate     DateTime      @default(now())
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
   supplier   Supplier           @relation(fields: [supplierId], references: [id])
-  warehouse  Warehouse          @relation(fields: [warehouseId], references: [id])
-  receivedBy User               @relation(fields: [receivedById], references: [id])
-  items      StockReceiptItem[]
-  fifoLayers FifoLayer[]
+  store      Store              @relation(fields: [storeId], references: [id])
+  receivedBy User               @relation("ReceiptReceivedBy", fields: [receivedById], references: [id])
+  items      GoodsReceiptItem[]
+  evaluation TechnicalEvaluation?
+  grn        GRN?
 
   @@index([supplierId])
-  @@index([warehouseId])
-  @@index([receiptDate])
+  @@index([storeId])
 }
 
 enum ReceiptStatus {
   DRAFT
-  INSPECTING
-  CONFIRMED
-  CANCELLED
+  SUBMITTED
+  UNDER_EVALUATION
+  ACCEPTED
+  REJECTED
+  GRN_GENERATED
 }
 
-model StockReceiptItem {
-  id               String  @id @default(cuid())
-  receiptId        String
-  itemId           String
-  quantity         Float
-  unitCost         Float
-  inspected        Boolean @default(false)
-  inspectionPassed Boolean @default(true)
-  remarks          String?
+model GoodsReceiptItem {
+  id        String @id @default(cuid())
+  receiptId String
+  itemId    String
+  quantity  Float
+  unitCost  Float
+  remarks   String?
 
-  receipt StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  receipt GoodsReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   item    InventoryItem @relation(fields: [itemId], references: [id])
 
   @@index([receiptId])
-  @@index([itemId])
 }
 
-// -------------------------------------------------------------------
-// STOCK ISSUES
-// -------------------------------------------------------------------
+model TechnicalEvaluation {
+  id          String   @id @default(cuid())
+  receiptId   String?  @unique
+  returnId    String?  @unique
+  evaluatorId String
+  decision    EvaluationDecision
+  comments    String?
+  createdAt   DateTime @default(now())
 
-model StockIssue {
-  id                String      @id @default(cuid())
-  code              String      @unique // ISS-YYYYMMDD-XXXX
-  sourceWarehouseId String
-  destWarehouseId   String? // null for issues to department
-  issuedById        String
-  department        String
-  requisitionId     String?
-  status            IssueStatus @default(COMPLETED)
-  totalQuantity     Float       @default(0)
-  totalCogs         Float       @default(0) // cost of goods sold (FIFO)
-  issueDate         DateTime    @default(now())
-  notes             String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-
-  sourceWarehouse Warehouse        @relation("IssueSourceWarehouse", fields: [sourceWarehouseId], references: [id])
-  destWarehouse   Warehouse?       @relation("IssueDestWarehouse", fields: [destWarehouseId], references: [id])
-  issuedBy        User             @relation(fields: [issuedById], references: [id])
-  items           StockIssueItem[]
-  gatePass        GatePass?
-
-  @@index([sourceWarehouseId])
-  @@index([issueDate])
+  receipt   GoodsReceipt?    @relation(fields: [receiptId], references: [id])
+  return    StoreReturnNote? @relation(fields: [returnId], references: [id])
+  evaluator User             @relation("EvaluatedBy", fields: [evaluatorId], references: [id])
 }
 
-enum IssueStatus {
+enum EvaluationDecision {
+  APPROVED
+  REJECTED
+  APPROVED_WITH_CONDITIONS
   PENDING
-  COMPLETED
-  CANCELLED
 }
 
-model StockIssueItem {
-  id       String  @id @default(cuid())
-  issueId  String
-  itemId   String
-  quantity Float
-  unitCost Float   @default(0) // weighted FIFO cost
-  cogs     Float   @default(0) // quantity * unitCost
-  remarks  String?
+model GRN {
+  id            String   @id @default(cuid())
+  code          String   @unique // GRN-YYYYMMDD-XXXX
+  receiptId     String   @unique
+  generatedById String
+  date          DateTime @default(now())
+  notes         String?
+  createdAt     DateTime @default(now())
 
-  issue StockIssue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  item  InventoryItem @relation(fields: [itemId], references: [id])
-
-  @@index([issueId])
-  @@index([itemId])
+  receipt     GoodsReceipt @relation(fields: [receiptId], references: [id])
+  generatedBy User         @relation("GRNGeneratedBy", fields: [generatedById], references: [id])
+  fifoLayers  FifoLayer[]
+  assets      FixedAsset[]
 }
 
 // -------------------------------------------------------------------
-// STOCK TRANSFERS
-// -------------------------------------------------------------------
-
-model StockTransfer {
-  id              String         @id @default(cuid())
-  code            String         @unique // TRF-YYYYMMDD-XXXX
-  fromWarehouseId String
-  toWarehouseId   String
-  transferredById String
-  status          TransferStatus @default(COMPLETED)
-  totalQuantity   Float          @default(0)
-  transferDate    DateTime       @default(now())
-  notes           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  fromWarehouse Warehouse           @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
-  toWarehouse   Warehouse           @relation("TransferTo", fields: [toWarehouseId], references: [id])
-  transferredBy User                @relation(fields: [transferredById], references: [id])
-  items         StockTransferItem[]
-
-  @@index([fromWarehouseId])
-  @@index([toWarehouseId])
-}
-
-enum TransferStatus {
-  PENDING
-  IN_TRANSIT
-  COMPLETED
-  CANCELLED
-}
-
-model StockTransferItem {
-  id         String @id @default(cuid())
-  transferId String
-  itemId     String
-  quantity   Float
-  unitCost   Float  @default(0)
-
-  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  item     InventoryItem @relation(fields: [itemId], references: [id])
-
-  @@index([transferId])
-}
-
-// -------------------------------------------------------------------
-// STOCK TRANSACTIONS (LEDGER)
-// Every movement creates a transaction row.
-// -------------------------------------------------------------------
-
-model StockTransaction {
-  id              String          @id @default(cuid())
-  code            String          @unique // TXN-YYYYMMDD-XXXX
-  itemId          String
-  warehouseId     String?
-  type            TransactionType
-  quantity        Float // signed: + for in, - for out
-  unitCost        Float           @default(0)
-  balanceBefore   Float           @default(0)
-  balanceAfter    Float           @default(0)
-  referenceType   String? // "RECEIPT", "ISSUE", "TRANSFER", "ADJUSTMENT"
-  referenceId     String?
-  userId          String
-  remarks         String?
-  transactionDate DateTime        @default(now())
-  createdAt       DateTime        @default(now())
-
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  warehouse Warehouse?    @relation(fields: [warehouseId], references: [id])
-  user      User          @relation(fields: [userId], references: [id])
-
-  @@index([itemId, transactionDate])
-  @@index([warehouseId])
-  @@index([type])
-  @@index([referenceType, referenceId])
-}
-
-enum TransactionType {
-  OPENING
-  RECEIPT
-  ISSUE
-  TRANSFER_IN
-  TRANSFER_OUT
-  ADJUSTMENT_IN
-  ADJUSTMENT_OUT
-  DAMAGE
-  OBSOLETE
-  DISPOSAL
-}
-
-// -------------------------------------------------------------------
-// REQUISITIONS
+// ISSUING WORKFLOW: Requisition -> SIV -> Final Issue
 // -------------------------------------------------------------------
 
 model Requisition {
@@ -496,13 +478,15 @@ model Requisition {
   department    String
   status        RequisitionStatus @default(DRAFT)
   requiredDate  DateTime
+  purpose       String?
   notes         String?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
-  requestedBy User                  @relation(fields: [requestedById], references: [id])
+  requestedBy User                  @relation("RequisitionRequestedBy", fields: [requestedById], references: [id])
   items       RequisitionItem[]
   approvals   RequisitionApproval[]
+  sivs        StoreIssueVoucher[]
 
   @@index([status])
   @@index([requestedById])
@@ -511,7 +495,7 @@ model Requisition {
 enum RequisitionStatus {
   DRAFT
   SUBMITTED
-  PENDING_APPROVAL
+  UNDER_REVIEW
   APPROVED
   REJECTED
   PARTIALLY_FULFILLED
@@ -549,6 +533,294 @@ model RequisitionApproval {
 enum ApprovalStatus {
   APPROVED
   REJECTED
+  RETURNED_FOR_CORRECTION
+}
+
+model StoreIssueVoucher {
+  id            String    @id @default(cuid())
+  code          String    @unique // SIV-YYYYMMDD-XXXX
+  requisitionId String?
+  storeId       String
+  createdById   String
+  approvedById  String?
+  status        SIVStatus @default(DRAFT)
+  issueDate     DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  requisition Requisition? @relation(fields: [requisitionId], references: [id])
+  store       Store        @relation(fields: [storeId], references: [id])
+  createdBy   User         @relation("SIVCreatedBy", fields: [createdById], references: [id])
+  approvedBy  User?        @relation("SIVApprovedBy", fields: [approvedById], references: [id])
+  items       SIVItem[]
+  gatePass    GatePass?
+
+  @@index([storeId])
+  @@index([status])
+}
+
+enum SIVStatus {
+  DRAFT
+  PRELIMINARY
+  UNDER_APPROVAL
+  AMENDMENT_REQUIRED
+  APPROVED
+  FINALIZED
+  ISSUED
+}
+
+model SIVItem {
+  id          String @id @default(cuid())
+  sivId       String
+  itemId      String
+  quantity    Float
+  approvedQty Float  @default(0)
+  issuedQty   Float  @default(0)
+  unitCost    Float  @default(0) 
+
+  siv  StoreIssueVoucher @relation(fields: [sivId], references: [id], onDelete: Cascade)
+  item InventoryItem     @relation(fields: [itemId], references: [id])
+
+  @@index([sivId])
+}
+
+// -------------------------------------------------------------------
+// RETURNS WORKFLOW
+// -------------------------------------------------------------------
+
+model StoreReturnNote {
+  id            String       @id @default(cuid())
+  code          String       @unique // SRN-YYYYMMDD-XXXX
+  requestedById String
+  department    String
+  originalSivId String?
+  status        ReturnStatus @default(DRAFT)
+  date          DateTime     @default(now())
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  requestedBy User                 @relation("ReturnRequestedBy", fields: [requestedById], references: [id])
+  items       StoreReturnItem[]
+  evaluation  TechnicalEvaluation?
+}
+
+enum ReturnStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_EVALUATION
+  APPROVED
+  REJECTED
+  POSTED
+}
+
+model StoreReturnItem {
+  id        String  @id @default(cuid())
+  srnId     String
+  itemId    String
+  quantity  Float
+  reason    String?
+  condition String?
+
+  srn  StoreReturnNote @relation(fields: [srnId], references: [id], onDelete: Cascade)
+  item InventoryItem   @relation(fields: [itemId], references: [id])
+}
+
+// -------------------------------------------------------------------
+// TRANSFERS WORKFLOW
+// -------------------------------------------------------------------
+
+model TransferRequest {
+  id            String         @id @default(cuid())
+  code          String         @unique // TRF-YYYYMMDD-XXXX
+  fromStoreId   String
+  toStoreId     String
+  requestedById String
+  status        TransferStatus @default(DRAFT)
+  reason        String?
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  fromStore   Store                 @relation("TransferRequestFrom", fields: [fromStoreId], references: [id])
+  toStore     Store                 @relation("TransferRequestTo", fields: [toStoreId], references: [id])
+  requestedBy User                  @relation("TransferRequestedBy", fields: [requestedById], references: [id])
+  items       TransferRequestItem[]
+}
+
+enum TransferStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  DISPATCHED
+  RECEIVED
+  COMPLETED
+}
+
+model TransferRequestItem {
+  id         String @id @default(cuid())
+  transferId String
+  itemId     String
+  quantity   Float
+
+  transfer TransferRequest @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  item     InventoryItem   @relation(fields: [itemId], references: [id])
+}
+
+// -------------------------------------------------------------------
+// DISPOSALS WORKFLOW
+// -------------------------------------------------------------------
+
+model DisposalRequest {
+  id            String         @id @default(cuid())
+  code          String         @unique // DISP-YYYYMMDD-XXXX
+  status        DisposalStatus @default(FLAGGED)
+  reason        String?
+  method        String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  items DisposalItem[]
+}
+
+enum DisposalStatus {
+  FLAGGED
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXECUTED
+}
+
+model DisposalItem {
+  id         String @id @default(cuid())
+  disposalId String
+  itemId     String
+  quantity   Float
+  condition  String?
+
+  disposal DisposalRequest @relation(fields: [disposalId], references: [id], onDelete: Cascade)
+  item     InventoryItem   @relation(fields: [itemId], references: [id])
+}
+
+// -------------------------------------------------------------------
+// FIXED ASSETS & USER CARDS
+// -------------------------------------------------------------------
+
+model FixedAsset {
+  id                String       @id @default(cuid())
+  assetNumber       String       @unique // e.g., ASTU/IT/001
+  itemId            String
+  serialNumber      String?
+  grnId             String?
+  responsibleUserId String?
+  status            AssetStatus  @default(IN_USE)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  item            InventoryItem @relation(fields: [itemId], references: [id])
+  grn             GRN?          @relation(fields: [grnId], references: [id])
+  responsibleUser User?         @relation("AssetResponsibleUser", fields: [responsibleUserId], references: [id])
+}
+
+enum AssetStatus {
+  IN_STORE
+  IN_USE
+  MAINTENANCE
+  DISPOSED
+  LOST
+}
+
+model UserCard {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// -------------------------------------------------------------------
+// STOCK TRANSACTIONS (LEDGER) & RECORD CARDS
+// -------------------------------------------------------------------
+
+model StockTransaction {
+  id              String          @id @default(cuid())
+  code            String          @unique // TXN-YYYYMMDD-XXXX
+  itemId          String
+  storeId         String
+  type            TransactionType
+  quantity        Float           // signed: + for in, - for out
+  unitCost        Float           @default(0)
+  balanceBefore   Float           @default(0)
+  balanceAfter    Float           @default(0)
+  referenceType   String?         // "GRN", "SIV", "SRN", "TRANSFER", "ADJUSTMENT"
+  referenceId     String?
+  userId          String
+  remarks         String?
+  transactionDate DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+
+  item  InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  store Store         @relation(fields: [storeId], references: [id])
+  user  User          @relation(fields: [userId], references: [id])
+
+  @@index([itemId, transactionDate])
+  @@index([storeId])
+  @@index([type])
+  @@index([referenceType, referenceId])
+}
+
+enum TransactionType {
+  OPENING
+  RECEIPT
+  ISSUE
+  RETURN
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  DAMAGE
+  OBSOLETE
+  DISPOSAL
+}
+
+model StockCard {
+  id              String   @id @default(cuid())
+  storeId         String
+  itemId          String
+  transactionDate DateTime @default(now())
+  transactionType String
+  referenceDoc    String?
+  inQty           Float    @default(0)
+  outQty          Float    @default(0)
+  balance         Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  store Store         @relation(fields: [storeId], references: [id])
+  item  InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([storeId, itemId, transactionDate])
+}
+
+model BinCard {
+  id              String   @id @default(cuid())
+  binId           String
+  itemId          String
+  transactionDate DateTime @default(now())
+  transactionType String
+  referenceDoc    String?
+  inQty           Float    @default(0)
+  outQty          Float    @default(0)
+  balance         Float    @default(0)
+  createdAt       DateTime @default(now())
+
+  bin  Bin           @relation(fields: [binId], references: [id])
+  item InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([binId, itemId, transactionDate])
 }
 
 // -------------------------------------------------------------------
@@ -558,7 +830,7 @@ enum ApprovalStatus {
 model StockTake {
   id            String          @id @default(cuid())
   code          String          @unique // ST-YYYYMMDD-XXXX
-  warehouseId   String
+  storeId       String
   conductedById String
   status        StockTakeStatus @default(DRAFT)
   startDate     DateTime        @default(now())
@@ -567,12 +839,12 @@ model StockTake {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
-  warehouse   Warehouse       @relation(fields: [warehouseId], references: [id])
+  store       Store           @relation(fields: [storeId], references: [id])
   conductedBy User            @relation(fields: [conductedById], references: [id])
   items       StockTakeItem[]
 
   @@index([status])
-  @@index([warehouseId])
+  @@index([storeId])
 }
 
 enum StockTakeStatus {
@@ -598,62 +870,13 @@ model StockTakeItem {
 }
 
 // -------------------------------------------------------------------
-// DAMAGED & OBSOLETE STOCK
-// -------------------------------------------------------------------
-
-model DamagedStock {
-  id             String            @id @default(cuid())
-  itemId         String
-  warehouseId    String?
-  quantity       Float
-  reason         String
-  reportedById   String
-  status         DispositionStatus @default(REPORTED)
-  disposalDate   DateTime?
-  disposalMethod String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  item InventoryItem @relation(fields: [itemId], references: [id])
-
-  @@index([itemId])
-  @@index([status])
-}
-
-model ObsoleteStock {
-  id             String            @id @default(cuid())
-  itemId         String
-  warehouseId    String?
-  quantity       Float
-  reason         String
-  reportedById   String
-  status         DispositionStatus @default(REPORTED)
-  disposalDate   DateTime?
-  disposalMethod String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
-
-  item InventoryItem @relation(fields: [itemId], references: [id])
-
-  @@index([itemId])
-  @@index([status])
-}
-
-enum DispositionStatus {
-  REPORTED
-  APPROVED
-  DISPOSED
-  CANCELLED
-}
-
-// -------------------------------------------------------------------
 // GATE PASSES
 // -------------------------------------------------------------------
 
 model GatePass {
   id                String         @id @default(cuid())
   code              String         @unique // GP-YYYYMMDD-XXXX
-  issueId           String?        @unique
+  sivId             String?        @unique
   requestedById     String
   securityOfficerId String?
   status            GatePassStatus @default(PENDING)
@@ -664,9 +887,9 @@ model GatePass {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  issue           StockIssue? @relation(fields: [issueId], references: [id])
-  requestedBy     User        @relation("GatePassRequestedBy", fields: [requestedById], references: [id])
-  securityOfficer User?       @relation("GatePassSecurityOfficer", fields: [securityOfficerId], references: [id])
+  siv             StoreIssueVoucher? @relation(fields: [sivId], references: [id])
+  requestedBy     User               @relation("GatePassRequestedBy", fields: [requestedById], references: [id])
+  securityOfficer User?              @relation("GatePassSecurityOfficer", fields: [securityOfficerId], references: [id])
 
   @@index([status])
 }
@@ -686,12 +909,12 @@ enum GatePassStatus {
 model AuditLog {
   id          String   @id @default(cuid())
   userId      String?
-  action      String // e.g. "USER_CREATED", "STOCK_RECEIVED"
-  module      String // e.g. "users", "inventory"
+  action      String
+  module      String
   entity      String?
   entityId    String?
-  oldValue    String? // JSON
-  newValue    String? // JSON
+  oldValue    String?
+  newValue    String?
   ipAddress   String?
   description String?
   timestamp   DateTime @default(now())
