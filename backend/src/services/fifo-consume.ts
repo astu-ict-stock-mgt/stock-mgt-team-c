@@ -1,49 +1,8 @@
-import { Prisma } from "@prisma/client";
-import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 
-// Consume `quantity` units from the oldest FIFO layers (oldest-first).
-// Must be called inside a Prisma $transaction.
-export async function consumeFifoTx(
-  tx: Prisma.TransactionClient,
-  params: { itemId: string; storeId: string; quantity: number }
-): Promise<{ consumptions: Array<{ layerId: string; quantity: number; unitCost: number; cogs: number }>; totalCogs: number; avgUnitCost: number }> {
-  const { itemId, storeId, quantity } = params;
-  if (quantity <= 0) return { consumptions: [], totalCogs: 0, avgUnitCost: 0 };
+// Legacy FIFO consume logic depends on old Stock models.
+// Pending Phase 4 implementation.
 
-  const layers = await tx.fifoLayer.findMany({
-    where: { itemId, storeId, remainingQty: { gt: 0 } },
-    orderBy: { createdAt: "asc" },
-  });
-
-  const available = layers.reduce((s, l) => s + l.remainingQty, 0);
-  if (available < quantity) {
-    throw Errors.insufficientStock(itemId, quantity, available);
-  }
-
-  let remaining = quantity;
-  const consumptions: Array<{ layerId: string; quantity: number; unitCost: number; cogs: number }> = [];
-  let totalCogs = 0;
-
-  for (const layer of layers) {
-    if (remaining <= 0) break;
-    const take = Math.min(layer.remainingQty, remaining);
-    const cogs = take * layer.unitCost;
-    await tx.fifoLayer.update({
-      where: { id: layer.id },
-      data: { remainingQty: layer.remainingQty - take },
-    });
-    consumptions.push({ layerId: layer.id, quantity: take, unitCost: layer.unitCost, cogs });
-    totalCogs += cogs;
-    remaining -= take;
-  }
-
-  return { consumptions, totalCogs, avgUnitCost: quantity > 0 ? totalCogs / quantity : 0 };
-}
-
-export async function nextTxnCode(tx: Prisma.TransactionClient): Promise<string> {
-  const today = new Date();
-  const ymd = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}${String(today.getUTCDate()).padStart(2, "0")}`;
-  const count = await tx.stockTransaction.count({ where: { code: { startsWith: `TXN-${ymd}-` } } });
-  return `TXN-${ymd}-${String(count + 1).padStart(4, "0")}`;
+export async function consumeFifo(data: any, ctx: any) {
+  throw Errors.notImplemented("FIFO consume workflow pending later phases");
 }

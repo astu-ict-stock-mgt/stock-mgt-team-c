@@ -13,6 +13,10 @@ import authRoutes from "./routes/auth";
 import usersRoutes from "./routes/users";
 import suppliersRoutes from "./routes/suppliers";
 import inventoryRoutes from "./routes/inventory";
+import storesRoutes from "./routes/stores";
+import locationsRoutes from "./routes/locations";
+import shelvesRoutes from "./routes/shelves";
+import binsRoutes from "./routes/bins";
 import receiptsRoutes from "./routes/receipts";
 import issuesRoutes from "./routes/issues";
 import transfersRoutes from "./routes/transfers";
@@ -90,7 +94,11 @@ app.get("/api/v1/health", async (_req: Request, res: Response) => {
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/suppliers", suppliersRoutes);
-app.use("/api/v1", inventoryRoutes); // categories, stores, inventory
+app.use("/api/v1", inventoryRoutes); // categories, inventory
+app.use("/api/v1/stores", storesRoutes);
+app.use("/api/v1/locations", locationsRoutes);
+app.use("/api/v1/shelves", shelvesRoutes);
+app.use("/api/v1/bins", binsRoutes);
 app.use("/api/v1/receipts", receiptsRoutes);
 app.use("/api/v1/issues", issuesRoutes);
 app.use("/api/v1/transfers", transfersRoutes);

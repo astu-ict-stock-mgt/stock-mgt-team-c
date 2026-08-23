@@ -19,22 +19,7 @@ export async function listUoms() {
   return prisma.unitOfMeasure.findMany({ orderBy: { name: "asc" } });
 }
 
-export async function listStores() {
-  const items = await prisma.store.findMany({
-    where: { deletedAt: null }, orderBy: { name: "asc" },
-    include: { stock: { select: { quantity: true } }, _count: { select: { stock: true } } },
-  });
-  return items.map((w) => ({
-    id: w.id, code: w.code, name: w.name, location: w.location, status: w.status,
-    itemCount: w._count.stock, totalUnits: w.stock.reduce((s, x) => s + x.quantity, 0),
-  }));
-}
 
-export async function createStore(input: any, auditCtx?: { userId?: string }) {
-  const w = await prisma.store.create({ data: { code: input.code.toUpperCase(), name: input.name, location: input.location ?? null } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "STORE_CREATED", module: "stores", entity: "store", entityId: w.id, newValue: w });
-  return w;
-}
 
 export async function listInventory(params: { page: number; limit: number; search?: string; categoryId?: string; status?: string }) {
   const where: Prisma.InventoryItemWhereInput = { deletedAt: null };
@@ -69,7 +54,7 @@ export async function listInventory(params: { page: number; limit: number; searc
 export async function getInventoryItem(id: string) {
   const it = await prisma.inventoryItem.findFirst({
     where: { id, deletedAt: null },
-    include: { category: true, uom: true, storeStock: { include: { store: true } } },
+    include: { category: true, uom: true, storeStocks: { include: { store: true } } },
   });
   if (!it) throw Errors.notFound("Inventory item", id);
   const val = await computeStockValue(it.id);
@@ -81,7 +66,7 @@ export async function getInventoryItem(id: string) {
     id: it.id, code: it.code, name: it.name, description: it.description, status: it.status,
     minStock: it.minStock, maxStock: it.maxStock, safetyStock: it.safetyStock, reorderLevel: it.reorderLevel,
     unitCost: val.avgUnitCost || it.unitCost, category: it.category, uom: it.uom,
-    storeStock: it.storeStock.map((ws) => ({
+    storeStocks: it.storeStocks.map((ws) => ({
       id: ws.id, storeId: ws.storeId, storeCode: ws.store.code, storeName: ws.store.name,
       quantity: ws.quantity, reservedQty: ws.reservedQty,
     })),

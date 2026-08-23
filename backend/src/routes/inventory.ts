@@ -19,17 +19,7 @@ router.post("/categories", requirePermission("categories.create"), asyncHandler(
   res.status(201).json(ok(c, "Category created"));
 }));
 
-// Stores
-router.get("/stores", requirePermission("warehouses.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const items = await inv.listStores();
-  res.json(ok({ items }));
-}));
 
-router.post("/stores", requirePermission("warehouses.create"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const body = val.storeSchema.parse(req.body);
-  const w = await inv.createStore(body, { userId: req.userId });
-  res.status(201).json(ok(w, "Store created"));
-}));
 
 // Inventory items
 router.get("/inventory", requirePermission("inventory.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {

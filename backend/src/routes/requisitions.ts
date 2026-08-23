@@ -22,7 +22,7 @@ router.get(
     const allowedStatuses: RequisitionStatus[] = [
       "DRAFT",
       "SUBMITTED",
-      "PENDING_APPROVAL",
+      "UNDER_REVIEW",
       "APPROVED",
       "REJECTED",
       "PARTIALLY_FULFILLED",
@@ -38,7 +38,7 @@ router.get(
         { notes: { contains: search } },
       ];
     }
-    if (status === "PENDING") where.status = { in: ["SUBMITTED", "PENDING_APPROVAL"] };
+    if (status === "PENDING") where.status = { in: ["SUBMITTED", "UNDER_REVIEW"] };
     else if (status && allowedStatuses.includes(status as RequisitionStatus)) where.status = status as RequisitionStatus;
     if (department) where.department = department;
 
@@ -254,7 +254,7 @@ router.post(
 
     const requisition = await prisma.requisition.findUnique({ where: { id: req.params.id }, include: { approvals: true } });
     if (!requisition) throw Errors.notFound("Requisition", req.params.id);
-    if (!["SUBMITTED", "PENDING_APPROVAL"].includes(requisition.status)) {
+    if (!["SUBMITTED", "UNDER_REVIEW"].includes(requisition.status)) {
       throw Errors.invalidRequisition("Only submitted requisitions can be approved or rejected");
     }
 
@@ -284,7 +284,7 @@ router.post(
         ? "REJECTED"
         : approvalCount >= 2
           ? "APPROVED"
-          : "PENDING_APPROVAL";
+          : "UNDER_REVIEW";
 
       await tx.requisition.update({
         where: { id: requisition.id },

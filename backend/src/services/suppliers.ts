@@ -38,7 +38,7 @@ export async function getSupplier(id: string) {
     phone: s.phone, address: s.address, status: s.status, receiptCount: s._count.receipts,
     receipts: s.receipts.map((r) => ({
       id: r.id, code: r.code, receiptDate: r.receiptDate.toISOString(), status: r.status,
-      totalAmount: r.totalAmount, totalQuantity: r.totalQuantity, itemCount: r._count.items,
+      itemCount: r._count.items,
     })),
   };
 }

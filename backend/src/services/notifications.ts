@@ -36,7 +36,7 @@ export async function getNotificationsForUser(userId: string, roles: Set<string>
   const canApproveRequisitions = roles.has("ADMINISTRATOR") || permissions.has("requisition.approve");
   if (canApproveRequisitions) {
     const requisitionWhere: Prisma.RequisitionWhereInput = {
-      status: { in: ["SUBMITTED", "PENDING_APPROVAL"] },
+      status: { in: ["SUBMITTED", "UNDER_REVIEW"] },
     };
 
     // Department heads approve requests from their own department only.

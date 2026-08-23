@@ -4,7 +4,10 @@ export const PERMISSIONS = [
   "permissions.read",
   "suppliers.read", "suppliers.create", "suppliers.update", "suppliers.delete",
   "categories.read", "categories.create", "categories.update", "categories.delete",
-  "warehouses.read", "warehouses.create", "warehouses.update", "warehouses.delete",
+  "stores.read", "stores.create", "stores.update", "stores.delete",
+  "locations.read", "locations.create", "locations.update", "locations.delete",
+  "shelves.read", "shelves.create", "shelves.update", "shelves.delete",
+  "bins.read", "bins.create", "bins.update", "bins.delete",
   "inventory.read", "inventory.create", "inventory.update", "inventory.delete",
   "stock.receive", "stock.issue", "stock.transfer", "stock.adjust",
   "requisition.create", "requisition.approve", "requisition.read",
@@ -25,14 +28,20 @@ export type RoleName =
   | "ACCOUNTANT"
   | "DEPARTMENT_HEAD"
   | "SECURITY_OFFICER"
-  | "SUPPLIER";
+  | "SUPPLIER"
+  | "TEC"
+  | "FIXED_ASSET_OFFICER"
+  | "AUDITOR";
 
 export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
   ADMINISTRATOR: [...PERMISSIONS],
   PAO: [
     "dashboard.view", "users.read",
     "suppliers.read", "suppliers.create", "suppliers.update",
-    "categories.read", "warehouses.read", "inventory.read",
+    "categories.read", "stores.read", "stores.create", "stores.update", "stores.delete", 
+    "locations.read", "locations.create", "locations.update", "locations.delete",
+    "shelves.read", "shelves.create", "shelves.update", "shelves.delete",
+    "bins.read", "bins.create", "bins.update", "bins.delete", "inventory.read",
     "stock.receive", "stock.issue", "stock.transfer",
     "requisition.read", "requisition.approve",
     "stocktake.read", "stocktake.approve",
@@ -41,7 +50,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "reports.view", "reports.export", "audit.view",
   ],
   STOREKEEPER: [
-    "dashboard.view", "suppliers.read", "categories.read", "warehouses.read",
+    "dashboard.view", "suppliers.read", "categories.read", 
+    "stores.read", "locations.read", "shelves.read", "bins.read",
     "inventory.read", "inventory.update",
     "stock.receive", "stock.issue", "stock.transfer",
     "requisition.read", "stocktake.create", "stocktake.read",
@@ -49,11 +59,13 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "gatepass.request", "gatepass.read", "reports.view",
   ],
   STOCK_CLERK: [
-    "dashboard.view", "suppliers.read", "categories.read", "warehouses.read",
+    "dashboard.view", "suppliers.read", "categories.read", 
+    "stores.read", "locations.read", "shelves.read", "bins.read",
     "inventory.read", "requisition.read", "stocktake.read", "reports.view",
   ],
   ACCOUNTANT: [
-    "dashboard.view", "suppliers.read", "categories.read", "warehouses.read",
+    "dashboard.view", "suppliers.read", "categories.read", 
+    "stores.read", "locations.read", "shelves.read", "bins.read",
     "inventory.read", "requisition.read", "reports.view", "reports.export", "audit.view",
   ],
   DEPARTMENT_HEAD: [
@@ -64,4 +76,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "dashboard.view", "gatepass.approve", "gatepass.read", "inventory.read", "audit.view",
   ],
   SUPPLIER: ["dashboard.view"],
+  TEC: ["dashboard.view"],
+  FIXED_ASSET_OFFICER: ["dashboard.view", "stores.read", "locations.read", "shelves.read", "bins.read", "inventory.read"],
+  AUDITOR: ["dashboard.view", "stores.read", "locations.read", "shelves.read", "bins.read", "inventory.read", "reports.view", "audit.view"],
 };

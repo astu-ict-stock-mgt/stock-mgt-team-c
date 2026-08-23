@@ -1,21 +1,13 @@
-import { prisma } from "../config/db";
+import { Errors } from "../utils/errors";
+
+// Legacy FIFO logic depends on old Stock models.
+// Pending Phase 3/4 implementation.
+
+export async function addFifoLayer(data: any, ctx: any) {
+  throw Errors.notImplemented("FIFO workflow pending later phases");
+}
 
 export async function computeStockValue(itemId: string, storeId?: string) {
-  const where: any = { itemId };
-  if (storeId) where.storeId = storeId;
-  const layers = await prisma.fifoLayer.findMany({ where, orderBy: { createdAt: "asc" } });
-  const totalQty = layers.reduce((s, l) => s + l.remainingQty, 0);
-  const totalValue = layers.reduce((s, l) => s + l.remainingQty * l.unitCost, 0);
-  return {
-    quantity: totalQty,
-    value: totalValue,
-    avgUnitCost: totalQty > 0 ? totalValue / totalQty : 0,
-    layers: layers.map((l) => ({
-      id: l.id,
-      originalQty: l.originalQty,
-      remainingQty: l.remainingQty,
-      unitCost: l.unitCost,
-      createdAt: l.createdAt.toISOString(),
-    })),
-  };
+  // Stub for now, returning 0 so inventory list doesn't break
+  return { avgUnitCost: 0, quantity: 0, value: 0, layers: [] };
 }

@@ -41,4 +41,5 @@ export const Errors = {
   // System
   database: (msg: string) => new AppError("DATABASE_ERROR", msg, 500),
   internal: (msg = "Internal server error") => new AppError("INTERNAL_ERROR", msg, 500),
+  notImplemented: (msg = "Endpoint not implemented yet in Phase 2") => new AppError("NOT_IMPLEMENTED", msg, 501),
 };
