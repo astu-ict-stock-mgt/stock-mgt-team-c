@@ -20,6 +20,9 @@ export const PERMISSIONS = [
   "gatepass.request", "gatepass.approve", "gatepass.read",
   "reports.view", "reports.export", "audit.view",
   "dashboard.view",
+  "returns.create", "returns.read", "returns.evaluate", "returns.approve", "returns.receive",
+  "transfers.create", "transfers.read", "transfers.approve", "transfers.dispatch", "transfers.receive",
+  "bintransfers.execute"
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -56,6 +59,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "damaged.manage", "obsolete.manage",
     "gatepass.approve", "gatepass.read",
     "reports.view", "reports.export", "audit.view",
+    "returns.read", "returns.approve",
+    "transfers.read", "transfers.approve",
   ],
   STOREKEEPER: [
     "dashboard.view", "suppliers.read", "categories.read", 
@@ -69,6 +74,9 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "stocktake.create", "stocktake.read",
     "damaged.manage", "obsolete.manage",
     "gatepass.request", "gatepass.read", "reports.view",
+    "returns.read", "returns.create", "returns.receive",
+    "transfers.read", "transfers.create", "transfers.dispatch", "transfers.receive",
+    "bintransfers.execute"
   ],
   STOCK_CLERK: [
     "dashboard.view", "suppliers.read", "categories.read", 
@@ -83,6 +91,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
   DEPARTMENT_HEAD: [
     "dashboard.view", "inventory.read",
     "requisitions.read", "requisitions.create", "requisitions.update", "requisitions.submit", "requisitions.approve", "requisitions.reject", "reports.view",
+    "returns.create", "returns.read",
+    "transfers.create", "transfers.read",
   ],
   SECURITY_OFFICER: [
     "dashboard.view", "gatepass.approve", "gatepass.read", "inventory.read", "audit.view",
@@ -92,7 +102,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "dashboard.view", "inventory.read",
     "stores.read", "locations.read", "shelves.read", "bins.read",
     "goods_receipts.read",
-    "technical_evaluations.read", "technical_evaluations.create", "technical_evaluations.approve", "technical_evaluations.reject"
+    "technical_evaluations.read", "technical_evaluations.create", "technical_evaluations.approve", "technical_evaluations.reject",
+    "returns.read", "returns.evaluate"
   ],
   FIXED_ASSET_OFFICER: ["dashboard.view", "stores.read", "locations.read", "shelves.read", "bins.read", "inventory.read"],
   AUDITOR: ["dashboard.view", "stores.read", "locations.read", "shelves.read", "bins.read", "inventory.read", "reports.view", "audit.view"],

@@ -118,7 +118,7 @@ async function main() {
 
   const requisitionSeeds = [
     { code: "REQ-20260813-0001", requestedById: deptHead?.id, department: "IT", status: "SUBMITTED" as const, requiredDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), notes: "Replacement laptops for new staff", items: laptop ? [{ itemId: laptop.id, quantity: 2 }] : [], approvals: pao ? [{ approverId: pao.id, status: "APPROVED" as const, comments: "Reviewed and approved" }] : [] },
-    { code: "REQ-20260813-0002", requestedById: deptHead?.id, department: "IT", status: "PENDING_APPROVAL" as const, requiredDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), notes: "Monitors and paperwork for lab setup", items: [ ...(monitor ? [{ itemId: monitor.id, quantity: 3 }] : []), ...(paper ? [{ itemId: paper.id, quantity: 10 }] : []) ], approvals: [] },
+    { code: "REQ-20260813-0002", requestedById: deptHead?.id, department: "IT", status: "UNDER_REVIEW" as const, requiredDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), notes: "Monitors and paperwork for lab setup", items: [ ...(monitor ? [{ itemId: monitor.id, quantity: 3 }] : []), ...(paper ? [{ itemId: paper.id, quantity: 10 }] : []) ], approvals: [] },
     { code: "REQ-20260813-0003", requestedById: admin?.id, department: "Administration", status: "APPROVED" as const, requiredDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), notes: "Office seating for visitor room", items: chair ? [{ itemId: chair.id, quantity: 4 }] : [], approvals: storekeeper ? [{ approverId: storekeeper.id, status: "APPROVED" as const, comments: "Stock reserved for pickup" }] : [] },
   ];
 
@@ -155,7 +155,11 @@ function roleDescription(role: RoleName): string {
     case "DEPARTMENT_HEAD": return "Department requisitions and approvals";
     case "SECURITY_OFFICER": return "Gate passes and material exit control";
     case "SUPPLIER": return "External supplier — limited view";
+    case "TEC": return "Technical Evaluation Committee";
+    case "FIXED_ASSET_OFFICER": return "Fixed Asset Registration";
+    case "AUDITOR": return "System Auditor";
   }
+  return "";
 }
 
 main()
