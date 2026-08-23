@@ -27,6 +27,7 @@ import reportsRoutes from "./routes/reports";
 import notificationsRoutes from "./routes/notifications";
 import dashboardRoutes from "./routes/dashboard";
 import requisitionsRoutes from "./routes/requisitions";
+import sivsRoutes from "./routes/sivs";
 
 const app = express();
 
@@ -110,6 +111,7 @@ app.use("/api/v1/reports", reportsRoutes);
 app.use("/api/v1/notifications", notificationsRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/requisitions", requisitionsRoutes);
+app.use("/api/v1/sivs", sivsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
