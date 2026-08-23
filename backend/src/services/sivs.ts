@@ -108,11 +108,15 @@ export async function createPreliminarySIV(data: any, ctx: AuditContext) {
           throw Errors.conflict(`Insufficient stock in Bin ${binStock.bin.name}. Available: ${available}, Requested: ${alloc.quantity}`);
         }
 
-        // Reserve in BinStock
-        await tx.binStock.update({
+        // Reserve in BinStock with post-update concurrency check
+        const updatedBinStock = await tx.binStock.update({
           where: { id: binStock.id },
           data: { reservedQty: { increment: alloc.quantity } }
         });
+        
+        if (updatedBinStock.reservedQty > updatedBinStock.quantity) {
+          throw Errors.conflict(`Concurrent modification: Insufficient stock after reservation in Bin ${binStock.bin.name}.`);
+        }
 
         allocationsToCreate.push({
           binId: alloc.binId,
@@ -136,10 +140,15 @@ export async function createPreliminarySIV(data: any, ctx: AuditContext) {
          throw Errors.conflict(`Insufficient total store stock for item ${itemData.itemId}`);
       }
 
-      await tx.storeStock.update({
+      // Reserve in StoreStock with post-update concurrency check
+      const updatedStoreStock = await tx.storeStock.update({
         where: { id: storeStock.id },
         data: { reservedQty: { increment: totalAllocated } }
       });
+
+      if (updatedStoreStock.reservedQty > updatedStoreStock.quantity) {
+         throw Errors.conflict(`Concurrent modification: Insufficient total store stock for item ${itemData.itemId}`);
+      }
 
       sivItemsToCreate.push({
         itemId: itemData.itemId,
@@ -258,8 +267,14 @@ export async function finalizeSIV(id: string, ctx: AuditContext) {
       include: { items: { include: { allocations: { include: { bin: true } } } } }
     });
     if (!siv) throw Errors.notFound("SIV", id);
-    if (siv.status !== SIVStatus.APPROVED) {
-      throw Errors.conflict("SIV must be APPROVED to finalize.");
+
+    // ATOMIC LOCK: Transition status strictly from APPROVED to FINALIZED to prevent concurrent double-finalization.
+    const lock = await tx.storeIssueVoucher.updateMany({
+      where: { id, status: SIVStatus.APPROVED },
+      data: { status: SIVStatus.FINALIZED, issueDate: new Date() }
+    });
+    if (lock.count === 0) {
+      throw Errors.conflict("SIV must be APPROVED to finalize. It may have already been finalized concurrently.");
     }
 
     for (const item of siv.items) {
@@ -276,7 +291,7 @@ export async function finalizeSIV(id: string, ctx: AuditContext) {
           throw Errors.conflict(`Physical or reserved stock mismatch for Bin ${alloc.bin.name}.`);
         }
 
-        // 1 & 2. Decrease BinStock physical & reserved
+        // 1 & 2. Decrease BinStock physical & reserved with concurrency check
         const updatedBinStock = await tx.binStock.update({
           where: { id: binStock.id },
           data: {
@@ -284,6 +299,9 @@ export async function finalizeSIV(id: string, ctx: AuditContext) {
             reservedQty: { decrement: alloc.quantity }
           }
         });
+        if (updatedBinStock.quantity < 0 || updatedBinStock.reservedQty < 0) {
+          throw Errors.conflict(`Concurrent modification: Stock fell below zero during finalization for Bin ${alloc.bin.name}.`);
+        }
 
         // FIFO consumption (for cost)
         let allocCost = 0;
@@ -324,7 +342,7 @@ export async function finalizeSIV(id: string, ctx: AuditContext) {
         });
       }
 
-      // 3 & 4. Decrease StoreStock
+      // 3 & 4. Decrease StoreStock with concurrency check
       const storeStock = await tx.storeStock.findUnique({
         where: { itemId_storeId: { itemId: item.itemId, storeId: siv.storeId } }
       });
@@ -337,6 +355,9 @@ export async function finalizeSIV(id: string, ctx: AuditContext) {
           reservedQty: { decrement: totalIssued }
         }
       });
+      if (updatedStoreStock.quantity < 0 || updatedStoreStock.reservedQty < 0) {
+        throw Errors.conflict(`Concurrent modification: Store stock fell below zero for item ${item.itemId}.`);
+      }
 
       // 5. StockTransaction
       const unitCost = totalIssued > 0 ? (totalCostAccumulated / totalIssued) : 0;
@@ -389,11 +410,7 @@ export async function finalizeSIV(id: string, ctx: AuditContext) {
       }
     }
 
-    // 8. Update SIV status
-    const finalizedSiv = await tx.storeIssueVoucher.update({
-      where: { id },
-      data: { status: SIVStatus.FINALIZED, issueDate: new Date() }
-    });
+    // 8. (SIV status already updated atomically at the beginning of the transaction)
 
     // 10. Check if requisition is fully fulfilled
     if (siv.requisitionId) {
@@ -422,7 +439,9 @@ export async function finalizeSIV(id: string, ctx: AuditContext) {
     }
 
     await recordAudit({ ctx, action: "UPDATED", module: "sivs", entity: "siv", entityId: siv.id });
-    return finalizedSiv;
+    
+    // Return updated siv details (fetch again or construct)
+    return tx.storeIssueVoucher.findUnique({ where: { id } });
   });
 }
 
