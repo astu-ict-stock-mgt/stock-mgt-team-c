@@ -91,7 +91,7 @@ async function main() {
 
   // 4. Stores, Locations, Shelves, Bins
   console.log("• Seeding Store Hierarchy...");
-  const mainStore = await db.store.upsert({
+  const mainStore = await (db as any).store.upsert({
     where: { code: "WH-MAIN" },
     create: { code: "WH-MAIN", name: "Main Store", type: "MAIN", location: "Building A", status: "ACTIVE" },
     update: { name: "Main Store" },
@@ -129,7 +129,7 @@ async function main() {
   const eaUom = await db.unitOfMeasure.findUnique({ where: { code: "EA" } });
 
   if (elecCat && eaUom) {
-    await db.inventoryItem.upsert({
+    await (db as any).inventoryItem.upsert({
       where: { code: "IT-LP-001" },
       create: {
         code: "IT-LP-001",
@@ -142,7 +142,7 @@ async function main() {
       },
       update: {},
     });
-    await db.inventoryItem.upsert({
+    await (db as any).inventoryItem.upsert({
       where: { code: "IT-MN-002" },
       create: {
         code: "IT-MN-002",
