@@ -647,13 +647,17 @@ model StoreReturnNote {
   requestedById String
   department    String
   originalSivId String?
+  storeId       String
+  returnedById  String
   status        ReturnStatus @default(DRAFT)
   date          DateTime     @default(now())
   notes         String?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
+  store       Store                @relation("ReturnDestinationStore", fields: [storeId], references: [id])
   requestedBy User                 @relation("ReturnRequestedBy", fields: [requestedById], references: [id])
+  returnedBy  User                 @relation("ReturnedBy", fields: [returnedById], references: [id])
   items       StoreReturnItem[]
   evaluation  TechnicalEvaluation?
 }
@@ -664,19 +668,32 @@ enum ReturnStatus {
   UNDER_EVALUATION
   APPROVED
   REJECTED
-  POSTED
+  RECEIVED
 }
 
 model StoreReturnItem {
   id        String  @id @default(cuid())
   srnId     String
   itemId    String
-  quantity  Float
-  reason    String?
-  condition String?
+  quantity    Float
+  acceptedQty Float?
+  unitCost    Float? // Cost associated with the original issue
+  reason      String?
+  condition   String?
 
-  srn  StoreReturnNote @relation(fields: [srnId], references: [id], onDelete: Cascade)
-  item InventoryItem   @relation(fields: [itemId], references: [id])
+  srn         StoreReturnNote       @relation(fields: [srnId], references: [id], onDelete: Cascade)
+  item        InventoryItem         @relation(fields: [itemId], references: [id])
+  allocations ReturnBinAllocation[]
+}
+
+model ReturnBinAllocation {
+  id           String @id @default(cuid())
+  returnItemId String
+  binId        String
+  quantity     Float
+
+  returnItem StoreReturnItem @relation(fields: [returnItemId], references: [id], onDelete: Cascade)
+  bin        Bin             @relation(fields: [binId], references: [id])
 }
 
 // -------------------------------------------------------------------
@@ -713,12 +730,66 @@ enum TransferStatus {
 
 model TransferRequestItem {
   id         String @id @default(cuid())
-  transferId String
-  itemId     String
-  quantity   Float
+  transferId    String
+  itemId        String
+  quantity      Float
+  dispatchedQty Float  @default(0)
+  receivedQty   Float  @default(0)
 
   transfer TransferRequest @relation(fields: [transferId], references: [id], onDelete: Cascade)
   item     InventoryItem   @relation(fields: [itemId], references: [id])
+  
+  outAllocations TransferOutBinAllocation[]
+  inAllocations  TransferInBinAllocation[]
+}
+
+model TransferOutBinAllocation {
+  id             String @id @default(cuid())
+  transferItemId String
+  binId          String
+  quantity       Float
+
+  transferItem TransferRequestItem @relation(fields: [transferItemId], references: [id], onDelete: Cascade)
+  bin          Bin                 @relation(fields: [binId], references: [id])
+}
+
+model TransferInBinAllocation {
+  id             String @id @default(cuid())
+  transferItemId String
+  binId          String
+  quantity       Float
+
+  transferItem TransferRequestItem @relation(fields: [transferItemId], references: [id], onDelete: Cascade)
+  bin          Bin                 @relation(fields: [binId], references: [id])
+}
+
+// -------------------------------------------------------------------
+// INTERNAL BIN TRANSFERS
+// -------------------------------------------------------------------
+
+model BinTransfer {
+  id            String            @id @default(cuid())
+  code          String            @unique // BTR-YYYYMMDD-XXXX
+  storeId       String
+  itemId        String
+  fromBinId     String
+  toBinId       String
+  quantity      Float
+  requestedById String
+  status        BinTransferStatus @default(DRAFT)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  store       Store         @relation(fields: [storeId], references: [id])
+  item        InventoryItem @relation(fields: [itemId], references: [id])
+  fromBin     Bin           @relation("BinTransferFrom", fields: [fromBinId], references: [id])
+  toBin       Bin           @relation("BinTransferTo", fields: [toBinId], references: [id])
+  requestedBy User          @relation(fields: [requestedById], references: [id])
+}
+
+enum BinTransferStatus {
+  DRAFT
+  EXECUTED
 }
 
 // -------------------------------------------------------------------
