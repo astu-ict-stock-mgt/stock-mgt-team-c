@@ -251,6 +251,7 @@ model Bin {
   
   binStocks BinStock[]
   binCards  BinCard[]
+  receiptItems GoodsReceiptItem[]
 
   @@unique([shelfId, code])
 }
@@ -423,12 +424,17 @@ model GoodsReceiptItem {
   itemId    String
   quantity  Float
   unitCost  Float
+  condition String?
+  binId     String?
   remarks   String?
 
   receipt GoodsReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
   item    InventoryItem @relation(fields: [itemId], references: [id])
+  bin     Bin?          @relation(fields: [binId], references: [id])
+  evaluationItem TechnicalEvaluationItem?
 
   @@index([receiptId])
+  @@index([binId])
 }
 
 model TechnicalEvaluation {
@@ -440,9 +446,26 @@ model TechnicalEvaluation {
   comments    String?
   createdAt   DateTime @default(now())
 
-  receipt   GoodsReceipt?    @relation(fields: [receiptId], references: [id])
-  return    StoreReturnNote? @relation(fields: [returnId], references: [id])
-  evaluator User             @relation("EvaluatedBy", fields: [evaluatorId], references: [id])
+  receipt   GoodsReceipt?             @relation(fields: [receiptId], references: [id])
+  return    StoreReturnNote?          @relation(fields: [returnId], references: [id])
+  evaluator User                      @relation("EvaluatedBy", fields: [evaluatorId], references: [id])
+  items     TechnicalEvaluationItem[]
+}
+
+model TechnicalEvaluationItem {
+  id                 String  @id @default(cuid())
+  evaluationId       String
+  goodsReceiptItemId String  @unique
+  acceptedQuantity   Float   @default(0)
+  rejectedQuantity   Float   @default(0)
+  condition          String?
+  decision           EvaluationDecision
+  remarks            String?
+
+  evaluation       TechnicalEvaluation @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  goodsReceiptItem GoodsReceiptItem    @relation(fields: [goodsReceiptItemId], references: [id])
+
+  @@index([evaluationId])
 }
 
 enum EvaluationDecision {
