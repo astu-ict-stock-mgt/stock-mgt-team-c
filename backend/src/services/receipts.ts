@@ -15,11 +15,11 @@ export async function createReceipt(data: any, ctx: AuditContext) {
 
   // Validate Store
   const store = await prisma.store.findUnique({ where: { id: data.storeId } });
-  if (!store) throw Errors.badRequest("STORE_NOT_FOUND", "Invalid store ID");
+  if (!store) throw Errors.validation("Invalid store ID", "STORE_NOT_FOUND");
 
   // Validate Supplier
   const supplier = await prisma.supplier.findUnique({ where: { id: data.supplierId } });
-  if (!supplier) throw Errors.badRequest("SUPPLIER_NOT_FOUND", "Invalid supplier ID");
+  if (!supplier) throw Errors.validation("Invalid supplier ID", "SUPPLIER_NOT_FOUND");
 
   // Create Draft Receipt
   const receipt = await prisma.goodsReceipt.create({
@@ -60,8 +60,8 @@ export async function createReceipt(data: any, ctx: AuditContext) {
 
 export async function updateReceipt(id: string, data: any, ctx: AuditContext) {
   const receipt = await prisma.goodsReceipt.findUnique({ where: { id }, include: { items: true } });
-  if (!receipt) throw Errors.notFound("Receipt not found");
-  if (receipt.status !== "DRAFT") throw Errors.badRequest("INVALID_STATE", "Only DRAFT receipts can be updated");
+  if (!receipt) throw Errors.notFound("Receipt");
+  if (receipt.status !== "DRAFT") throw Errors.validation("Only DRAFT receipts can be updated", "INVALID_STATE");
 
   // To update items properly, we delete existing and recreate, or we map them. 
   // For simplicity, if items are provided, we delete all and recreate.
@@ -114,8 +114,8 @@ export async function updateReceipt(id: string, data: any, ctx: AuditContext) {
 
 export async function submitReceipt(id: string, ctx: AuditContext) {
   const receipt = await prisma.goodsReceipt.findUnique({ where: { id } });
-  if (!receipt) throw Errors.notFound("Receipt not found");
-  if (receipt.status !== "DRAFT") throw Errors.badRequest("INVALID_STATE", "Only DRAFT receipts can be submitted");
+  if (!receipt) throw Errors.notFound("Receipt");
+  if (receipt.status !== "DRAFT") throw Errors.validation("Only DRAFT receipts can be submitted", "INVALID_STATE");
 
   const updated = await prisma.goodsReceipt.update({
     where: { id },
@@ -180,6 +180,6 @@ export async function getReceipt(id: string) {
     }
   });
 
-  if (!receipt) throw Errors.notFound("Receipt not found");
+  if (!receipt) throw Errors.notFound("Receipt");
   return receipt;
 }

@@ -25,33 +25,27 @@ export async function submitEvaluation(
     include: { items: true, evaluation: true }
   });
 
-  if (!receipt) throw Errors.notFound("Receipt not found");
+  if (!receipt) throw Errors.notFound("Receipt");
   
-  // Rule: Only SUBMITTED receipts can be evaluated (or UNDER_EVALUATION if they want to update it).
-  // The prompt says SUBMITTED -> UNDER_EVALUATION -> ACCEPTED/REJECTED.
-  // When an evaluation is submitted with a final decision, it transitions to ACCEPTED or REJECTED.
-  // If it's a draft evaluation, it might be UNDER_EVALUATION. 
-  // Let's assume submitting an evaluation finalizes it immediately based on decision.
   if (receipt.status !== "SUBMITTED" && receipt.status !== "UNDER_EVALUATION") {
-    throw Errors.badRequest("INVALID_STATE", "Receipt must be SUBMITTED to evaluate");
+    throw Errors.validation("Receipt must be SUBMITTED to evaluate", "INVALID_STATE");
   }
   
   if (receipt.evaluation) {
-    throw Errors.badRequest("ALREADY_EVALUATED", "Receipt already has an evaluation");
+    throw Errors.validation("Receipt already has an evaluation", "ALREADY_EVALUATED");
   }
 
-  // Validate items match receipt items
   const receiptItemIds = receipt.items.map(i => i.id);
   for (const item of data.items) {
     if (!receiptItemIds.includes(item.goodsReceiptItemId)) {
-      throw Errors.badRequest("INVALID_ITEM", `Item ${item.goodsReceiptItemId} does not belong to this receipt`);
+      throw Errors.validation(`Item ${item.goodsReceiptItemId} does not belong to this receipt`, "INVALID_ITEM");
     }
     const matchingReceiptItem = receipt.items.find(i => i.id === item.goodsReceiptItemId);
     if (!matchingReceiptItem) continue;
     
     // Ensure accepted + rejected equals the original quantity (or at least doesn't exceed it)
     if (item.acceptedQuantity + item.rejectedQuantity > matchingReceiptItem.quantity) {
-      throw Errors.badRequest("INVALID_QUANTITY", `Evaluated quantities for item ${matchingReceiptItem.id} exceed received quantity`);
+      throw Errors.validation(`Evaluated quantities for item ${matchingReceiptItem.id} exceed received quantity`, "INVALID_QUANTITY");
     }
   }
 

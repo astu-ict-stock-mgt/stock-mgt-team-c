@@ -12,6 +12,7 @@ import {
 } from "../validators/receipts";
 
 const router = Router();
+console.log("RECEIPTS ROUTER INITIALIZED");
 
 // ==========================================
 // Goods Receipts

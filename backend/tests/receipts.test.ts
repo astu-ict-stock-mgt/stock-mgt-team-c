@@ -2,24 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import app from "../src/app";
 import { prisma } from "../src/config/db";
-import { vi } from "vitest";
-
-// Mock auth
-vi.mock("../src/middleware/auth", async (importOriginal) => {
-  const actual: any = await importOriginal();
-  return {
-    ...actual,
-    requirePermission: () => (req: any, res: any, next: any) => {
-      req.userId = "test-user-id";
-      next();
-    },
-    attachAuth: (req: any, res: any, next: any) => {
-      req.userId = "test-user-id";
-      next();
-    },
-    asyncHandler: actual.asyncHandler
-  };
-});
+import jwt from "jsonwebtoken";
+import { config } from "../src/config";
 
 describe("Phase 3: Goods Receiving & GRN Workflow", () => {
   let supplierId: string;
@@ -30,6 +14,7 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
   let itemId: string;
   let receiptId: string;
   let grnId: string;
+  let token: string;
 
   beforeAll(async () => {
     // Cleanup
@@ -52,6 +37,43 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
     await (prisma as any).unitOfMeasure.deleteMany();
     await (prisma as any).category.deleteMany();
     await (prisma as any).supplier.deleteMany();
+    
+    // Auth cleanup
+    await (prisma as any).auditLog.deleteMany();
+    await (prisma as any).userRole.deleteMany();
+    await (prisma as any).user.deleteMany();
+    await (prisma as any).rolePermission.deleteMany();
+    await (prisma as any).role.deleteMany();
+    await (prisma as any).permission.deleteMany();
+
+    // Create Admin Role and User
+    const adminRole = await prisma.role.create({
+      data: { name: "ADMINISTRATOR", description: "Admin" }
+    });
+    const user = await prisma.user.create({
+      data: {
+        username: "testadmin",
+        email: "admin@test.com",
+        passwordHash: "dummyhash",
+        fullName: "Test Admin",
+        status: "ACTIVE",
+        userRoles: {
+          create: { roleId: adminRole.id }
+        }
+      }
+    });
+
+    token = "test-token-12345";
+    await prisma.userSession.create({
+      data: {
+        userId: user.id,
+        token: token,
+        refresh: "test-refresh-12345",
+        expiresAt: new Date(Date.now() + 3600000), // 1 hr
+        ip: "127.0.0.1",
+        userAgent: "vitest"
+      }
+    });
 
     // Create prerequisites
     const supplier = await prisma.supplier.create({
@@ -99,7 +121,7 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
   });
 
   it("1. Create Goods Receipt", async () => {
-    const res = await request(app).post("/api/v1/goods-receipts").send({
+    const res = await request(app).post("/api/v1/goods-receipts").set("Authorization", `Bearer ${token}`).send({
       supplierId,
       storeId,
       deliveryNote: "DN-123",
@@ -126,7 +148,7 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
   });
 
   it("2. Submit Goods Receipt", async () => {
-    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/submit`);
+    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/submit`).set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe("SUBMITTED");
   });
@@ -135,7 +157,7 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
     const receipt = await prisma.goodsReceipt.findUnique({ where: { id: receiptId }, include: { items: true } });
     const receiptItemId = receipt!.items[0].id;
 
-    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/evaluation`).send({
+    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/evaluation`).set("Authorization", `Bearer ${token}`).send({
       decision: "APPROVED_WITH_CONDITIONS",
       comments: "10 damaged, returning later",
       items: [
@@ -162,7 +184,7 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
   });
 
   it("4. Generate GRN & Verify Atomic Stock Mutation", async () => {
-    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/grn`).send({
+    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/grn`).set("Authorization", `Bearer ${token}`).send({
       notes: "Received partially"
     });
     expect(res.status).toBe(201);
@@ -192,8 +214,8 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
   });
 
   it("5. Duplicate GRN generation is rejected", async () => {
-    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/grn`).send({});
-    expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/ALREADY_GENERATED/);
+    const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/grn`).set("Authorization", `Bearer ${token}`).send({});
+    expect(res.status).toBe(422); // Validation error (Errors.validation) returns 422
+    expect(res.body.message).toMatch(/GRN already generated/);
   });
 });

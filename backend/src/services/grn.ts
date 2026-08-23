@@ -25,19 +25,19 @@ export async function generateGRN(receiptId: string, notes: string | undefined, 
     }
   });
 
-  if (!receipt) throw Errors.notFound("Receipt not found");
+  if (!receipt) throw Errors.notFound("Receipt");
   
   if (receipt.grn) {
-    throw Errors.badRequest("ALREADY_GENERATED", "GRN already generated for this receipt");
+    throw Errors.validation("GRN already generated for this receipt", "ALREADY_GENERATED");
   }
 
   if (receipt.status !== "ACCEPTED") {
-    throw Errors.badRequest("INVALID_STATE", "Receipt must be evaluated and ACCEPTED before generating GRN");
+    throw Errors.validation("Receipt must be evaluated and ACCEPTED before generating GRN", "INVALID_STATE");
   }
 
   // The evaluation must exist and not be REJECTED overall
   if (!receipt.evaluation || receipt.evaluation.decision === "REJECTED") {
-    throw Errors.badRequest("INVALID_EVALUATION", "Receipt evaluation is missing or rejected");
+    throw Errors.validation("Receipt evaluation is missing or rejected", "INVALID_EVALUATION");
   }
 
   // CRITICAL ATOMIC TRANSACTION
@@ -88,7 +88,7 @@ export async function generateGRN(receiptId: string, notes: string | undefined, 
         });
 
         if (!bin || bin.shelf.location.storeId !== receipt.storeId) {
-          throw Errors.badRequest("INVALID_BIN", `Bin ${item.binId} does not belong to store ${receipt.storeId}`);
+          throw Errors.validation(`Bin ${item.binId} does not belong to store ${receipt.storeId}`, "INVALID_BIN");
         }
 
         const binStock = await tx.binStock.upsert({
@@ -244,6 +244,6 @@ export async function getGRN(id: string) {
     }
   });
 
-  if (!grn) throw Errors.notFound("GRN not found");
+  if (!grn) throw Errors.notFound("GRN");
   return grn;
 }
