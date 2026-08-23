@@ -97,19 +97,19 @@ async function main() {
     update: { name: "Main Store" },
   });
 
-  const locA = await db.storeLocation.upsert({
+  const locA = await (db as any).storeLocation.upsert({
     where: { storeId_code: { storeId: mainStore.id, code: "LOC-A" } },
     create: { storeId: mainStore.id, code: "LOC-A", name: "Zone A (Electronics)" },
     update: {},
   });
 
-  const shelf1 = await db.shelf.upsert({
+  const shelf1 = await (db as any).shelf.upsert({
     where: { locationId_code: { locationId: locA.id, code: "SH-01" } },
     create: { locationId: locA.id, code: "SH-01", name: "Shelf 1" },
     update: {},
   });
 
-  await db.bin.upsert({
+  await (db as any).bin.upsert({
     where: { shelfId_code: { shelfId: shelf1.id, code: "BIN-01-A" } },
     create: { shelfId: shelf1.id, code: "BIN-01-A", name: "Bin A1" },
     update: {},
