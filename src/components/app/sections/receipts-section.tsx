@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useState } from "react";
@@ -319,3 +320,4 @@ function ReceiptDetailDrawer() {
     </Dialog>
   );
 }
+

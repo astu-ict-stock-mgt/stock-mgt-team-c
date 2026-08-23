@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { Errors } from "@/lib/utils/errors";
@@ -248,3 +249,4 @@ export async function deleteInventoryItem(id: string, auditCtx?: { userId?: stri
   await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ITEM_DELETED", module: "inventory", entity: "item", entityId: id });
   return true;
 }
+

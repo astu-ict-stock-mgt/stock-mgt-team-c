@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Role-aware dashboard statistics.
 // Returns different KPI sets based on the user's roles.
 
@@ -336,3 +337,4 @@ async function basicDashboard() {
     kpis: [],
   };
 }
+

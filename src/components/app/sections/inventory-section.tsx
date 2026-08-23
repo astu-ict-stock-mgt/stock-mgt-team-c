@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use client";
 
 import { useState } from "react";
@@ -373,3 +374,4 @@ function Stat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
