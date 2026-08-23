@@ -139,7 +139,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
         requiredDate: new Date().toISOString(),
         items: [{ itemId, quantity: 100 }]
       });
-    
+    if (res.status !== 201) console.log("REQ CREATE ERROR:", res.body);
     expect(res.status).toBe(201);
     reqId = res.body.data.id;
     expect(res.body.data.status).toBe(RequisitionStatus.DRAFT);

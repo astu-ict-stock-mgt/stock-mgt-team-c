@@ -10,100 +10,271 @@ At line:1 char:1
 [1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/ALL/projects/ICT_CENTER_INTERN/Stock-MS/stock-mgt-team-c/backend[39m
 
 [90mstdout[2m | tests/siv.test.ts
-[22m[39mΓùç injected env (1) from .env // tip: Γîÿ suppress logs { quiet: true }
+[22m[39mΓùç injected env (1) from .env // tip: Γîÿ override existing { override: true }
 
 [90mstdout[2m | tests/siv.test.ts
 [22m[39mRECEIPTS ROUTER INITIALIZED
 
-[0mPOST /api/v1/requisitions [31m500[0m 27.688 ms - 118[0m
+[0mPOST /api/v1/requisitions [31m500[0m 165.863 ms - 94[0m
 [90mstderr[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mRequisition 
 creation -> NO stock mutation
-[22m[39m[unhandled] TypeError: Cannot read properties of undefined (reading 'userId')
-    at Module.createRequisition [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\serv
-ices\requisitions.ts:47:12[90m)[39m
-    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\requisitions.ts:31:29
-    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\middleware\auth.ts:71:21
-    at Layer.handle [as handle_request] [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39m
-node_modules\[4mexpress[24m\lib\router\layer.js:95:5[90m)[39m
-    at next [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4mexpress[24
-m\lib\router\route.js:149:13[90m)[39m
-    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\middleware\auth.ts:51:46
-    at Layer.handle [as handle_request] [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39m
-node_modules\[4mexpress[24m\lib\router\layer.js:95:5[90m)[39m
-    at next [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4mexpress[24
-m\lib\router\route.js:149:13[90m)[39m
-    at Route.dispatch [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4me
-xpress[24m\lib\router\route.js:119:3[90m)[39m
-    at Layer.handle [as handle_request] [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39m
-node_modules\[4mexpress[24m\lib\router\layer.js:95:5[90m)[39m
+[22m[39m[unhandled] RangeError: Invalid status code: undefined
+[90m    at ServerResponse.writeHead (node:_http_server:361:11)[39m
+    at ServerResponse.writeHead [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_mod
+ules\[4mon-headers[24m\index.js:50:26[90m)[39m
+    at ServerResponse.writeHead [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_mod
+ules\[4mon-headers[24m\index.js:50:26[90m)[39m
+    at ServerResponse.end [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\
+[4mcompression[24m\index.js:124:14[90m)[39m
+    at ServerResponse.send [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\
+[4mexpress[24m\lib\response.js:232:10[90m)[39m
+    at ServerResponse.json [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\
+[4mexpress[24m\lib\response.js:278:15[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\requisitions.ts:32:16
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m {
+  code: [32m'ERR_HTTP_INVALID_STATUS_CODE'[39m
+}
 
+[90mstdout[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mRequisition creation -> NO stock mutation
+[22m[39mREQ CREATE ERROR: {
+  success: [33mfalse[39m,
+  message: [32m'Invalid status code: undefined'[39m,
+  error: { code: [32m'INTERNAL_ERROR'[39m }
+}
+
+[0mPOST /api/v1/requisitions/undefined/submit [33m404[0m 104.864 ms - 91[0m
 [90mstdout[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mRequisition submission and approval -> NO stock mutation
-[22m[39mprisma:error 
-Invalid `prisma.requisition.findUnique()` invocation in
-D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\requisitions.ts:30:40
+[22m[39mREQ SUBMIT ERROR: {
+  success: [33mfalse[39m,
+  message: [32m'Requisition not found: undefined'[39m,
+  error: { code: [32m'NOT_FOUND'[39m }
+}
 
-  27 }
-  28 
-  29 export async function getRequisition(id: string) {
-ΓåÆ 30   const req = await prisma.requisition.findUnique({
-         where: {
-           id: "undefined"
-         },
-         include: {
-           requestedBy: {
-             select: {
-               id: true,
-               name: true,
-               ~~~~
-               role: true,
-       ?       email?: true,
-       ?       username?: true,
-       ?       fullName?: true,
-       ?       passwordHash?: true,
-       ?       status?: true,
-       ?       failedLoginCount?: true,
-       ?       lockedUntil?: true,
-       ?       lastLoginAt?: true,
-       ?       department?: true,
-       ?       phoneNumber?: true,
-       ?       createdAt?: true,
-       ?       updatedAt?: true,
-       ?       deletedAt?: true,
-       ?       sessions?: true,
-       ?       userRoles?: true,
-       ?       auditLogs?: true,
-       ?       stockTransactions?: true,
-       ?       requisitions?: true,
-       ?       requisitionApprovals?: true,
-       ?       stockTakes?: true,
-       ?       gatePasses?: true,
-       ?       gatePassesApproved?: true,
-       ?       receipts?: true,
-       ?       grns?: true,
-       ?       evaluations?: true,
-       ?       sivsCreated?: true,
-       ?       sivsApproved?: true,
-       ?       returnsRequested?: true,
-       ?       transfersRequested?: true,
-       ?       assets?: true,
-       ?       userCard?: true,
-       ?       _count?: true
-             }
-           },
-           items: {
-             include: {
-               item: {
-                 select: {
-                   id: true,
-                   code: true,
-                   name: true,
-                   uom: true
-                 }
-               }
-             }
-           },
-           approvals: {
-             include: {
-               approver: {
-                 select: {
-                
+[0mPOST /api/v1/requisitions/undefined/approve [33m404[0m 38.478 ms - 91[0m
+[90mstdout[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mRequisition submission and approval -> NO stock mutation
+[22m[39mREQ APPROVE ERROR: {
+  success: [33mfalse[39m,
+  message: [32m'Requisition not found: undefined'[39m,
+  error: { code: [32m'NOT_FOUND'[39m }
+}
+
+[0mPOST /api/v1/sivs [33m422[0m 29.589 ms - 198[0m
+[90mstdout[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mSIV preliminary allocation -> reservedQty increases correctly, physical unchanged
+[22m[39mSIV CREATE ERROR: {
+  success: [33mfalse[39m,
+  message: [32m'Validation failed'[39m,
+  error: {
+    code: [32m'VALIDATION_ERROR'[39m,
+    details: { formErrors: [], fieldErrors: [36m[Object][39m }
+  }
+}
+
+[0mPOST /api/v1/sivs [33m422[0m 18.223 ms - 198[0m
+[0mPOST /api/v1/sivs [33m422[0m 28.555 ms - 198[0m
+[0mPATCH /api/v1/sivs/undefined [33m404[0m 156.373 ms - 83[0m
+[0mPOST /api/v1/sivs/undefined/submit [33m404[0m 49.720 ms - 83[0m
+[0mPOST /api/v1/sivs/undefined/approve [33m404[0m 24.388 ms - 83[0m
+[0mPOST /api/v1/sivs/undefined/finalize [33m404[0m 40.169 ms - 83[0m
+[0mPOST /api/v1/sivs/undefined/finalize [33m404[0m 50.241 ms - 83[0m
+[90mstdout[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mDuplicate finalization is rejected and does NOT decrease stock again
+[22m[39mSIV DUPLICATE FINALIZE ERROR: {
+  success: [33mfalse[39m,
+  message: [32m'SIV not found: undefined'[39m,
+  error: { code: [32m'NOT_FOUND'[39m }
+}
+
+[0mPOST /api/v1/sivs [33m422[0m 25.537 ms - 198[0m
+[0mPOST /api/v1/sivs [33m422[0m 23.428 ms - 198[0m
+ [31mΓ¥»[39m tests/siv.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m8 failed[39m[2m)[22m[33m 4605[2mms[22m[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mRequisition creation -> NO stock mutation[33m 768[2mms[22m[31m[39m
+[31m     ΓåÆ expected 500 to be 201 // Object.is equality[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mRequisition submission and approval -> NO stock mutation[90m 225[2mms[22m[31m[39m
+[31m     ΓåÆ expected 404 to be 200 // Object.is equality[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mSIV preliminary allocation -> reservedQty increases correctly, physical unchanged[90m 63[2mms[22m[31m[39m
+[31m     ΓåÆ expected 422 to be 201 // Object.is equality[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mReservation cannot exceed available stock[90m 50[2mms[22m[31m[39m
+[31m     ΓåÆ expected 422 to be 409 // Object.is equality[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mRejected SIV releases reservations[90m 61[2mms[22m[31m[39m
+[31m     ΓåÆ Cannot read properties of undefined (reading 'id')[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mAmendment correctly calculates reservation deltas[90m 192[2mms[22m[31m[39m
+[31m     ΓåÆ expected 404 to be 200 // Object.is equality[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mFinalization decreases physical stock once, creates ledgers, consumes FIFO[90m 198[2mms[22m[31m[39m
+[31m     ΓåÆ expected 404 to be 200 // Object.is equality[39m
+[31m   [31m├ù[31m Phase 4: Requisitions & SIV Workflow[2m > [22mDuplicate finalization is rejected and does NOT decrease stock again[90m 82[2mms[22m[31m[39m
+[31m     ΓåÆ expected 404 to be 409 // Object.is equality[39m
+
+[31mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1m[7m Failed Tests 8 [27m[22mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > 
+[22mRequisition creation -> NO stock mutation
+[31m[1mAssertionError[22m: expected 500 to be 201 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 201[39m
+[31m+ 500[39m
+
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m143:24[22m[39m
+    [90m141| [39m      })[33m;[39m
+    [90m142| [39m    [35mif[39m (res[33m.[39mstatus [33m!==[39m [34m201[39m) 
+console[33m.[39m[34mlog[39m([32m"REQ CREATE ERROR:"[39m[33m,[39m res[33m.[39mbody)[33m;[39m
+    [90m143| [39m    [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m201[39m)[33m;[39m
+    [90m   | [39m                       [31m^[39m
+    [90m144| [39m    reqId [33m=[39m res[33m.[39mbody[33m.[39mdata[33m.[39mid[33m;[39m
+    [90m145| [39m    [34mexpect[39m(res[33m.[39mbody[33m.[39mdata[33m.[39mstatus)[33m.[39m[34mtoBe[39m([
+33mRequisitionStatus[39m[33m.[39m[33mDRAFT[39m)[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[1/8]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > 
+[22mRequisition submission and approval -> NO stock mutation
+[31m[1mAssertionError[22m: expected 404 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m162:24[22m[39m
+    [90m160| [39m
+    [90m161| [39m    [35mif[39m (res[33m.[39mstatus [33m!==[39m [34m200[39m) 
+console[33m.[39m[34mlog[39m([32m"REQ APPROVE ERROR:"[39m[33m,[39m res[33m.[39mbodyΓÇª
+    [90m162| [39m    [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m200[39m)[33m;[39m
+    [90m   | [39m                       [31m^[39m
+    [90m163| [39m    [34mexpect[39m(res[33m.[39mbody[33m.[39mdata[33m.[39mstatus)[33m.[39m[34mtoBe[39m([
+33mRequisitionStatus[39m[33m.[39m[33mAPPROVED[39m)[33m;[39m
+    [90m164| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[2/8]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mSIV 
+preliminary allocation -> reservedQty increases correctly, physical unchanged
+[31m[1mAssertionError[22m: expected 422 to be 201 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 201[39m
+[31m+ 422[39m
+
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m187:24[22m[39m
+    [90m185| [39m    
+    [90m186| [39m    [35mif[39m (res[33m.[39mstatus [33m!==[39m [34m201[39m) 
+console[33m.[39m[34mlog[39m([32m"SIV CREATE ERROR:"[39m[33m,[39m res[33m.[39mbody)[33m;[39m
+    [90m187| [39m    [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m201[39m)[33m;[39m
+    [90m   | [39m                       [31m^[39m
+    [90m188| [39m    sivId [33m=[39m res[33m.[39mbody[33m.[39mdata[33m.[39mid[33m;[39m
+    [90m189| [39m    [34mexpect[39m(res[33m.[39mbody[33m.[39mdata[33m.[39mstatus)[33m.[39m[34mtoBe[39m([
+33mSIVStatus[39m[33m.[39m[33mPRELIMINARY[39m)[33m;[39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[3/8]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > 
+[22mReservation cannot exceed available stock
+[31m[1mAssertionError[22m: expected 422 to be 409 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 422[39m
+
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m215:24[22m[39m
+    [90m213| [39m        }]
+    [90m214| [39m      })[33m;[39m
+    [90m215| [39m    [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m409[39m)[33m;[39m 
+[90m// Conflict due to insufficient stock[39m
+    [90m   | [39m                       [31m^[39m
+    [90m216| [39m  })[33m;[39m
+    [90m217| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[4/8]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > 
+[22mRejected SIV releases reservations
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'id')[39m
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m225:41[22m[39m
+    [90m223| [39m        items[33m:[39m [{ itemId[33m,[39m quantity[33m:[39m [34m10[39m[33m,[39m 
+allocations[33m:[39m [{ binId[33m,[39m quantitΓÇª
+    [90m224| [39m    })[33m;[39m
+    [90m225| [39m    [35mconst[39m tempSivId [33m=[39m 
+tempRes[33m.[39mbody[33m.[39mdata[33m.[39mid[33m;[39m
+    [90m   | [39m                                        [31m^[39m
+    [90m226| [39m    
+    [90m227| [39m    [35mconst[39m rejectRes [33m=[39m [35mawait[39m [34mrequest[39m(app)
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[5/8]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > 
+[22mAmendment correctly calculates reservation deltas
+[31m[1mAssertionError[22m: expected 404 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m249:24[22m[39m
+    [90m247| [39m        }]
+    [90m248| [39m      })[33m;[39m
+    [90m249| [39m    [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m200[39m)[33m;[39m
+    [90m   | [39m                       [31m^[39m
+    [90m250| [39m
+    [90m251| [39m    [35mconst[39m binStock [33m=[39m [35mawait[39m 
+prisma[33m.[39mbinStock[33m.[39m[34mfindUnique[39m({ where[33m:[39m { itemIΓÇª
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[6/8]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > 
+[22mFinalization decreases physical stock once, creates ledgers, consumes FIFO
+[31m[1mAssertionError[22m: expected 404 to be 200 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 200[39m
+[31m+ 404[39m
+
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m264:24[22m[39m
+    [90m262| [39m      [33m.[39m[35mset[39m([32m"Authorization"[39m[33m,[39m [32m`Bearer 
+[39m[36m${[39madminToken[36m}[39m[32m`[39m)[33m;[39m
+    [90m263| [39m    
+    [90m264| [39m    [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m200[39m)[33m;[39m
+    [90m   | [39m                       [31m^[39m
+    [90m265| [39m    [34mexpect[39m(res[33m.[39mbody[33m.[39mdata[33m.[39mstatus)[33m.[39m[34mtoBe[39m([
+33mSIVStatus[39m[33m.[39m[33mFINALIZED[39m)[33m;[39m
+    [90m266| [39m
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[7/8]ΓÄ»[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > 
+[22mDuplicate finalization is rejected and does NOT decrease stock again
+[31m[1mAssertionError[22m: expected 404 to be 409 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 409[39m
+[31m+ 404[39m
+
+[36m [2mΓ¥»[22m tests/siv.test.ts:[2m298:24[22m[39m
+    [90m296| [39m    
+    [90m297| [39m    [35mif[39m (res[33m.[39mstatus [33m!==[39m [34m409[39m) 
+console[33m.[39m[34mlog[39m([32m"SIV DUPLICATE FINALIZE ERROR:[39mΓÇª
+    [90m298| [39m    [34mexpect[39m(res[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m409[39m)[33m;[39m 
+[90m// Conflict, already finalized[39m
+    [90m   | [39m                       [31m^[39m
+    [90m299| [39m
+    [90m300| [39m    [35mconst[39m binStock [33m=[39m [35mawait[39m 
+prisma[33m.[39mbinStock[33m.[39m[34mfindUnique[39m({ where[33m:[39m { itemIΓÇª
+
+[31m[2mΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»[8/8]ΓÄ»[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 16:08:05
+[2m   Duration [22m 31.00s[2m (transform 6.13s, setup 0ms, collect 20.90s, tests 4.61s, environment 2ms, prepare 2.70s)[22m
+

@@ -142,7 +142,7 @@ export async function submitRequisition(id: string, ctx: AuditContext) {
 export async function getApprovals(id: string) {
   return prisma.requisitionApproval.findMany({
     where: { requisitionId: id },
-    include: { approver: { select: { id: true, name: true, role: true } } },
+    include: { approver: { select: { id: true, fullName: true, username: true } } },
     orderBy: { approvedAt: "desc" }
   });
 }
