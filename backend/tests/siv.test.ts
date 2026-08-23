@@ -3,8 +3,6 @@ import request from "supertest";
 import app from "../src/app";
 import { prisma } from "../src/config/db";
 import { SIVStatus, RequisitionStatus, TransactionType, VoucherType } from "@prisma/client";
-import { generateTestToken } from "./utils/auth"; // Assume test utility exists, or we use seed token
-
 let reqId: string;
 let sivId: string;
 let storeId: string;
@@ -13,7 +11,7 @@ let itemId: string;
 let adminToken: string;
 
 describe("Phase 4: Requisitions & SIV Workflow", () => {
-  
+
   beforeAll(async () => {
     // Cleanup
     await (prisma as any).fifoLayer.deleteMany();
@@ -28,7 +26,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     await (prisma as any).requisition.deleteMany();
     await (prisma as any).binStock.deleteMany();
     await (prisma as any).storeStock.deleteMany();
-    
+
     // Create Admin Role and User
     const adminRole = await prisma.role.upsert({
       where: { name: "ADMINISTRATOR" },
@@ -75,7 +73,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
       update: {},
       create: { code: "SIV-LOC", name: "SIV Loc", storeId }
     });
-    
+
     const shelf = await prisma.shelf.upsert({
       where: { locationId_code: { code: "SIV-SH", locationId: loc.id } },
       update: {},
@@ -94,7 +92,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
       update: {},
       create: { code: "PCS_SIV", name: "Pieces SIV" }
     });
-    
+
     const category = await prisma.category.upsert({
       where: { code: "CAT_SIV" },
       update: {},
@@ -144,7 +142,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     reqId = res.body.data.id;
     expect(res.body.data.status).toBe(RequisitionStatus.DRAFT);
 
-    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } }});
+    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } } });
     expect(binStock!.reservedQty).toBe(0);
     expect(binStock!.quantity).toBe(500);
   });
@@ -162,7 +160,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(RequisitionStatus.APPROVED);
 
-    const storeStock = await prisma.storeStock.findUnique({ where: { itemId_storeId: { itemId, storeId } }});
+    const storeStock = await prisma.storeStock.findUnique({ where: { itemId_storeId: { itemId, storeId } } });
     expect(storeStock!.reservedQty).toBe(0);
     expect(storeStock!.quantity).toBe(500);
   });
@@ -182,17 +180,17 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
           allocations: [{ binId, quantity: 100 }]
         }]
       });
-    
+
     if (res.status !== 201) console.log("SIV CREATE ERROR:", res.body);
     expect(res.status).toBe(201);
     sivId = res.body.data.id;
     expect(res.body.data.status).toBe(SIVStatus.PRELIMINARY);
 
-    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } }});
+    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } } });
     expect(binStock!.reservedQty).toBe(100);
     expect(binStock!.quantity).toBe(500); // physical unchanged
 
-    const storeStock = await prisma.storeStock.findUnique({ where: { itemId_storeId: { itemId, storeId } }});
+    const storeStock = await prisma.storeStock.findUnique({ where: { itemId_storeId: { itemId, storeId } } });
     expect(storeStock!.reservedQty).toBe(100);
     expect(storeStock!.quantity).toBe(500); // physical unchanged
   });
@@ -219,18 +217,18 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
   it("Rejected SIV releases reservations", async () => {
     // create another siv
     const tempRes = await request(app).post("/api/v1/sivs").set("Authorization", `Bearer ${adminToken}`).send({
-        requisitionId: reqId, storeId, voucherType: "SIV",
-        items: [{ itemId, quantity: 10, allocations: [{ binId, quantity: 10 }] }]
+      requisitionId: reqId, storeId, voucherType: "SIV",
+      items: [{ itemId, quantity: 10, allocations: [{ binId, quantity: 10 }] }]
     });
     const tempSivId = tempRes.body.data.id;
-    
+
     const rejectRes = await request(app)
       .post(`/api/v1/sivs/${tempSivId}/reject`)
       .set("Authorization", `Bearer ${adminToken}`)
       .send({ notes: "Rejected" });
     expect(rejectRes.status).toBe(200);
 
-    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } }});
+    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } } });
     expect(binStock!.reservedQty).toBe(100); // Only the first SIV's 100 is reserved
   });
 
@@ -248,7 +246,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
       });
     expect(res.status).toBe(200);
 
-    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } }});
+    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } } });
     expect(binStock!.reservedQty).toBe(50); // Dropped from 100 to 50
   });
 
@@ -260,26 +258,26 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     const res = await request(app)
       .post(`/api/v1/sivs/${sivId}/finalize`)
       .set("Authorization", `Bearer ${adminToken}`);
-    
+
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(SIVStatus.FINALIZED);
 
     // Stock check
-    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } }});
+    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } } });
     expect(binStock!.reservedQty).toBe(0); // released
     expect(binStock!.quantity).toBe(450); // physical decreased
 
-    const storeStock = await prisma.storeStock.findUnique({ where: { itemId_storeId: { itemId, storeId } }});
+    const storeStock = await prisma.storeStock.findUnique({ where: { itemId_storeId: { itemId, storeId } } });
     expect(storeStock!.reservedQty).toBe(0); // released
     expect(storeStock!.quantity).toBe(450); // physical decreased
 
     // Ledger check
-    const tx = await prisma.stockTransaction.findFirst({ where: { referenceId: sivId }});
+    const tx = await prisma.stockTransaction.findFirst({ where: { referenceId: sivId } });
     expect(tx).toBeDefined();
     expect(tx!.type).toBe(TransactionType.ISSUE);
     expect(tx!.quantity).toBe(-50); // Outgoing
 
-    const binCard = await prisma.binCard.findFirst({ where: { binId, referenceDoc: res.body.data.code }});
+    const binCard = await prisma.binCard.findFirst({ where: { binId, referenceDoc: res.body.data.code } });
     expect(binCard).toBeDefined();
     expect(binCard!.outQty).toBe(50);
 
@@ -293,11 +291,11 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     const res = await request(app)
       .post(`/api/v1/sivs/${sivId}/finalize`)
       .set("Authorization", `Bearer ${adminToken}`);
-    
+
     if (res.status !== 409) console.log("SIV DUPLICATE FINALIZE ERROR:", res.body);
     expect(res.status).toBe(409); // Conflict, already finalized
 
-    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } }});
+    const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } } });
     expect(binStock!.quantity).toBe(450); // physical STILL 450
   });
 
@@ -317,7 +315,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
       update: {},
       create: { code: "DEST1", name: "Dest" }
     });
-    
+
     const resSivFail = await request(app)
       .post("/api/v1/sivs")
       .set("Authorization", `Bearer ${adminToken}`)
