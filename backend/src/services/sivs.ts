@@ -9,10 +9,11 @@ function generateSIVCode(isISIV: boolean): string {
   return `${isISIV ? "ISIV" : "SIV"}-${dateStr}-${rand}`;
 }
 
-export async function listSIVs(params: { status?: SIVStatus; storeId?: string }) {
+export async function listSIVs(params: { status?: SIVStatus; storeId?: string; voucherType?: VoucherType }) {
   const where: Prisma.StoreIssueVoucherWhereInput = {};
   if (params.status) where.status = params.status;
   if (params.storeId) where.storeId = params.storeId;
+  if (params.voucherType) where.voucherType = params.voucherType;
 
   return prisma.storeIssueVoucher.findMany({
     where,
