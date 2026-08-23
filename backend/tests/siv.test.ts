@@ -10,22 +10,12 @@ let binId: string;
 let itemId: string;
 let adminToken: string;
 
+import { clearDatabase } from "./utils/db";
+
 describe("Phase 4: Requisitions & SIV Workflow", () => {
 
   beforeAll(async () => {
-    // Cleanup
-    await (prisma as any).fifoLayer.deleteMany();
-    await (prisma as any).binCard.deleteMany();
-    await (prisma as any).stockCard.deleteMany();
-    await (prisma as any).stockTransaction.deleteMany();
-    await (prisma as any).sIVBinAllocation.deleteMany();
-    await (prisma as any).sIVItem.deleteMany();
-    await (prisma as any).storeIssueVoucher.deleteMany();
-    await (prisma as any).requisitionApproval.deleteMany();
-    await (prisma as any).requisitionItem.deleteMany();
-    await (prisma as any).requisition.deleteMany();
-    await (prisma as any).binStock.deleteMany();
-    await (prisma as any).storeStock.deleteMany();
+    await clearDatabase();
 
     // Create Admin Role and User
     const adminRole = await prisma.role.upsert({
@@ -324,5 +314,10 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
         items: [{ itemId, quantity: 1, allocations: [{ binId, quantity: 1 }] }]
       });
     expect(resSivFail.status).toBe(422); // Zod validation fails, destinationStoreId must NOT be present
+  });
+
+  afterAll(async () => {
+    await clearDatabase();
+    await prisma.$disconnect();
   });
 });

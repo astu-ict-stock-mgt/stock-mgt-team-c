@@ -5,43 +5,25 @@ import { prisma } from "../src/config/db";
 import jwt from "jsonwebtoken";
 import { config } from "../src/config";
 
-describe("Phase 3: Goods Receiving & GRN Workflow", () => {
-  let supplierId: string;
+import { clearDatabase } from "./utils/db";
+
+describe("Phase 3: Receiving & Technical Evaluation API", () => {
+  let adminToken: string;
+  let inspectorToken: string;
+  let categoryId: string;
+  let uomId: string;
+  let itemId: string;
   let storeId: string;
   let locId: string;
   let shelfId: string;
+  let supplierId: string;
   let binId: string;
-  let itemId: string;
   let receiptId: string;
   let grnId: string;
   let token: string;
 
   beforeAll(async () => {
-    // Cleanup
-    await (prisma as any).fifoLayer.deleteMany();
-    await (prisma as any).binCard.deleteMany();
-    await (prisma as any).stockCard.deleteMany();
-    await (prisma as any).stockTransaction.deleteMany();
-    await (prisma as any).gRN.deleteMany();
-    await (prisma as any).technicalEvaluationItem.deleteMany();
-    await (prisma as any).technicalEvaluation.deleteMany();
-    await (prisma as any).goodsReceiptItem.deleteMany();
-    await (prisma as any).goodsReceipt.deleteMany();
-    await (prisma as any).binStock.deleteMany();
-    await (prisma as any).storeStock.deleteMany();
-    await (prisma as any).bin.deleteMany();
-    await (prisma as any).shelf.deleteMany();
-    await (prisma as any).storeLocation.deleteMany();
-    await (prisma as any).store.deleteMany();
-    await (prisma as any).inventoryItem.deleteMany();
-    await (prisma as any).unitOfMeasure.deleteMany();
-    await (prisma as any).category.deleteMany();
-    await (prisma as any).supplier.deleteMany();
-    
-    // Auth cleanup
-    await (prisma as any).auditLog.deleteMany();
-    await (prisma as any).userRole.deleteMany();
-    await (prisma as any).user.deleteMany();
+    await clearDatabase();
     await (prisma as any).rolePermission.deleteMany();
     await (prisma as any).role.deleteMany();
     await (prisma as any).permission.deleteMany();
@@ -217,5 +199,10 @@ describe("Phase 3: Goods Receiving & GRN Workflow", () => {
     const res = await request(app).post(`/api/v1/goods-receipts/${receiptId}/grn`).set("Authorization", `Bearer ${token}`).send({});
     expect(res.status).toBe(422); // Validation error (Errors.validation) returns 422
     expect(res.body.message).toMatch(/GRN already generated/);
+  });
+
+  afterAll(async () => {
+    await clearDatabase();
+    await prisma.$disconnect();
   });
 });

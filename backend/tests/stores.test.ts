@@ -24,6 +24,8 @@ vi.mock("../src/middleware/auth", async (importOriginal) => {
   };
 });
 
+import { clearDatabase } from "./utils/db";
+
 describe("Store Hierarchy API", () => {
   let storeId: string;
   let locId: string;
@@ -31,16 +33,11 @@ describe("Store Hierarchy API", () => {
   let binId: string;
 
   beforeAll(async () => {
-    
-    // Clean up before test
-    await (prisma as any).bin.deleteMany();
-    await (prisma as any).shelf.deleteMany();
-    await (prisma as any).storeLocation.deleteMany();
-    await prisma.store.deleteMany();
+    await clearDatabase();
   });
 
   afterAll(async () => {
-    await prisma.store.deleteMany();
+    await clearDatabase();
     await prisma.$disconnect();
   });
 
