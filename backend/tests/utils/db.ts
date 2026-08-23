@@ -37,8 +37,7 @@ export async function clearDatabase() {
   await prisma.store.deleteMany();
 
   // 7. Master Data - Items
-  await prisma.itemCategory.deleteMany();
-  await prisma.item.deleteMany();
+  await (prisma as any).inventoryItem.deleteMany();
   await prisma.category.deleteMany();
   await prisma.unitOfMeasure.deleteMany();
 
