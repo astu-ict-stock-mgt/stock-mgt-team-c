@@ -27,6 +27,7 @@ import reportsRoutes from "./routes/reports";
 import notificationsRoutes from "./routes/notifications";
 import dashboardRoutes from "./routes/dashboard";
 import requisitionsRoutes from "./routes/requisitions";
+import requisitionsRoutes from "./routes/requisitions";
 
 const app = express();
 
@@ -100,7 +101,6 @@ app.use("/api/v1/stores", storesRoutes);
 app.use("/api/v1/locations", locationsRoutes);
 app.use("/api/v1/shelves", shelvesRoutes);
 app.use("/api/v1/bins", binsRoutes);
-console.log("receiptsRoutes type is:", typeof receiptsRoutes, Object.keys(receiptsRoutes || {}));
 app.use("/api/v1/goods-receipts", receiptsRoutes);
 app.use("/api/v1/grns", grnsRoutes);
 app.use("/api/v1/issues", issuesRoutes);
