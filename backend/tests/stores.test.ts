@@ -33,9 +33,9 @@ describe("Store Hierarchy API", () => {
   beforeAll(async () => {
     
     // Clean up before test
-    await prisma.bin.deleteMany();
-    await prisma.shelf.deleteMany();
-    await prisma.storeLocation.deleteMany();
+    await (prisma as any).bin.deleteMany();
+    await (prisma as any).shelf.deleteMany();
+    await (prisma as any).storeLocation.deleteMany();
     await prisma.store.deleteMany();
   });
 
