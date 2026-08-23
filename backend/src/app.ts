@@ -27,7 +27,6 @@ import reportsRoutes from "./routes/reports";
 import notificationsRoutes from "./routes/notifications";
 import dashboardRoutes from "./routes/dashboard";
 import requisitionsRoutes from "./routes/requisitions";
-import requisitionsRoutes from "./routes/requisitions";
 
 const app = express();
 
