@@ -18,7 +18,7 @@ export async function listSIVs(params: { status?: SIVStatus; storeId?: string })
     where,
     orderBy: { createdAt: "desc" },
     include: {
-      createdBy: { select: { id: true, name: true } },
+      createdBy: { select: { id: true, fullName: true } },
       store: { select: { id: true, name: true } },
       destinationStore: { select: { id: true, name: true } },
     }
@@ -32,8 +32,8 @@ export async function getSIV(id: string) {
       requisition: true,
       store: { select: { id: true, name: true, code: true } },
       destinationStore: { select: { id: true, name: true, code: true } },
-      createdBy: { select: { id: true, name: true } },
-      approvedBy: { select: { id: true, name: true } },
+      createdBy: { select: { id: true, fullName: true } },
+      approvedBy: { select: { id: true, fullName: true } },
       items: {
         include: {
           item: { select: { id: true, name: true, code: true, uom: true } },

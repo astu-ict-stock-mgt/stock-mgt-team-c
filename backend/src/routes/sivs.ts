@@ -26,39 +26,38 @@ router.get("/:id", requirePermission("sivs.read"), asyncHandler(async (req: Auth
 
 router.post("/", requirePermission("sivs.create"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const data = CreateSIVSchema.parse(req.body);
-  const siv = await createPreliminarySIV(data, req.auditCtx!);
+  const siv = await createPreliminarySIV(data, { userId: req.userId, ipAddress: req.ip });
   return ok(res, siv, 201);
 }));
 
 router.patch("/:id", requirePermission("sivs.amend"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const data = AmendSIVSchema.parse(req.body);
-  const siv = await amendSIV(req.params.id, data, req.auditCtx!);
+  const siv = await amendSIV(req.params.id, data, { userId: req.userId, ipAddress: req.ip });
   return ok(res, siv);
 }));
 
 router.post("/:id/submit", requirePermission("sivs.submit"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const siv = await submitSIV(req.params.id, req.auditCtx!);
+  const siv = await submitSIV(req.params.id, { userId: req.userId, ipAddress: req.ip });
   return ok(res, siv);
 }));
 
 router.post("/:id/approve", requirePermission("sivs.approve"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const siv = await approveSIV(req.params.id, req.auditCtx!);
+  const siv = await approveSIV(req.params.id, { userId: req.userId, ipAddress: req.ip });
   return ok(res, siv);
 }));
 
 router.post("/:id/request-amendment", requirePermission("sivs.amend"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  // Can just reject or revert to PRELIMINARY for amend
   return ok(res, { message: "Use amend endpoint to submit new allocations" });
 }));
 
 router.post("/:id/reject", requirePermission("sivs.reject"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const data = RejectSIVSchema.parse(req.body);
-  const siv = await rejectSIV(req.params.id, req.auditCtx!);
+  const siv = await rejectSIV(req.params.id, { userId: req.userId, ipAddress: req.ip });
   return ok(res, siv);
 }));
 
 router.post("/:id/finalize", requirePermission("sivs.finalize"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const siv = await finalizeSIV(req.params.id, req.auditCtx!);
+  const siv = await finalizeSIV(req.params.id, { userId: req.userId, ipAddress: req.ip });
   return ok(res, siv);
 }));
 

@@ -28,18 +28,18 @@ router.get("/:id", requirePermission("requisitions.read"), asyncHandler(async (r
 
 router.post("/", requirePermission("requisitions.create"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const data = CreateRequisitionSchema.parse(req.body);
-  const requisition = await createRequisition(data, req.auditCtx!);
+  const requisition = await createRequisition(data, { userId: req.userId, ipAddress: req.ip });
   return ok(res, requisition, 201);
 }));
 
 router.patch("/:id", requirePermission("requisitions.update"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const data = UpdateRequisitionSchema.parse(req.body);
-  const requisition = await updateRequisition(req.params.id, data, req.auditCtx!);
+  const requisition = await updateRequisition(req.params.id, data, { userId: req.userId, ipAddress: req.ip });
   return ok(res, requisition);
 }));
 
 router.post("/:id/submit", requirePermission("requisitions.submit"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  const requisition = await submitRequisition(req.params.id, req.auditCtx!);
+  const requisition = await submitRequisition(req.params.id, { userId: req.userId, ipAddress: req.ip });
   return ok(res, requisition);
 }));
 
@@ -50,13 +50,13 @@ router.get("/:id/approvals", requirePermission("requisitions.read"), asyncHandle
 
 router.post("/:id/approve", requirePermission("requisitions.approve"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const data = ApproveRequisitionSchema.parse(req.body);
-  const requisition = await approveRequisition(req.params.id, data, req.auditCtx!);
+  const requisition = await approveRequisition(req.params.id, data, { userId: req.userId, ipAddress: req.ip });
   return ok(res, requisition);
 }));
 
 router.post("/:id/reject", requirePermission("requisitions.reject"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const data = RejectRequisitionSchema.parse(req.body);
-  const requisition = await rejectRequisition(req.params.id, data, req.auditCtx!);
+  const requisition = await rejectRequisition(req.params.id, data, { userId: req.userId, ipAddress: req.ip });
   return ok(res, requisition);
 }));
 

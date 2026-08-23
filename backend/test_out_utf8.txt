@@ -1,0 +1,109 @@
+﻿node.exe : [33mThe CJS build of Vite's Node API is deprecated. See 
+https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([33mThe CJS bu...e details.[39m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/ALL/projects/ICT_CENTER_INTERN/Stock-MS/stock-mgt-team-c/backend[39m
+
+[90mstdout[2m | tests/siv.test.ts
+[22m[39mΓùç injected env (1) from .env // tip: Γîÿ suppress logs { quiet: true }
+
+[90mstdout[2m | tests/siv.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/requisitions [31m500[0m 27.688 ms - 118[0m
+[90mstderr[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mRequisition 
+creation -> NO stock mutation
+[22m[39m[unhandled] TypeError: Cannot read properties of undefined (reading 'userId')
+    at Module.createRequisition [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\serv
+ices\requisitions.ts:47:12[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\requisitions.ts:31:29
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\middleware\auth.ts:71:21
+    at Layer.handle [as handle_request] [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39m
+node_modules\[4mexpress[24m\lib\router\layer.js:95:5[90m)[39m
+    at next [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4mexpress[24
+m\lib\router\route.js:149:13[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\middleware\auth.ts:51:46
+    at Layer.handle [as handle_request] [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39m
+node_modules\[4mexpress[24m\lib\router\layer.js:95:5[90m)[39m
+    at next [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4mexpress[24
+m\lib\router\route.js:149:13[90m)[39m
+    at Route.dispatch [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4me
+xpress[24m\lib\router\route.js:119:3[90m)[39m
+    at Layer.handle [as handle_request] [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39m
+node_modules\[4mexpress[24m\lib\router\layer.js:95:5[90m)[39m
+
+[90mstdout[2m | tests/siv.test.ts[2m > [22m[2mPhase 4: Requisitions & SIV Workflow[2m > [22m[2mRequisition submission and approval -> NO stock mutation
+[22m[39mprisma:error 
+Invalid `prisma.requisition.findUnique()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\requisitions.ts:30:40
+
+  27 }
+  28 
+  29 export async function getRequisition(id: string) {
+ΓåÆ 30   const req = await prisma.requisition.findUnique({
+         where: {
+           id: "undefined"
+         },
+         include: {
+           requestedBy: {
+             select: {
+               id: true,
+               name: true,
+               ~~~~
+               role: true,
+       ?       email?: true,
+       ?       username?: true,
+       ?       fullName?: true,
+       ?       passwordHash?: true,
+       ?       status?: true,
+       ?       failedLoginCount?: true,
+       ?       lockedUntil?: true,
+       ?       lastLoginAt?: true,
+       ?       department?: true,
+       ?       phoneNumber?: true,
+       ?       createdAt?: true,
+       ?       updatedAt?: true,
+       ?       deletedAt?: true,
+       ?       sessions?: true,
+       ?       userRoles?: true,
+       ?       auditLogs?: true,
+       ?       stockTransactions?: true,
+       ?       requisitions?: true,
+       ?       requisitionApprovals?: true,
+       ?       stockTakes?: true,
+       ?       gatePasses?: true,
+       ?       gatePassesApproved?: true,
+       ?       receipts?: true,
+       ?       grns?: true,
+       ?       evaluations?: true,
+       ?       sivsCreated?: true,
+       ?       sivsApproved?: true,
+       ?       returnsRequested?: true,
+       ?       transfersRequested?: true,
+       ?       assets?: true,
+       ?       userCard?: true,
+       ?       _count?: true
+             }
+           },
+           items: {
+             include: {
+               item: {
+                 select: {
+                   id: true,
+                   code: true,
+                   name: true,
+                   uom: true
+                 }
+               }
+             }
+           },
+           approvals: {
+             include: {
+               approver: {
+                 select: {
+                

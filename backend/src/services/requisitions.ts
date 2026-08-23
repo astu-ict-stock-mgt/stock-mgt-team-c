@@ -20,7 +20,7 @@ export async function listRequisitions(params: { status?: RequisitionStatus; dep
     where,
     orderBy: { createdAt: "desc" },
     include: {
-      requestedBy: { select: { id: true, name: true, role: true } },
+      requestedBy: { select: { id: true, fullName: true, username: true } },
       items: { include: { item: { select: { id: true, code: true, name: true, uom: true } } } },
     }
   });
@@ -30,10 +30,10 @@ export async function getRequisition(id: string) {
   const req = await prisma.requisition.findUnique({
     where: { id },
     include: {
-      requestedBy: { select: { id: true, name: true, role: true } },
+      requestedBy: { select: { id: true, fullName: true, username: true } },
       items: { include: { item: { select: { id: true, code: true, name: true, uom: true } } } },
       approvals: {
-        include: { approver: { select: { id: true, name: true, role: true } } },
+        include: { approver: { select: { id: true, fullName: true, username: true } } },
         orderBy: { approvedAt: "asc" }
       },
       sivs: true

@@ -151,12 +151,14 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
 
   // TEST 2
   it("Requisition submission and approval -> NO stock mutation", async () => {
-    await request(app).post(`/api/v1/requisitions/${reqId}/submit`).set("Authorization", `Bearer ${adminToken}`);
+    const submitRes = await request(app).post(`/api/v1/requisitions/${reqId}/submit`).set("Authorization", `Bearer ${adminToken}`);
+    if (submitRes.status !== 200) console.log("REQ SUBMIT ERROR:", submitRes.body);
     const res = await request(app)
       .post(`/api/v1/requisitions/${reqId}/approve`)
       .set("Authorization", `Bearer ${adminToken}`)
       .send({ comments: "Approved" });
 
+    if (res.status !== 200) console.log("REQ APPROVE ERROR:", res.body);
     expect(res.status).toBe(200);
     expect(res.body.data.status).toBe(RequisitionStatus.APPROVED);
 
@@ -181,7 +183,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
         }]
       });
     
-    if (res.status === 500) console.log(res.body);
+    if (res.status !== 201) console.log("SIV CREATE ERROR:", res.body);
     expect(res.status).toBe(201);
     sivId = res.body.data.id;
     expect(res.body.data.status).toBe(SIVStatus.PRELIMINARY);
@@ -291,6 +293,8 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     const res = await request(app)
       .post(`/api/v1/sivs/${sivId}/finalize`)
       .set("Authorization", `Bearer ${adminToken}`);
+    
+    if (res.status !== 409) console.log("SIV DUPLICATE FINALIZE ERROR:", res.body);
     expect(res.status).toBe(409); // Conflict, already finalized
 
     const binStock = await prisma.binStock.findUnique({ where: { itemId_binId: { itemId, binId } }});
@@ -308,7 +312,11 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
       });
     expect(resIsivFail.status).toBe(422); // Zod validation fails, destinationStoreId missing
 
-    const destStore = await prisma.store.create({ data: { code: "DEST1", name: "Dest" } });
+    const destStore = await prisma.store.upsert({
+      where: { code: "DEST1" },
+      update: {},
+      create: { code: "DEST1", name: "Dest" }
+    });
     
     const resSivFail = await request(app)
       .post("/api/v1/sivs")
