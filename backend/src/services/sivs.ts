@@ -62,7 +62,7 @@ export async function createPreliminarySIV(data: any, ctx: AuditContext) {
 
     const store = await tx.store.findUnique({ where: { id: data.storeId } });
     if (!store || store.status !== "ACTIVE" || store.deletedAt) {
-      throw Errors.badRequest("Invalid or inactive source store.");
+      throw Errors.validation("Invalid or inactive source store.");
     }
 
     // Prepare arrays for bulk creation
@@ -72,7 +72,7 @@ export async function createPreliminarySIV(data: any, ctx: AuditContext) {
     for (const itemData of data.items) {
       const reqItem = req.items.find(i => i.itemId === itemData.itemId);
       if (!reqItem) {
-        throw Errors.badRequest(`Item ${itemData.itemId} is not in the requisition.`);
+        throw Errors.validation(`Item ${itemData.itemId} is not in the requisition.`);
       }
       
       const requestedRemaining = reqItem.quantity - reqItem.fulfilledQty;
@@ -81,7 +81,7 @@ export async function createPreliminarySIV(data: any, ctx: AuditContext) {
       const allocationsToCreate: any[] = [];
 
       for (const alloc of itemData.allocations) {
-        if (alloc.quantity <= 0) throw Errors.badRequest("Allocation quantity must be positive.");
+        if (alloc.quantity <= 0) throw Errors.validation("Allocation quantity must be positive.");
         
         totalAllocated += alloc.quantity;
 
@@ -99,7 +99,7 @@ export async function createPreliminarySIV(data: any, ctx: AuditContext) {
            // A simpler check is fetching the storeLocation.
            const loc = await tx.storeLocation.findUnique({ where: { id: binStock.bin.shelf.locationId } });
            if (loc?.storeId !== data.storeId) {
-             throw Errors.badRequest(`Bin ${binStock.bin.name} does not belong to store ${store.name}`);
+             throw Errors.validation(`Bin ${binStock.bin.name} does not belong to store ${store.name}`);
            }
         }
 
@@ -470,7 +470,7 @@ export async function amendSIV(id: string, data: any, ctx: AuditContext) {
     for (const itemData of data.items) {
       const reqItem = req?.items.find(i => i.itemId === itemData.itemId);
       if (req && !reqItem) {
-        throw Errors.badRequest(`Item ${itemData.itemId} is not in the requisition.`);
+        throw Errors.validation(`Item ${itemData.itemId} is not in the requisition.`);
       }
       
       const requestedRemaining = reqItem ? reqItem.quantity - reqItem.fulfilledQty : Infinity;
@@ -478,7 +478,7 @@ export async function amendSIV(id: string, data: any, ctx: AuditContext) {
       const allocationsToCreate: any[] = [];
 
       for (const alloc of itemData.allocations) {
-        if (alloc.quantity <= 0) throw Errors.badRequest("Allocation quantity must be positive.");
+        if (alloc.quantity <= 0) throw Errors.validation("Allocation quantity must be positive.");
         
         totalAllocated += alloc.quantity;
 
