@@ -56,13 +56,13 @@ export async function submitEvaluation(
     // Create evaluation
     const evalRecord = await tx.technicalEvaluation.create({
       data: {
-        receiptId,
-        evaluatorId: ctx.userId!,
+        receipt: { connect: { id: receiptId } },
+        evaluator: { connect: { id: ctx.userId! } },
         decision: data.decision,
         comments: data.comments,
         items: {
           create: data.items.map(i => ({
-            goodsReceiptItemId: i.goodsReceiptItemId,
+            goodsReceiptItem: { connect: { id: i.goodsReceiptItemId } },
             acceptedQuantity: i.acceptedQuantity,
             rejectedQuantity: i.rejectedQuantity,
             condition: i.condition,
