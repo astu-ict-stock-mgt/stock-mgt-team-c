@@ -198,6 +198,7 @@ model Store {
   storeStocks        StoreStock[]
   receipts           GoodsReceipt[]
   sivs               StoreIssueVoucher[]
+  sivsReceived       StoreIssueVoucher[] @relation("SIVDestinationStore")
   transfersFrom      TransferRequest[]   @relation("TransferRequestFrom")
   transfersTo        TransferRequest[]   @relation("TransferRequestTo")
   stockTakes         StockTake[]
@@ -252,6 +253,7 @@ model Bin {
   binStocks BinStock[]
   binCards  BinCard[]
   receiptItems GoodsReceiptItem[]
+  sivAllocations SIVBinAllocation[]
 
   @@unique([shelfId, code])
 }
@@ -497,13 +499,14 @@ model GRN {
 model Requisition {
   id            String            @id @default(cuid())
   code          String            @unique // REQ-YYYYMMDD-XXXX
-  requestedById String
-  department    String
-  status        RequisitionStatus @default(DRAFT)
-  requiredDate  DateTime
-  purpose       String?
-  notes         String?
-  createdAt     DateTime          @default(now())
+  requestedById         String
+  department            String
+  destinationDepartment String?
+  status                RequisitionStatus @default(DRAFT)
+  requiredDate          DateTime
+  purpose               String?
+  notes                 String?
+  createdAt             DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
   requestedBy User                  @relation("RequisitionRequestedBy", fields: [requestedById], references: [id])
@@ -562,21 +565,24 @@ enum ApprovalStatus {
 model StoreIssueVoucher {
   id            String    @id @default(cuid())
   code          String    @unique // SIV-YYYYMMDD-XXXX
-  requisitionId String?
-  storeId       String
-  createdById   String
-  approvedById  String?
+  requisitionId      String?
+  storeId            String
+  destinationStoreId String?
+  voucherType        VoucherType @default(SIV)
+  createdById        String
+  approvedById       String?
   status        SIVStatus @default(DRAFT)
   issueDate     DateTime?
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  requisition Requisition? @relation(fields: [requisitionId], references: [id])
-  store       Store        @relation(fields: [storeId], references: [id])
-  createdBy   User         @relation("SIVCreatedBy", fields: [createdById], references: [id])
-  approvedBy  User?        @relation("SIVApprovedBy", fields: [approvedById], references: [id])
-  items       SIVItem[]
+  requisition      Requisition? @relation(fields: [requisitionId], references: [id])
+  store            Store        @relation(fields: [storeId], references: [id])
+  destinationStore Store?       @relation("SIVDestinationStore", fields: [destinationStoreId], references: [id])
+  createdBy        User         @relation("SIVCreatedBy", fields: [createdById], references: [id])
+  approvedBy       User?        @relation("SIVApprovedBy", fields: [approvedById], references: [id])
+  items            SIVItem[]
   gatePass    GatePass?
 
   @@index([storeId])
@@ -593,6 +599,11 @@ enum SIVStatus {
   ISSUED
 }
 
+enum VoucherType {
+  SIV
+  ISIV
+}
+
 model SIVItem {
   id          String @id @default(cuid())
   sivId       String
@@ -602,10 +613,26 @@ model SIVItem {
   issuedQty   Float  @default(0)
   unitCost    Float  @default(0) 
 
-  siv  StoreIssueVoucher @relation(fields: [sivId], references: [id], onDelete: Cascade)
-  item InventoryItem     @relation(fields: [itemId], references: [id])
+  siv         StoreIssueVoucher  @relation(fields: [sivId], references: [id], onDelete: Cascade)
+  item        InventoryItem      @relation(fields: [itemId], references: [id])
+  allocations SIVBinAllocation[]
 
   @@index([sivId])
+}
+
+model SIVBinAllocation {
+  id         String   @id @default(cuid())
+  sivItemId  String
+  binId      String
+  quantity   Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sivItem SIVItem @relation(fields: [sivItemId], references: [id], onDelete: Cascade)
+  bin     Bin     @relation(fields: [binId], references: [id])
+
+  @@index([sivItemId])
+  @@index([binId])
 }
 
 // -------------------------------------------------------------------
