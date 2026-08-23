@@ -49,7 +49,9 @@ model User {
   sivsCreated          StoreIssueVoucher[]   @relation("SIVCreatedBy")
   sivsApproved         StoreIssueVoucher[]   @relation("SIVApprovedBy")
   returnsRequested     StoreReturnNote[]     @relation("ReturnRequestedBy")
+  returnsMade          StoreReturnNote[]     @relation("ReturnedBy")
   transfersRequested   TransferRequest[]     @relation("TransferRequestedBy")
+  binTransfers         BinTransfer[]
   assets               FixedAsset[]          @relation("AssetResponsibleUser")
   userCard             UserCard?
 
@@ -205,6 +207,9 @@ model Store {
   fifoLayers         FifoLayer[]
   stockTransactions  StockTransaction[]
   stockCards         StockCard[]
+  returnNotes        StoreReturnNote[]   @relation("ReturnDestinationStore")
+  binTransfers       BinTransfer[]
+
 
   @@index([status])
   @@index([deletedAt])
@@ -254,6 +259,11 @@ model Bin {
   binCards  BinCard[]
   receiptItems GoodsReceiptItem[]
   sivAllocations SIVBinAllocation[]
+  returnAlloc     ReturnBinAllocation[]
+  transferOutAlloc TransferOutBinAllocation[]
+  transferInAlloc TransferInBinAllocation[]
+  binTransferFrom BinTransfer[] @relation("BinTransferFrom")
+  binTransferTo   BinTransfer[] @relation("BinTransferTo")
 
   @@unique([shelfId, code])
 }
@@ -304,6 +314,7 @@ model InventoryItem {
   fixedAssets      FixedAsset[]
   returnItems      StoreReturnItem[]
   disposalItems    DisposalItem[]
+  binTransfers     BinTransfer[]
 
   @@index([categoryId])
   @@index([status])
