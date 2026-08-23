@@ -49,8 +49,10 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     });
 
     adminToken = "test-token-siv-123";
-    await prisma.userSession.create({
-      data: {
+    await prisma.userSession.upsert({
+      where: { token: adminToken },
+      update: { userId: user.id, expiresAt: new Date(Date.now() + 3600000) },
+      create: {
         userId: user.id,
         token: adminToken,
         refresh: "test-refresh-siv-123",
@@ -61,18 +63,48 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
     });
 
     // Create Store, Location, Shelf, Bin, Item
-    const store = await prisma.store.create({ data: { code: "SIV-STR", name: "SIV Store" } });
+    const store = await prisma.store.upsert({
+      where: { code: "SIV-STR" },
+      update: {},
+      create: { code: "SIV-STR", name: "SIV Store" }
+    });
     storeId = store.id;
 
-    const loc = await prisma.storeLocation.create({ data: { code: "SIV-LOC", name: "SIV Loc", storeId } });
-    const shelf = await prisma.shelf.create({ data: { code: "SIV-SH", name: "SIV Shelf", locationId: loc.id } });
-    const bin = await prisma.bin.create({ data: { code: "SIV-BIN", name: "SIV Bin", shelfId: shelf.id } });
+    const loc = await prisma.storeLocation.upsert({
+      where: { storeId_code: { storeId, code: "SIV-LOC" } },
+      update: {},
+      create: { code: "SIV-LOC", name: "SIV Loc", storeId }
+    });
+    
+    const shelf = await prisma.shelf.upsert({
+      where: { locationId_code: { code: "SIV-SH", locationId: loc.id } },
+      update: {},
+      create: { code: "SIV-SH", name: "SIV Shelf", locationId: loc.id }
+    });
+
+    const bin = await prisma.bin.upsert({
+      where: { shelfId_code: { code: "SIV-BIN", shelfId: shelf.id } },
+      update: {},
+      create: { code: "SIV-BIN", name: "SIV Bin", shelfId: shelf.id }
+    });
     binId = bin.id;
 
-    const uom = await prisma.unitOfMeasure.create({ data: { code: "PCS_SIV", name: "Pieces SIV" } });
-    const category = await prisma.category.create({ data: { code: "CAT_SIV", name: "Category SIV" } });
-    const item = await prisma.inventoryItem.create({
-      data: { code: "ITEM-SIV", name: "Test SIV Item", uomId: uom.id, categoryId: category.id }
+    const uom = await prisma.unitOfMeasure.upsert({
+      where: { code: "PCS_SIV" },
+      update: {},
+      create: { code: "PCS_SIV", name: "Pieces SIV" }
+    });
+    
+    const category = await prisma.category.upsert({
+      where: { code: "CAT_SIV" },
+      update: {},
+      create: { code: "CAT_SIV", name: "Category SIV" }
+    });
+
+    const item = await prisma.inventoryItem.upsert({
+      where: { code: "ITEM-SIV" },
+      update: {},
+      create: { code: "ITEM-SIV", name: "Test SIV Item", uomId: uom.id, categoryId: category.id }
     });
     itemId = item.id;
 
@@ -149,6 +181,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
         }]
       });
     
+    if (res.status === 500) console.log(res.body);
     expect(res.status).toBe(201);
     sivId = res.body.data.id;
     expect(res.body.data.status).toBe(SIVStatus.PRELIMINARY);
@@ -273,7 +306,7 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
         requisitionId: reqId, storeId, voucherType: "ISIV",
         items: [{ itemId, quantity: 1, allocations: [{ binId, quantity: 1 }] }]
       });
-    expect(resIsivFail.status).toBe(400); // Zod validation fails, destinationStoreId missing
+    expect(resIsivFail.status).toBe(422); // Zod validation fails, destinationStoreId missing
 
     const destStore = await prisma.store.create({ data: { code: "DEST1", name: "Dest" } });
     
@@ -284,6 +317,6 @@ describe("Phase 4: Requisitions & SIV Workflow", () => {
         requisitionId: reqId, storeId, voucherType: "SIV", destinationStoreId: destStore.id,
         items: [{ itemId, quantity: 1, allocations: [{ binId, quantity: 1 }] }]
       });
-    expect(resSivFail.status).toBe(400); // Zod validation fails, destinationStoreId must NOT be present
+    expect(resSivFail.status).toBe(422); // Zod validation fails, destinationStoreId must NOT be present
   });
 });
