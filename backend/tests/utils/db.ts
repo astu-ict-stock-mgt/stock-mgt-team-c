@@ -21,6 +21,7 @@ export async function clearDatabase() {
   await (prisma as any).requisition.deleteMany();
 
   // 4. Receiving & Technical Evaluation
+  await (prisma as any).gRN.deleteMany();
   await (prisma as any).technicalEvaluationItem.deleteMany();
   await (prisma as any).technicalEvaluation.deleteMany();
   await (prisma as any).goodsReceiptItem.deleteMany();
@@ -36,14 +37,18 @@ export async function clearDatabase() {
   await (prisma as any).storeLocation.deleteMany();
   await prisma.store.deleteMany();
 
-  // 7. Master Data - Items
+  // 7. Master Data - Items and Suppliers
   await (prisma as any).inventoryItem.deleteMany();
   await prisma.category.deleteMany();
   await prisma.unitOfMeasure.deleteMany();
+  await (prisma as any).supplier.deleteMany();
 
-  // 8. Users & Sessions
+  // 8. Users, Roles, Sessions & Audit
+  await (prisma as any).auditLog.deleteMany();
   await prisma.userSession.deleteMany();
   await prisma.userRole.deleteMany();
+  await (prisma as any).rolePermission.deleteMany();
   await prisma.role.deleteMany();
+  await (prisma as any).permission.deleteMany();
   await prisma.user.deleteMany();
 }
