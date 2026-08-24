@@ -27,6 +27,7 @@ import {
   AlertCircle,
   Info,
   CheckCircle2,
+  ClipboardList,
 } from "lucide-react";
 import type { CurrentUser } from "@/lib/types";
 import { useLogout, useNotifications, type AppNotification } from "@/lib/api/hooks";
@@ -61,6 +62,7 @@ import { UsersSection } from "@/components/app/sections/users-section";
 import { RolesSection } from "@/components/app/sections/roles-section";
 import { SettingsSection } from "@/components/app/sections/settings-section";
 import { RequisitionsSection } from "@/components/app/sections/requisitions-section";
+import { StockTakesSection } from "@/components/app/sections/stock-takes-section";
 
 type NavItem = {
   id: Section;
@@ -87,6 +89,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "receipts", label: "Stock Receipts", icon: ArrowDownToLine, permission: "inventory.read" },
       { id: "issues", label: "Stock Issues", icon: ArrowUpFromLine, permission: "inventory.read" },
       { id: "requisitions", label: "Requisitions", icon: FileText, permission: "requisition.read" },
+      { id: "stock-takes", label: "Stock Takes", icon: ClipboardList, permission: "stocktakes.read" },
     ],
   },
   {
@@ -359,6 +362,7 @@ export function AppShell({
             {section === "receipts" && <ReceiptsSection />}
             {section === "issues" && <IssuesSection />}
             {section === "requisitions" && <RequisitionsSection />}
+            {section === "stock-takes" && <StockTakesSection />}
             {section === "reports" && <ReportsSection />}
             {section === "audit-logs" && <AuditLogsSection />}
             {section === "users" && <UsersSection />}

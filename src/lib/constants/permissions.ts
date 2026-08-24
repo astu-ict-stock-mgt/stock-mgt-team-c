@@ -25,8 +25,9 @@ export const PERMISSIONS = [
   // Requisitions
   "requisition.create", "requisition.approve", "requisition.read",
 
-  // Stock taking
-  "stocktake.create", "stocktake.approve", "stocktake.read",
+  // Stock taking & adjustments
+  "stocktakes.create", "stocktakes.read", "stocktakes.update", "stocktakes.submit", "stocktakes.review", "stocktakes.recount",
+  "stockadjustments.read", "stockadjustments.approve", "stockadjustments.post",
 
   // Damaged / Obsolete
   "damaged.manage", "obsolete.manage",
@@ -66,7 +67,8 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "inventory.read",
     "stock.receive", "stock.issue", "stock.transfer",
     "requisition.read", "requisition.approve",
-    "stocktake.read", "stocktake.approve",
+    "stocktakes.read", "stocktakes.review", "stocktakes.recount",
+    "stockadjustments.read", "stockadjustments.approve", "stockadjustments.post",
     "damaged.manage", "obsolete.manage",
     "gatepass.approve", "gatepass.read",
     "reports.view", "reports.export",
@@ -81,7 +83,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "inventory.read", "inventory.update",
     "stock.receive", "stock.issue", "stock.transfer",
     "requisition.read",
-    "stocktake.create", "stocktake.read",
+    "stocktakes.create", "stocktakes.read", "stocktakes.update", "stocktakes.submit",
     "damaged.manage", "obsolete.manage",
     "gatepass.request", "gatepass.read",
     "reports.view",
@@ -94,7 +96,7 @@ export const ROLE_PERMISSIONS: Record<RoleName, Permission[]> = {
     "warehouses.read",
     "inventory.read",
     "requisition.read",
-    "stocktake.read",
+    "stocktakes.read",
     "reports.view",
   ],
 

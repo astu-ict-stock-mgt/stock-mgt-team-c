@@ -1,6 +1,7 @@
 import { Router, Response } from "express";
 import { ok } from "../utils/response";
 import { asyncHandler, AuthedRequest, requirePermission } from "../middleware/auth";
+import { Errors } from "../utils/errors";
 import { prisma } from "../config/db";
 import { 
   createTransfer, submitTransfer, approveTransfer, rejectTransfer, 
@@ -28,13 +29,13 @@ router.get("/:id", requirePermission("transfers.read"), asyncHandler(async (req:
   const trf = await prisma.transferRequest.findUnique({
     where: { id: req.params.id },
     include: {
-      items: { include: { item: true, allocationsOut: true, allocationsIn: true } },
+      items: { include: { item: true, outAllocations: true, inAllocations: true } },
       fromStore: true,
       toStore: true,
       requestedBy: { select: { id: true, fullName: true } }
     }
   });
-  if (!trf) return res.status(404).json({ success: false, code: "NOT_FOUND", message: "TransferRequest not found" });
+  if (!trf) throw Errors.notFound("TransferRequest", req.params.id);
   res.json(ok(trf));
 }));
 

@@ -23,6 +23,9 @@ import type {
   ValuationReport,
   MovementReportItem,
   Role,
+  StockTake,
+  StockAdjustment,
+  StoreBinStock,
 } from "@/lib/types";
 
 // ---------------- Auth ----------------
@@ -452,5 +455,194 @@ export function useMovementReport(params: { page: number; limit: number; startDa
   return useQuery({
     queryKey: ["reports", "movement", params],
     queryFn: () => apiClient.get<Paginated<MovementReportItem>>(`/api/v1/reports/movement?${search}`),
+  });
+}
+
+// ---------------- Stock Takes ----------------
+export function useStockTakes(params?: { storeId?: string; status?: string; search?: string }) {
+  const search = new URLSearchParams();
+  if (params?.storeId) search.set("storeId", params.storeId);
+  if (params?.status) search.set("status", params.status);
+  if (params?.search) search.set("search", params.search);
+  const qs = search.toString();
+  return useQuery({
+    queryKey: ["stock-takes", params],
+    queryFn: () => apiClient.get<{ items: StockTake[] }>(`/api/v1/stock-takes${qs ? `?${qs}` : ""}`),
+  });
+}
+
+export function useStockTake(id: string | null) {
+  return useQuery({
+    queryKey: ["stock-takes", id],
+    queryFn: () => apiClient.get<StockTake>(`/api/v1/stock-takes/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useStoreBinStocks(storeId: string | null) {
+  return useQuery({
+    queryKey: ["store-bin-stocks", storeId],
+    queryFn: () => apiClient.get<{ items: StoreBinStock[] }>(`/api/v1/stores/${storeId}/bin-stocks`),
+    enabled: !!storeId,
+  });
+}
+
+export function useCreateStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { storeId: string; notes?: string }) => apiClient.post<StockTake>("/api/v1/stock-takes", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useAddStockTakeItems() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, items }: { id: string; items: Array<{ itemId: string; binId: string }> }) =>
+      apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/items`, { items }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["stock-takes", vars.id] });
+    },
+  });
+}
+
+export function useStartStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/start`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["stock-takes", id] });
+    },
+  });
+}
+
+export function useResumeStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/resume`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["stock-takes", id] });
+    },
+  });
+}
+
+export function useRecordStockTakeCount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, items }: { id: string; items: Array<{ itemId: string; binId: string; physicalQty: number; remarks?: string; unitCostOverride?: number }> }) =>
+      apiClient.patch<StockTake>(`/api/v1/stock-takes/${id}/count`, { items }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["stock-takes", vars.id] });
+    },
+  });
+}
+
+export function useSubmitStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/submit`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["stock-takes", id] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useReviewStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/review`),
+    onSuccess: (_, id) => qc.invalidateQueries({ queryKey: ["stock-takes", id] }),
+  });
+}
+
+export function useRecountStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/recount`),
+    onSuccess: (_, id) => qc.invalidateQueries({ queryKey: ["stock-takes", id] }),
+  });
+}
+
+export function useRejectStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/reject`),
+    onSuccess: (_, id) => qc.invalidateQueries({ queryKey: ["stock-takes", id] }),
+  });
+}
+
+export function useApproveStockTake() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockTake>(`/api/v1/stock-takes/${id}/approve`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["stock-takes", id] });
+      qc.invalidateQueries({ queryKey: ["stock-adjustments"] });
+    },
+  });
+}
+
+// ---------------- Stock Adjustments ----------------
+export function useStockAdjustments(params?: { storeId?: string; status?: string; stockTakeId?: string }) {
+  const search = new URLSearchParams();
+  if (params?.storeId) search.set("storeId", params.storeId);
+  if (params?.status) search.set("status", params.status);
+  if (params?.stockTakeId) search.set("stockTakeId", params.stockTakeId);
+  const qs = search.toString();
+  return useQuery({
+    queryKey: ["stock-adjustments", params],
+    queryFn: () => apiClient.get<{ items: StockAdjustment[] }>(`/api/v1/stock-adjustments${qs ? `?${qs}` : ""}`),
+  });
+}
+
+export function useStockAdjustment(id: string | null) {
+  return useQuery({
+    queryKey: ["stock-adjustments", id],
+    queryFn: () => apiClient.get<StockAdjustment>(`/api/v1/stock-adjustments/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useApproveStockAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, items }: { id: string; items?: Array<{ itemId: string; binId: string; unitCost?: number }> }) =>
+      apiClient.post<StockAdjustment>(`/api/v1/stock-adjustments/${id}/approve`, { items }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["stock-adjustments"] });
+      qc.invalidateQueries({ queryKey: ["stock-adjustments", vars.id] });
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+    },
+  });
+}
+
+export function useRejectStockAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockAdjustment>(`/api/v1/stock-adjustments/${id}/reject`),
+    onSuccess: (_, id) => qc.invalidateQueries({ queryKey: ["stock-adjustments", id] }),
+  });
+}
+
+export function usePostStockAdjustment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StockAdjustment>(`/api/v1/stock-adjustments/${id}/post`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["stock-adjustments"] });
+      qc.invalidateQueries({ queryKey: ["stock-adjustments", id] });
+      qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    },
   });
 }

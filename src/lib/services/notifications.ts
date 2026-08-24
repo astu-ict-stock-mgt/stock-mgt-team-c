@@ -138,7 +138,7 @@ export async function getNotificationsForUser(
   // Pending stock takes — users who can read stock-take work.
   const canSeeStockTakes =
     roles.has("ADMINISTRATOR") ||
-    permissions.has("stocktake.read");
+    permissions.has("stocktakes.read");
 
   if (canSeeStockTakes) {
     const pendingStockTakes = await db.stockTake.count({
@@ -151,7 +151,7 @@ export async function getNotificationsForUser(
         title: "Active Stock Takes",
         message: `${pendingStockTakes} stock take${pendingStockTakes === 1 ? "" : "s"} in progress`,
         severity: "info",
-        link: { section: "audit-logs", filter: "stock-take" },
+        link: { section: "stock-takes" },
         createdAt: new Date().toISOString(),
       });
     }

@@ -273,3 +273,24 @@ export async function deleteBin(id: string, auditCtx?: { userId?: string; ip?: s
   });
   return { success: true };
 }
+
+export async function listStoreBinStocks(storeId: string) {
+  const store = await prisma.store.findUnique({ where: { id: storeId } });
+  if (!store || store.deletedAt) throw Errors.notFound("Store", storeId);
+
+  return prisma.binStock.findMany({
+    where: { bin: { shelf: { location: { storeId } } } },
+    include: {
+      item: { select: { id: true, code: true, name: true } },
+      bin: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          shelf: { select: { id: true, code: true, name: true, location: { select: { id: true, code: true, name: true } } } },
+        },
+      },
+    },
+    orderBy: [{ item: { name: "asc" } }, { bin: { code: "asc" } }],
+  });
+}

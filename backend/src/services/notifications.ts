@@ -60,11 +60,11 @@ export async function getNotificationsForUser(userId: string, roles: Set<string>
     }
   }
 
-  const canSeeStockTakes = roles.has("ADMINISTRATOR") || permissions.has("stocktake.read");
+  const canSeeStockTakes = roles.has("ADMINISTRATOR") || permissions.has("stocktakes.read");
   if (canSeeStockTakes) {
     const pendingStockTakes = await prisma.stockTake.count({ where: { status: { in: ["DRAFT", "IN_PROGRESS"] } } });
     if (pendingStockTakes > 0) {
-      items.push({ id: "pending_stocktakes", type: "pending_stocktake", title: "Active Stock Takes", message: `${pendingStockTakes} stock take${pendingStockTakes === 1 ? "" : "s"} in progress`, severity: "info", link: { section: "audit-logs", filter: "stock-take" }, createdAt: new Date().toISOString() });
+      items.push({ id: "pending_stocktakes", type: "pending_stocktake", title: "Active Stock Takes", message: `${pendingStockTakes} stock take${pendingStockTakes === 1 ? "" : "s"} in progress`, severity: "info", link: { section: "stock-takes" }, createdAt: new Date().toISOString() });
     }
   }
 

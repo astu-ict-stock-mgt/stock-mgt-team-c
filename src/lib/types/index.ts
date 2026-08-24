@@ -329,3 +329,75 @@ export type Role = {
   userCount: number;
   permissions: string[];
 };
+
+export type StockTakeItem = {
+  id: string;
+  itemId: string;
+  binId: string;
+  systemQty: number | null;
+  physicalQty: number | null;
+  variance: number | null;
+  remarks: string | null;
+  unitCostOverride: number | null;
+  item: { id: string; code: string; name: string };
+  bin: { id: string; code: string; name: string };
+};
+
+export type StockAdjustmentItem = {
+  id: string;
+  itemId: string;
+  binId: string;
+  variance: number;
+  unitCost: number | null;
+  remarks: string | null;
+  item: { id: string; code: string; name: string };
+  bin: { id: string; code: string; name: string };
+};
+
+export type StockAdjustment = {
+  id: string;
+  code: string;
+  storeId: string;
+  stockTakeId: string | null;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  store?: Store;
+  stockTake?: { id: string; code: string; status: string } | null;
+  requestedBy?: { id: string; fullName: string };
+  approvedBy?: { id: string; fullName: string } | null;
+  items: StockAdjustmentItem[];
+};
+
+export type StockTake = {
+  id: string;
+  code: string;
+  storeId: string;
+  conductedById: string;
+  status: string;
+  startDate: string;
+  endDate: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  store: Store;
+  conductedBy: { id: string; fullName: string };
+  items: StockTakeItem[];
+  adjustment?: StockAdjustment | null;
+};
+
+export type StoreBinStock = {
+  id: string;
+  itemId: string;
+  binId: string;
+  quantity: number;
+  reservedQty: number;
+  item: { id: string; code: string; name: string };
+  bin: {
+    id: string;
+    code: string;
+    name: string;
+    shelf: { id: string; code: string; name: string; location: { id: string; code: string; name: string } };
+  };
+};

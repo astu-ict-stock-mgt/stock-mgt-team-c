@@ -11,6 +11,7 @@ export type Section =
   | "receipts"
   | "issues"
   | "requisitions"
+  | "stock-takes"
   | "reports"
   | "audit-logs"
   | "users"
