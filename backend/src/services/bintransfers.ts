@@ -95,7 +95,7 @@ export async function executeBinTransfer(data: { itemId: string, fromBinId: stri
         fromBinId: data.fromBinId,
         toBinId: data.toBinId,
         quantity: data.quantity,
-        requestedById: ctx.userId,
+        requestedById: ctx.userId!,
         status: BinTransferStatus.EXECUTED
       }
     });
