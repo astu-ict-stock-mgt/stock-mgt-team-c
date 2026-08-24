@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable, ResponsiveTable, MobileCard } from "@/components/app/section-utils";
 import { formatRelative, formatDate } from "@/lib/utils/format";
 import { useUIStore } from "@/stores/ui-store";
 
@@ -76,35 +76,49 @@ export function AuditLogsSection() {
           size="md"
         />
       ) : (
-            <AstuCardTable>
-              <table className="astu-table">
-                <thead>
-                  <tr>
-                    <th>Action</th>
-                    <th>Module</th>
-                    <th>Entity</th>
-                    <th>User</th>
-                    <th>Description</th>
-                    <th>IP</th>
-                    <th>Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((a) => (
-                    <tr key={a.id}>
-                      <td><Badge variant="secondary" className="text-[10px] font-mono">{a.action}</Badge></td>
-                      <td className="text-xs font-medium">{a.module}</td>
-                      <td className="text-xs text-muted-foreground">{a.entity ?? "—"}{a.entityId ? ` · ${a.entityId.slice(-8)}` : ""}</td>
-                      <td className="text-xs">{a.user?.fullName ?? "system"}</td>
-                      <td className="text-xs max-w-[200px] truncate">{a.description ?? "—"}</td>
-                      <td className="text-xs font-mono">{a.ipAddress ?? "—"}</td>
-                      <td className="text-xs whitespace-nowrap" title={formatDate(a.timestamp, true)}>{formatRelative(a.timestamp)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-            </AstuCardTable>
+        <ResponsiveTable
+          mobileCards={data.items.map((a) => (
+            <MobileCard
+              key={a.id}
+              primary={a.description ?? a.action}
+              secondary={`${a.module}${a.entity ? ` · ${a.entity}` : ""}`}
+              badge={<span className="inline-flex items-center rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground ring-1 ring-inset ring-border">{a.action}</span>}
+              meta={[
+                { label: "User",      value: a.user?.fullName ?? "system" },
+                { label: "IP",        value: a.ipAddress ?? "—" },
+                { label: "When",      value: formatRelative(a.timestamp) },
+              ]}
+            />
+          ))}
+        >
+          <table className="astu-table">
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Module</th>
+                <th>Entity</th>
+                <th>User</th>
+                <th>Description</th>
+                <th>IP</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items.map((a) => (
+                <tr key={a.id}>
+                  <td><Badge variant="secondary" className="text-[10px] font-mono">{a.action}</Badge></td>
+                  <td className="text-xs font-medium">{a.module}</td>
+                  <td className="text-xs text-muted-foreground">{a.entity ?? "—"}{a.entityId ? ` · ${a.entityId.slice(-8)}` : ""}</td>
+                  <td className="text-xs">{a.user?.fullName ?? "system"}</td>
+                  <td className="text-xs max-w-[200px] truncate">{a.description ?? "—"}</td>
+                  <td className="text-xs font-mono">{a.ipAddress ?? "—"}</td>
+                  <td className="text-xs whitespace-nowrap" title={formatDate(a.timestamp, true)}>{formatRelative(a.timestamp)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
+        </ResponsiveTable>
           )}
     </div>
   );

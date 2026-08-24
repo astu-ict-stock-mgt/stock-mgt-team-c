@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { useUIStore } from "@/stores/ui-store";
 import { formatCurrency, formatNumber, statusColor } from "@/lib/utils/format";
 import { toast } from "sonner";
@@ -156,8 +156,8 @@ export function InventorySection() {
 
       {/* Filters bar */}
       <Card className="mb-4 p-3 border border-border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-          <div className="relative md:col-span-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="relative sm:col-span-2">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input className="pl-8 h-9" placeholder="Search by code or name..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           </div>
@@ -195,8 +195,27 @@ export function InventorySection() {
           onAction={() => setCreateOpen(true)}
         />
        ) : (
-        <AstuCardTable
+        <ResponsiveTable
           footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}
+          mobileCards={data.items.map((it) => (
+            <MobileCard
+              key={it.id}
+              primary={it.name}
+              secondary={it.code}
+              badge={<StatusPill status={it.status} />}
+              meta={[
+                { label: "Qty",      value: formatNumber(it.totalQuantity) },
+                { label: "Value",    value: formatCurrency(it.totalValue) },
+                { label: "Category", value: it.category.name },
+                { label: "Reorder",  value: formatNumber(it.reorderLevel) },
+              ]}
+              action={
+                <AstuAction onClick={() => setSelectedItemId(it.id)}>
+                  <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />View</span>
+                </AstuAction>
+              }
+            />
+          ))}
         >
           <table className="astu-table">
             <thead>
@@ -233,7 +252,7 @@ export function InventorySection() {
             </tbody>
           </table>
           <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
+        </ResponsiveTable>
       )}
 
       <ItemDetailDrawer />

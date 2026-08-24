@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { statusColor } from "@/lib/utils/format";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -98,8 +98,8 @@ export function SuppliersSection() {
       />
 
       <Card className="mb-4 p-3 border border-border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <div className="relative md:col-span-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="relative sm:col-span-2">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input className="pl-8 h-9" placeholder="Search by code, name, contact..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           </div>
@@ -126,7 +126,27 @@ export function SuppliersSection() {
           onAction={openCreate}
         />
        ) : (
-        <AstuCardTable footerAction={<AstuAction onClick={openCreate}>+ New</AstuAction>}>
+        <ResponsiveTable
+          footerAction={<AstuAction onClick={openCreate}>+ New</AstuAction>}
+          mobileCards={data.items.map((s) => (
+            <MobileCard
+              key={s.id}
+              primary={s.name}
+              secondary={s.code}
+              badge={<StatusPill status={s.status} />}
+              meta={[
+                { label: "Contact",  value: s.contactPerson ?? "—" },
+                { label: "Phone",    value: s.phone ?? "—" },
+                { label: "Receipts", value: String(s.receiptCount) },
+              ]}
+              action={
+                <AstuAction onClick={() => openEdit(s)}>
+                  <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3" />Edit</span>
+                </AstuAction>
+              }
+            />
+          ))}
+        >
           <table className="astu-table">
             <thead>
               <tr>
@@ -158,7 +178,7 @@ export function SuppliersSection() {
             </tbody>
           </table>
           <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
+        </ResponsiveTable>
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

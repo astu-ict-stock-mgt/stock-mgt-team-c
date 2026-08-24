@@ -70,9 +70,9 @@ export function DashboardSection() {
         icon={LayoutDashboard}
       />
 
-      {/* KPIs */}
+      {/* KPIs — 1 col mobile → 2 tablet → 4 desktop */}
       {data.kpis.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {data.kpis.map((kpi) => (
             <StatCard
               key={kpi.label}
@@ -108,7 +108,7 @@ export function DashboardSection() {
             </ChartCard>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
             {data.charts.inventoryByStatus && data.charts.inventoryByStatus.length > 0 && (
               <ChartCard title="Inventory by Status" icon={Package}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -167,8 +167,8 @@ export function DashboardSection() {
         </div>
       )}
 
-      {/* Recent activity */}
-      <div className="columns-1 gap-4 lg:columns-2">
+      {/* Recent activity — 1-col mobile, 2-col md+ */}
+      <div className="columns-1 gap-4 md:columns-2">
         {data.recentTransactions && data.recentTransactions.length > 0 && (
           <ActivityCard title="Recent Transactions" icon={ArrowDownToLine} tone="primary" footer={<AstuAction onClick={() => setSection("audit-logs")}>View Audit Logs →</AstuAction>}>
             <table className="astu-table">

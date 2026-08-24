@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { BarChart3, Package } from "lucide-react";
-import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable, TabBar } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable, TabBar, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { useInventoryReport, useValuationReport, useMovementReport, useCategoriesAndUoms, useStores } from "@/lib/api/hooks";
 import { formatCurrency, formatNumber, statusColor } from "@/lib/utils/format";
 
@@ -93,7 +93,22 @@ function InventoryReportView() {
               size="sm"
             />
           ) : (
-            <AstuCardTable>
+            <ResponsiveTable
+              mobileCards={data.items.map((it) => (
+                <MobileCard
+                  key={it.code}
+                  primary={it.name}
+                  secondary={it.code}
+                  badge={<StatusPill status={it.status} />}
+                  meta={[
+                    { label: "Category", value: it.category },
+                    { label: "Qty",      value: `${formatNumber(it.quantity)} ${it.uom}` },
+                    { label: "Value",    value: formatCurrency(it.totalValue) },
+                    { label: "Cost",     value: formatCurrency(it.unitCost) },
+                  ]}
+                />
+              ))}
+            >
               <table className="astu-table">
                 <thead>
                   <tr>
@@ -120,7 +135,7 @@ function InventoryReportView() {
                   ))}
                 </tbody>
               </table>
-            </AstuCardTable>
+            </ResponsiveTable>
           )}
         </>
       )}
@@ -194,7 +209,21 @@ function ValuationReportView() {
               size="sm"
             />
           ) : (
-            <AstuCardTable>
+            <ResponsiveTable
+              mobileCards={data.items.map((it) => (
+                <MobileCard
+                  key={it.code}
+                  primary={it.name}
+                  secondary={it.code}
+                  meta={[
+                    { label: "Qty",    value: `${formatNumber(it.quantity)} ${it.uom}` },
+                    { label: "Avg Cost", value: formatCurrency(it.avgUnitCost) },
+                    { label: "Value",  value: formatCurrency(it.totalValue) },
+                    { label: "Layers", value: String(it.fifoLayers) },
+                  ]}
+                />
+              ))}
+            >
               <table className="astu-table">
                 <thead>
                   <tr>
@@ -219,7 +248,7 @@ function ValuationReportView() {
                   ))}
                 </tbody>
               </table>
-            </AstuCardTable>
+            </ResponsiveTable>
           )}
         </>
       )}
@@ -271,7 +300,22 @@ function MovementReportView() {
           size="sm"
         />
        ) : (
-        <AstuCardTable>
+        <ResponsiveTable
+          mobileCards={data.items.map((t) => (
+            <MobileCard
+              key={t.id}
+              primary={t.itemName ? `${t.itemCode} · ${t.itemName}` : t.itemCode}
+              secondary={t.code}
+              badge={<StatusPill status={t.type} />}
+              meta={[
+                { label: "Qty",     value: formatNumber(Math.abs(t.quantity)) },
+                { label: "Balance", value: formatNumber(t.balanceAfter) },
+                { label: "Store",   value: t.store ?? "—" },
+                { label: "Date",    value: new Date(t.transactionDate).toLocaleDateString() },
+              ]}
+            />
+          ))}
+        >
           <table className="astu-table">
             <thead>
               <tr>
@@ -301,7 +345,7 @@ function MovementReportView() {
             </tbody>
           </table>
           <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
+        </ResponsiveTable>
       )}
     </div>
   );

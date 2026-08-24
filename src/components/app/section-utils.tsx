@@ -22,7 +22,7 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex items-start justify-between gap-4 border-b border-border pb-4">
+    <div className="mb-6 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="flex min-w-0 items-start gap-3">
         {Icon && (
           <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-2 text-primary ring-1 ring-inset ring-border">
@@ -30,13 +30,15 @@ export function PageHeader({
           </span>
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-[22px] font-semibold leading-tight text-foreground">{title}</h1>
+          <h1 className="truncate text-[20px] font-semibold leading-tight text-foreground sm:text-[22px]">{title}</h1>
           {description && (
             <p className="mt-1 text-[13px] leading-snug text-muted-foreground">{description}</p>
           )}
         </div>
       </div>
-      {action && <div className="flex shrink-0 items-center gap-2">{action}</div>}
+      {action && (
+        <div className="flex shrink-0 items-center gap-2 sm:self-start">{action}</div>
+      )}
     </div>
   );
 }
@@ -55,7 +57,7 @@ export function TabBar({
 }) {
   return (
     <div className="mb-5 overflow-x-auto">
-      <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-surface-2 p-1">
+      <div className="inline-flex min-w-full items-center gap-1 rounded-lg border border-border bg-surface-2 p-1 sm:min-w-0">
         {tabs.map((t) => {
           const isActive = t.id === active;
           return (
@@ -557,6 +559,144 @@ export function AstuCardTable({
         </div>
       )}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * MobileCard — renders a single data record as a card on narrow screens.
+ *
+ * Usage:
+ *   <MobileCard
+ *     primary="Dell Latitude 5520"
+ *     secondary="IT-LP-001"
+ *     badge={<StatusPill status="AVAILABLE" />}
+ *     meta={[
+ *       { label: "Qty",   value: "24" },
+ *       { label: "Value", value: "ETB 120,000" },
+ *     ]}
+ *     action={<AstuAction onClick={...}>View</AstuAction>}
+ *   />
+ * ------------------------------------------------------------------ */
+export function MobileCard({
+  primary,
+  secondary,
+  badge,
+  meta,
+  action,
+  onClick,
+}: {
+  primary: ReactNode;
+  secondary?: ReactNode;
+  badge?: ReactNode;
+  meta?: Array<{ label: string; value: ReactNode }>;
+  action?: ReactNode;
+  onClick?: () => void;
+}) {
+  const Comp = onClick ? "button" : "div";
+  return (
+    <Comp
+      onClick={onClick}
+      className={cn(
+        "flex w-full flex-col gap-2 border-b border-border bg-card px-4 py-3 last:border-b-0 text-left",
+        onClick && "hover:bg-surface-2 transition-colors active:bg-surface-2"
+      )}
+    >
+      {/* Header row: primary text + optional badge */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-foreground">{primary}</p>
+          {secondary && (
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{secondary}</p>
+          )}
+        </div>
+        {badge && <div className="shrink-0">{badge}</div>}
+      </div>
+
+      {/* Meta grid — up to 4 label/value pairs */}
+      {meta && meta.length > 0 && (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          {meta.map(({ label, value }) => (
+            <div key={label} className="min-w-0">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {label}
+              </p>
+              <p className="truncate text-xs font-semibold tabular text-foreground">{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action row */}
+      {action && (
+        <div className="flex items-center justify-end pt-0.5">{action}</div>
+      )}
+    </Comp>
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * ResponsiveTable — the DRY mobile/desktop table pattern.
+ *
+ * - On screens ≥ sm (640px): renders the standard <table> inside
+ *   AstuCardTable, exactly as before.
+ * - On screens < sm: renders the `mobileCards` ReactNode instead —
+ *   typically an array of <MobileCard /> elements — wrapped in the
+ *   same astu-card container so borders and shadow match.
+ *
+ * Usage:
+ *   <ResponsiveTable
+ *     toolbar={<FilterBar />}
+ *     footerAction={<AstuAction>+ New</AstuAction>}
+ *     mobileCards={data.items.map(item => (
+ *       <MobileCard key={item.id} primary={item.name} ... />
+ *     ))}
+ *   >
+ *     <table className="astu-table">...</table>
+ *     <Pagination ... />
+ *   </ResponsiveTable>
+ * ------------------------------------------------------------------ */
+export function ResponsiveTable({
+  children,
+  mobileCards,
+  toolbar,
+  footerAction,
+  title,
+}: {
+  children: ReactNode;           // table + Pagination (shown sm+)
+  mobileCards: ReactNode;        // MobileCard list (shown <sm)
+  toolbar?: ReactNode;
+  footerAction?: ReactNode;
+  title?: string;
+}) {
+  return (
+    <>
+      {/* ── Mobile card list (< sm) ── */}
+      <div className="sm:hidden">
+        <div className="astu-card overflow-hidden">
+          {title && (
+            <div className="border-b border-border px-4 py-3">
+              <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            </div>
+          )}
+          {toolbar && (
+            <div className="border-b border-border bg-surface px-4 py-3">{toolbar}</div>
+          )}
+          <div>{mobileCards}</div>
+          {footerAction && (
+            <div className="flex items-center justify-end border-t border-border bg-surface px-4 py-2.5">
+              {footerAction}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Desktop table (sm+) ── */}
+      <div className="hidden sm:block">
+        <AstuCardTable title={title} toolbar={toolbar} footerAction={footerAction}>
+          {children}
+        </AstuCardTable>
+      </div>
+    </>
   );
 }
 
