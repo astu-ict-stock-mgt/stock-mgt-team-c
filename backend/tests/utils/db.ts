@@ -10,7 +10,17 @@ export async function clearDatabase() {
   await (prisma as any).stockCard.deleteMany();
   await (prisma as any).stockTransaction.deleteMany();
 
-  // 2. Issue Vouchers & Allocations
+  // 2. Returns, Transfers & Bin Transfers (Phase 5)
+  await prisma.returnBinAllocation.deleteMany();
+  await prisma.storeReturnItem.deleteMany();
+  await prisma.storeReturnNote.deleteMany();
+  await prisma.transferOutBinAllocation.deleteMany();
+  await prisma.transferInBinAllocation.deleteMany();
+  await prisma.transferRequestItem.deleteMany();
+  await prisma.transferRequest.deleteMany();
+  await prisma.binTransfer.deleteMany();
+
+  // 3. Issue Vouchers & Allocations
   await (prisma as any).sIVBinAllocation.deleteMany();
   await (prisma as any).sIVItem.deleteMany();
   await (prisma as any).storeIssueVoucher.deleteMany();

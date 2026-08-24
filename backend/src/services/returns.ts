@@ -293,10 +293,10 @@ export async function receiveReturn(id: string, data: any, ctx: AuditContext) {
         data: {
           storeId: srn.storeId,
           itemId: returnItem.itemId,
-          quantity: totalAllocated,
+          originalQty: totalAllocated,
           remainingQty: totalAllocated,
           unitCost: unitCost,
-          reference: srn.code
+          batchNumber: srn.code
         }
       });
 
