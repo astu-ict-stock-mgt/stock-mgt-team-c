@@ -32,28 +32,30 @@ model User {
   updatedAt        DateTime   @updatedAt
   deletedAt        DateTime?
 
-  sessions             UserSession[]
-  userRoles            UserRole[]
-  auditLogs            AuditLog[]
-  stockTransactions    StockTransaction[]
-  requisitions         Requisition[]         @relation("RequisitionRequestedBy")
-  requisitionApprovals RequisitionApproval[]
-  stockTakes           StockTake[]
-  gatePasses           GatePass[]            @relation("GatePassRequestedBy")
-  gatePassesApproved   GatePass[]            @relation("GatePassSecurityOfficer")
+  sessions                  UserSession[]
+  userRoles                 UserRole[]
+  auditLogs                 AuditLog[]
+  stockTransactions         StockTransaction[]
+  requisitions              Requisition[]         @relation("RequisitionRequestedBy")
+  requisitionApprovals      RequisitionApproval[]
+  stockTakes                StockTake[]
+  gatePasses                GatePass[]            @relation("GatePassRequestedBy")
+  gatePassesApproved        GatePass[]            @relation("GatePassSecurityOfficer")
+  stockAdjustmentsRequested StockAdjustment[]     @relation("StockAdjustmentRequestedBy")
+  stockAdjustmentsApproved  StockAdjustment[]     @relation("StockAdjustmentApprovedBy")
 
   // Documents
-  receipts             GoodsReceipt[]        @relation("ReceiptReceivedBy")
-  grns                 GRN[]                 @relation("GRNGeneratedBy")
-  evaluations          TechnicalEvaluation[] @relation("EvaluatedBy")
-  sivsCreated          StoreIssueVoucher[]   @relation("SIVCreatedBy")
-  sivsApproved         StoreIssueVoucher[]   @relation("SIVApprovedBy")
-  returnsRequested     StoreReturnNote[]     @relation("ReturnRequestedBy")
-  returnsMade          StoreReturnNote[]     @relation("ReturnedBy")
-  transfersRequested   TransferRequest[]     @relation("TransferRequestedBy")
-  binTransfers         BinTransfer[]
-  assets               FixedAsset[]          @relation("AssetResponsibleUser")
-  userCard             UserCard?
+  receipts           GoodsReceipt[]        @relation("ReceiptReceivedBy")
+  grns               GRN[]                 @relation("GRNGeneratedBy")
+  evaluations        TechnicalEvaluation[] @relation("EvaluatedBy")
+  sivsCreated        StoreIssueVoucher[]   @relation("SIVCreatedBy")
+  sivsApproved       StoreIssueVoucher[]   @relation("SIVApprovedBy")
+  returnsRequested   StoreReturnNote[]     @relation("ReturnRequestedBy")
+  returnsMade        StoreReturnNote[]     @relation("ReturnedBy")
+  transfersRequested TransferRequest[]     @relation("TransferRequestedBy")
+  binTransfers       BinTransfer[]
+  assets             FixedAsset[]          @relation("AssetResponsibleUser")
+  userCard           UserCard?
 
   @@index([status])
   @@index([deletedAt])
@@ -187,7 +189,7 @@ model Store {
   id          String      @id @default(cuid())
   code        String      @unique
   name        String      @unique
-  type        String?     // e.g. "MAIN", "DEPARTMENT"
+  type        String? // e.g. "MAIN", "DEPARTMENT"
   department  String?
   location    String?
   status      StoreStatus @default(ACTIVE)
@@ -196,20 +198,20 @@ model Store {
   updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
 
-  locations          StoreLocation[]
-  storeStocks        StoreStock[]
-  receipts           GoodsReceipt[]
-  sivs               StoreIssueVoucher[]
-  sivsReceived       StoreIssueVoucher[] @relation("SIVDestinationStore")
-  transfersFrom      TransferRequest[]   @relation("TransferRequestFrom")
-  transfersTo        TransferRequest[]   @relation("TransferRequestTo")
-  stockTakes         StockTake[]
-  fifoLayers         FifoLayer[]
-  stockTransactions  StockTransaction[]
-  stockCards         StockCard[]
-  returnNotes        StoreReturnNote[]   @relation("ReturnDestinationStore")
-  binTransfers       BinTransfer[]
-
+  locations         StoreLocation[]
+  storeStocks       StoreStock[]
+  receipts          GoodsReceipt[]
+  sivs              StoreIssueVoucher[]
+  sivsReceived      StoreIssueVoucher[] @relation("SIVDestinationStore")
+  transfersFrom     TransferRequest[]   @relation("TransferRequestFrom")
+  transfersTo       TransferRequest[]   @relation("TransferRequestTo")
+  stockTakes        StockTake[]
+  fifoLayers        FifoLayer[]
+  stockTransactions StockTransaction[]
+  stockCards        StockCard[]
+  returnNotes       StoreReturnNote[]   @relation("ReturnDestinationStore")
+  binTransfers      BinTransfer[]
+  stockAdjustments  StockAdjustment[]
 
   @@index([status])
   @@index([deletedAt])
@@ -254,16 +256,18 @@ model Bin {
   createdAt DateTime @default(now())
 
   shelf Shelf @relation(fields: [shelfId], references: [id], onDelete: Cascade)
-  
-  binStocks BinStock[]
-  binCards  BinCard[]
-  receiptItems GoodsReceiptItem[]
-  sivAllocations SIVBinAllocation[]
-  returnAlloc     ReturnBinAllocation[]
-  transferOutAlloc TransferOutBinAllocation[]
-  transferInAlloc TransferInBinAllocation[]
-  binTransferFrom BinTransfer[] @relation("BinTransferFrom")
-  binTransferTo   BinTransfer[] @relation("BinTransferTo")
+
+  binStocks            BinStock[]
+  binCards             BinCard[]
+  receiptItems         GoodsReceiptItem[]
+  sivAllocations       SIVBinAllocation[]
+  returnAlloc          ReturnBinAllocation[]
+  transferOutAlloc     TransferOutBinAllocation[]
+  transferInAlloc      TransferInBinAllocation[]
+  binTransferFrom      BinTransfer[]              @relation("BinTransferFrom")
+  binTransferTo        BinTransfer[]              @relation("BinTransferTo")
+  stockTakeItems       StockTakeItem[]
+  stockAdjustmentItems StockAdjustmentItem[]
 
   @@unique([shelfId, code])
 }
@@ -273,48 +277,49 @@ model Bin {
 // -------------------------------------------------------------------
 
 model InventoryItem {
-  id             String        @id @default(cuid())
-  code           String        @unique // SKU
-  name           String
-  description    String?
-  categoryId     String
-  uomId          String
-  materialType   MaterialType  @default(CONSUMABLE)
-  status         ItemStatus    @default(AVAILABLE)
-  
-  // Stock Control
-  minStock       Float         @default(0)
-  maxStock       Float         @default(0)
-  safetyStock    Float         @default(0)
-  reorderLevel   Float         @default(0)
-  
-  // Shelf Life (template data)
-  hasShelfLife   Boolean       @default(false)
-  shelfLifeDays  Int?
+  id           String       @id @default(cuid())
+  code         String       @unique // SKU
+  name         String
+  description  String?
+  categoryId   String
+  uomId        String
+  materialType MaterialType @default(CONSUMABLE)
+  status       ItemStatus   @default(AVAILABLE)
 
-  unitCost       Float         @default(0)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  deletedAt      DateTime?
+  // Stock Control
+  minStock     Float @default(0)
+  maxStock     Float @default(0)
+  safetyStock  Float @default(0)
+  reorderLevel Float @default(0)
+
+  // Shelf Life (template data)
+  hasShelfLife  Boolean @default(false)
+  shelfLifeDays Int?
+
+  unitCost  Float     @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   category Category      @relation(fields: [categoryId], references: [id])
   uom      UnitOfMeasure @relation(fields: [uomId], references: [id])
 
-  storeStocks      StoreStock[]
-  binStocks        BinStock[]
-  fifoLayers       FifoLayer[]
-  receiptItems     GoodsReceiptItem[]
-  sivItems         SIVItem[]
-  transactions     StockTransaction[]
-  stockCards       StockCard[]
-  binCards         BinCard[]
-  requisitionItems RequisitionItem[]
-  transferItems    TransferRequestItem[]
-  stockTakeItems   StockTakeItem[]
-  fixedAssets      FixedAsset[]
-  returnItems      StoreReturnItem[]
-  disposalItems    DisposalItem[]
-  binTransfers     BinTransfer[]
+  storeStocks          StoreStock[]
+  binStocks            BinStock[]
+  fifoLayers           FifoLayer[]
+  receiptItems         GoodsReceiptItem[]
+  sivItems             SIVItem[]
+  transactions         StockTransaction[]
+  stockCards           StockCard[]
+  binCards             BinCard[]
+  requisitionItems     RequisitionItem[]
+  transferItems        TransferRequestItem[]
+  stockTakeItems       StockTakeItem[]
+  stockAdjustmentItems StockAdjustmentItem[]
+  fixedAssets          FixedAsset[]
+  returnItems          StoreReturnItem[]
+  disposalItems        DisposalItem[]
+  binTransfers         BinTransfer[]
 
   @@index([categoryId])
   @@index([status])
@@ -372,17 +377,17 @@ model BinStock {
 }
 
 model FifoLayer {
-  id             String   @id @default(cuid())
-  itemId         String
-  storeId        String
-  grnId          String?  
-  batchNumber    String?
+  id              String    @id @default(cuid())
+  itemId          String
+  storeId         String
+  grnId           String?
+  batchNumber     String?
   manufactureDate DateTime?
-  expiryDate     DateTime?
-  originalQty    Float
-  remainingQty   Float
-  unitCost       Float
-  createdAt      DateTime @default(now())
+  expiryDate      DateTime?
+  originalQty     Float
+  remainingQty    Float
+  unitCost        Float
+  createdAt       DateTime  @default(now())
 
   item  InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
   store Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -411,9 +416,9 @@ model GoodsReceipt {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  supplier   Supplier           @relation(fields: [supplierId], references: [id])
-  store      Store              @relation(fields: [storeId], references: [id])
-  receivedBy User               @relation("ReceiptReceivedBy", fields: [receivedById], references: [id])
+  supplier   Supplier             @relation(fields: [supplierId], references: [id])
+  store      Store                @relation(fields: [storeId], references: [id])
+  receivedBy User                 @relation("ReceiptReceivedBy", fields: [receivedById], references: [id])
   items      GoodsReceiptItem[]
   evaluation TechnicalEvaluation?
   grn        GRN?
@@ -432,7 +437,7 @@ enum ReceiptStatus {
 }
 
 model GoodsReceiptItem {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   receiptId String
   itemId    String
   quantity  Float
@@ -441,9 +446,9 @@ model GoodsReceiptItem {
   binId     String?
   remarks   String?
 
-  receipt GoodsReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  item    InventoryItem @relation(fields: [itemId], references: [id])
-  bin     Bin?          @relation(fields: [binId], references: [id])
+  receipt        GoodsReceipt             @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  item           InventoryItem            @relation(fields: [itemId], references: [id])
+  bin            Bin?                     @relation(fields: [binId], references: [id])
   evaluationItem TechnicalEvaluationItem?
 
   @@index([receiptId])
@@ -451,13 +456,13 @@ model GoodsReceiptItem {
 }
 
 model TechnicalEvaluation {
-  id          String   @id @default(cuid())
-  receiptId   String?  @unique
-  returnId    String?  @unique
+  id          String             @id @default(cuid())
+  receiptId   String?            @unique
+  returnId    String?            @unique
   evaluatorId String
   decision    EvaluationDecision
   comments    String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime           @default(now())
 
   receipt   GoodsReceipt?             @relation(fields: [receiptId], references: [id])
   return    StoreReturnNote?          @relation(fields: [returnId], references: [id])
@@ -466,11 +471,11 @@ model TechnicalEvaluation {
 }
 
 model TechnicalEvaluationItem {
-  id                 String  @id @default(cuid())
+  id                 String             @id @default(cuid())
   evaluationId       String
-  goodsReceiptItemId String  @unique
-  acceptedQuantity   Float   @default(0)
-  rejectedQuantity   Float   @default(0)
+  goodsReceiptItemId String             @unique
+  acceptedQuantity   Float              @default(0)
+  rejectedQuantity   Float              @default(0)
   condition          String?
   decision           EvaluationDecision
   remarks            String?
@@ -508,8 +513,8 @@ model GRN {
 // -------------------------------------------------------------------
 
 model Requisition {
-  id            String            @id @default(cuid())
-  code          String            @unique // REQ-YYYYMMDD-XXXX
+  id                    String            @id @default(cuid())
+  code                  String            @unique // REQ-YYYYMMDD-XXXX
   requestedById         String
   department            String
   destinationDepartment String?
@@ -518,7 +523,7 @@ model Requisition {
   purpose               String?
   notes                 String?
   createdAt             DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  updatedAt             DateTime          @updatedAt
 
   requestedBy User                  @relation("RequisitionRequestedBy", fields: [requestedById], references: [id])
   items       RequisitionItem[]
@@ -574,19 +579,19 @@ enum ApprovalStatus {
 }
 
 model StoreIssueVoucher {
-  id            String    @id @default(cuid())
-  code          String    @unique // SIV-YYYYMMDD-XXXX
+  id                 String      @id @default(cuid())
+  code               String      @unique // SIV-YYYYMMDD-XXXX
   requisitionId      String?
   storeId            String
   destinationStoreId String?
   voucherType        VoucherType @default(SIV)
   createdById        String
   approvedById       String?
-  status        SIVStatus @default(DRAFT)
-  issueDate     DateTime?
-  notes         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  status             SIVStatus   @default(DRAFT)
+  issueDate          DateTime?
+  notes              String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
   requisition      Requisition? @relation(fields: [requisitionId], references: [id])
   store            Store        @relation(fields: [storeId], references: [id])
@@ -594,7 +599,7 @@ model StoreIssueVoucher {
   createdBy        User         @relation("SIVCreatedBy", fields: [createdById], references: [id])
   approvedBy       User?        @relation("SIVApprovedBy", fields: [approvedById], references: [id])
   items            SIVItem[]
-  gatePass    GatePass?
+  gatePass         GatePass?
 
   @@index([storeId])
   @@index([status])
@@ -624,7 +629,7 @@ model SIVItem {
   quantity    Float
   approvedQty Float  @default(0)
   issuedQty   Float  @default(0)
-  unitCost    Float  @default(0) 
+  unitCost    Float  @default(0)
 
   siv         StoreIssueVoucher  @relation(fields: [sivId], references: [id], onDelete: Cascade)
   item        InventoryItem      @relation(fields: [itemId], references: [id])
@@ -634,12 +639,12 @@ model SIVItem {
 }
 
 model SIVBinAllocation {
-  id         String   @id @default(cuid())
-  sivItemId  String
-  binId      String
-  quantity   Float
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  sivItemId String
+  binId     String
+  quantity  Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   sivItem SIVItem @relation(fields: [sivItemId], references: [id], onDelete: Cascade)
   bin     Bin     @relation(fields: [binId], references: [id])
@@ -683,9 +688,9 @@ enum ReturnStatus {
 }
 
 model StoreReturnItem {
-  id        String  @id @default(cuid())
-  srnId     String
-  itemId    String
+  id          String  @id @default(cuid())
+  srnId       String
+  itemId      String
   quantity    Float
   acceptedQty Float?
   unitCost    Float? // Cost associated with the original issue
@@ -740,7 +745,7 @@ enum TransferStatus {
 }
 
 model TransferRequestItem {
-  id         String @id @default(cuid())
+  id            String @id @default(cuid())
   transferId    String
   itemId        String
   quantity      Float
@@ -749,7 +754,7 @@ model TransferRequestItem {
 
   transfer TransferRequest @relation(fields: [transferId], references: [id], onDelete: Cascade)
   item     InventoryItem   @relation(fields: [itemId], references: [id])
-  
+
   outAllocations TransferOutBinAllocation[]
   inAllocations  TransferInBinAllocation[]
 }
@@ -808,13 +813,13 @@ enum BinTransferStatus {
 // -------------------------------------------------------------------
 
 model DisposalRequest {
-  id            String         @id @default(cuid())
-  code          String         @unique // DISP-YYYYMMDD-XXXX
-  status        DisposalStatus @default(FLAGGED)
-  reason        String?
-  method        String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id        String         @id @default(cuid())
+  code      String         @unique // DISP-YYYYMMDD-XXXX
+  status    DisposalStatus @default(FLAGGED)
+  reason    String?
+  method    String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   items DisposalItem[]
 }
@@ -829,7 +834,7 @@ enum DisposalStatus {
 }
 
 model DisposalItem {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   disposalId String
   itemId     String
   quantity   Float
@@ -844,15 +849,15 @@ model DisposalItem {
 // -------------------------------------------------------------------
 
 model FixedAsset {
-  id                String       @id @default(cuid())
-  assetNumber       String       @unique // e.g., ASTU/IT/001
+  id                String      @id @default(cuid())
+  assetNumber       String      @unique // e.g., ASTU/IT/001
   itemId            String
   serialNumber      String?
   grnId             String?
   responsibleUserId String?
-  status            AssetStatus  @default(IN_USE)
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  status            AssetStatus @default(IN_USE)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
   item            InventoryItem @relation(fields: [itemId], references: [id])
   grn             GRN?          @relation(fields: [grnId], references: [id])
@@ -886,11 +891,11 @@ model StockTransaction {
   itemId          String
   storeId         String
   type            TransactionType
-  quantity        Float           // signed: + for in, - for out
+  quantity        Float // signed: + for in, - for out
   unitCost        Float           @default(0)
   balanceBefore   Float           @default(0)
   balanceAfter    Float           @default(0)
-  referenceType   String?         // "GRN", "SIV", "SRN", "TRANSFER", "ADJUSTMENT"
+  referenceType   String? // "GRN", "SIV", "SRN", "TRANSFER", "ADJUSTMENT"
   referenceId     String?
   userId          String
   remarks         String?
@@ -973,9 +978,10 @@ model StockTake {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
-  store       Store           @relation(fields: [storeId], references: [id])
-  conductedBy User            @relation(fields: [conductedById], references: [id])
+  store       Store            @relation(fields: [storeId], references: [id])
+  conductedBy User             @relation(fields: [conductedById], references: [id])
   items       StockTakeItem[]
+  adjustment  StockAdjustment?
 
   @@index([status])
   @@index([storeId])
@@ -984,23 +990,83 @@ model StockTake {
 enum StockTakeStatus {
   DRAFT
   IN_PROGRESS
-  COMPLETED
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  RECOUNT_REQUIRED
+  REJECTED
   RECONCILED
 }
 
 model StockTakeItem {
-  id          String  @id @default(cuid())
-  stockTakeId String
-  itemId      String
-  systemQty   Float
-  physicalQty Float?
-  variance    Float?
-  remarks     String?
+  id               String  @id @default(cuid())
+  stockTakeId      String
+  itemId           String
+  binId            String
+  systemQty        Float? // Captured when IN_PROGRESS
+  physicalQty      Float? // Recorded during count
+  variance         Float?
+  remarks          String?
+  unitCostOverride Float? // Optional cost override for positive variance
 
   stockTake StockTake     @relation(fields: [stockTakeId], references: [id], onDelete: Cascade)
   item      InventoryItem @relation(fields: [itemId], references: [id])
+  bin       Bin           @relation(fields: [binId], references: [id])
 
+  @@unique([stockTakeId, itemId, binId])
   @@index([stockTakeId])
+  @@index([binId])
+}
+
+// -------------------------------------------------------------------
+// STOCK ADJUSTMENTS (Phase 6)
+// -------------------------------------------------------------------
+
+model StockAdjustment {
+  id            String                @id @default(cuid())
+  code          String                @unique // ADJ-YYYYMMDD-XXXX
+  storeId       String
+  stockTakeId   String?               @unique
+  requestedById String
+  approvedById  String?
+  status        StockAdjustmentStatus @default(DRAFT)
+  notes         String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  store       Store                 @relation(fields: [storeId], references: [id])
+  stockTake   StockTake?            @relation(fields: [stockTakeId], references: [id])
+  requestedBy User                  @relation("StockAdjustmentRequestedBy", fields: [requestedById], references: [id])
+  approvedBy  User?                 @relation("StockAdjustmentApprovedBy", fields: [approvedById], references: [id])
+  items       StockAdjustmentItem[]
+
+  @@index([status])
+  @@index([storeId])
+}
+
+enum StockAdjustmentStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  POSTED
+}
+
+model StockAdjustmentItem {
+  id                String  @id @default(cuid())
+  stockAdjustmentId String
+  itemId            String
+  binId             String
+  variance          Float // Negative for OUT, Positive for IN
+  unitCost          Float? // Actual cost applied
+  remarks           String?
+
+  stockAdjustment StockAdjustment @relation(fields: [stockAdjustmentId], references: [id], onDelete: Cascade)
+  item            InventoryItem   @relation(fields: [itemId], references: [id])
+  bin             Bin             @relation(fields: [binId], references: [id])
+
+  @@unique([stockAdjustmentId, itemId, binId])
+  @@index([stockAdjustmentId])
 }
 
 // -------------------------------------------------------------------
