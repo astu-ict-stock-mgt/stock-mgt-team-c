@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, AstuCardTable } from "@/components/app/section-utils";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -79,9 +79,17 @@ export function CategoriesSection() {
           </Dialog>
         }
       />
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load" onRetry={() => refetch()} /> :
-       !data || data.categories.length === 0 ? <SectionEmpty title="No categories yet" /> : (
+       !data || data.categories.length === 0 ? (
+        <EmptyState
+          icon={FolderTree}
+          title="No categories yet"
+          description="Create categories to classify inventory items, then add units of measure for accurate stock tracking."
+          actionLabel="New Category"
+          onAction={() => setOpen(true)}
+        />
+       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           <AstuCardTable title={`Categories (${data.categories.length})`}>
             <table className="astu-table">

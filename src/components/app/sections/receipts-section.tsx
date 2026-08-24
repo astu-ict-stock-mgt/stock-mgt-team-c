@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
 import { useUIStore } from "@/stores/ui-store";
 import { formatCurrency, formatNumber, statusColor, formatDate } from "@/lib/utils/format";
 import { toast } from "sonner";
@@ -47,9 +47,17 @@ export function ReceiptsSection() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load receipts" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No receipts yet" message="Create your first receipt to start tracking inventory" /> : (
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={ArrowDownToLine}
+          title="No receipts yet"
+          description="Record your first goods receipt to create FIFO layers and update store stock automatically."
+          actionLabel="New Receipt"
+          onAction={() => setCreateOpen(true)}
+        />
+       ) : (
         <AstuCardTable footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}>
           <table className="astu-table">
             <thead>

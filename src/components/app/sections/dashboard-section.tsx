@@ -24,7 +24,7 @@ import { type ReactNode } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, CartesianGrid } from "recharts";
 import { useDashboard } from "@/lib/api/hooks";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader, SectionError, SectionLoading, AstuAction, StatCard, StatusPill, type StatTone } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, AstuAction, StatCard, StatusPill, type StatTone } from "@/components/app/section-utils";
 import { useUIStore } from "@/stores/ui-store";
 import { formatCurrency, formatCurrencyCompact, formatCompact, formatNumber, formatRelative, statusColor } from "@/lib/utils/format";
 
@@ -59,7 +59,7 @@ export function DashboardSection() {
   const { data, isLoading, isError, refetch } = useDashboard();
   const setSection = useUIStore((s) => s.setSection);
 
-  if (isLoading) return <SectionLoading label="Loading dashboard..." />;
+  if (isLoading) return <SectionLoading variant="dashboard" />;
   if (isError || !data) return <SectionError message="Failed to load dashboard" onRetry={() => refetch()} />;
 
   return (

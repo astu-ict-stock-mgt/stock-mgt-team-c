@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
 import { statusColor } from "@/lib/utils/format";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -115,9 +115,17 @@ export function SuppliersSection() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load suppliers" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No suppliers" /> : (
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={Truck}
+          title="No suppliers yet"
+          description="Register your first supplier to start tracking goods received and supplier performance."
+          actionLabel="New Supplier"
+          onAction={openCreate}
+        />
+       ) : (
         <AstuCardTable footerAction={<AstuAction onClick={openCreate}>+ New</AstuAction>}>
           <table className="astu-table">
             <thead>

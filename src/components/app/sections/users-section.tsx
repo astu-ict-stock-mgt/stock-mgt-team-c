@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
 import { statusColor, formatRelative, roleDisplayName } from "@/lib/utils/format";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -152,9 +152,17 @@ export function UsersSection() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load users" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No users yet" /> : (
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No users yet"
+          description="Create the first user account and assign roles to control access to the system."
+          actionLabel="New User"
+          onAction={() => setCreateOpen(true)}
+        />
+       ) : (
         <AstuCardTable footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}>
           <table className="astu-table">
             <thead>

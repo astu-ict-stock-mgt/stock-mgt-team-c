@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable } from "@/components/app/section-utils";
 import { formatRelative, formatDate } from "@/lib/utils/format";
 import { useUIStore } from "@/stores/ui-store";
 
@@ -64,11 +64,18 @@ export function AuditLogsSection() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
-        isError ? <SectionError message="Failed to load audit logs" onRetry={() => refetch()} /> :
-          !data || data.items.length === 0 ? (
-            <SectionEmpty title="No audit logs" message="System mutations will be logged here" />
-          ) : (
+      {isLoading ? (
+        <SectionLoading variant="table" />
+      ) : isError ? (
+        <SectionError message="Failed to load audit logs" onRetry={() => refetch()} />
+      ) : !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={ScrollText}
+          title="No audit logs yet"
+          description="Every create, update, and delete action in the system is recorded here automatically."
+          size="md"
+        />
+      ) : (
             <AstuCardTable>
               <table className="astu-table">
                 <thead>

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { BarChart3, Package } from "lucide-react";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuCardTable, TabBar } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable, TabBar } from "@/components/app/section-utils";
 import { useInventoryReport, useValuationReport, useMovementReport, useCategoriesAndUoms, useStores } from "@/lib/api/hooks";
 import { formatCurrency, formatNumber, statusColor } from "@/lib/utils/format";
 
@@ -74,7 +74,7 @@ function InventoryReportView() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load report" onRetry={() => refetch()} /> :
        !data ? null : (
         <>
@@ -85,7 +85,14 @@ function InventoryReportView() {
             <Stat label="Low Stock" value={formatNumber(data.lowStockCount)} color="text-warning-strong" />
             <Stat label="Out of Stock" value={formatNumber(data.outOfStockCount)} color="text-danger" />
           </div>
-          {data.items.length === 0 ? <SectionEmpty title="No items match filters" /> : (
+          {data.items.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="No items match the current filters"
+              description="Try removing some filters or selecting a different category or store."
+              size="sm"
+            />
+          ) : (
             <AstuCardTable>
               <table className="astu-table">
                 <thead>
@@ -152,7 +159,7 @@ function ValuationReportView() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed" onRetry={() => refetch()} /> :
        !data ? null : (
         <>
@@ -179,7 +186,14 @@ function ValuationReportView() {
               </CardContent>
             </Card>
           )}
-          {data.items.length === 0 ? <SectionEmpty title="No items to value" /> : (
+          {data.items.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="No items to value"
+              description="No inventory items have stock value under the current filters."
+              size="sm"
+            />
+          ) : (
             <AstuCardTable>
               <table className="astu-table">
                 <thead>
@@ -247,9 +261,16 @@ function MovementReportView() {
           <Button variant="outline" className="h-9" onClick={() => refetch()}>Refresh</Button>
         </div>
       </Card>
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No transactions found" /> : (
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          title="No transactions found"
+          description="No stock movements match the current filters. Try changing the store, type, or date range."
+          size="sm"
+        />
+       ) : (
         <AstuCardTable>
           <table className="astu-table">
             <thead>

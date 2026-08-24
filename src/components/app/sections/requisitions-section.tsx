@@ -13,7 +13,7 @@ import {
   AstuCardTable,
   PageHeader,
   Pagination,
-  SectionEmpty,
+  EmptyState,
   SectionError,
   SectionLoading,
   StatCard,
@@ -297,11 +297,20 @@ export function RequisitionsSection() {
       </Card>
 
       {isLoading ? (
-        <SectionLoading label="Loading requisitions..." />
+        <SectionLoading variant="table-with-stats" label="Loading requisitions..." />
       ) : isError ? (
         <SectionError message="Failed to load requisitions" onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
-        <SectionEmpty title="No requisitions found" message="Create requisitions in the backend to see them here." />
+        <EmptyState
+          icon={FileText}
+          title="No requisitions found"
+          description={
+            search || status
+              ? "No requisitions match the current filters. Try adjusting the search or status."
+              : "Department Heads can create requisitions above. They appear here once submitted for approval."
+          }
+          size="md"
+        />
       ) : (
         <AstuCardTable title="Requisition Records" footerAction={<AstuAction onClick={() => refetch()}>Refresh</AstuAction>}>
           <table className="astu-table">

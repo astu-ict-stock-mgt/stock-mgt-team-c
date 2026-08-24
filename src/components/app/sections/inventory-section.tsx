@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
 import { useUIStore } from "@/stores/ui-store";
 import { formatCurrency, formatNumber, statusColor } from "@/lib/utils/format";
 import { toast } from "sonner";
@@ -184,9 +184,17 @@ export function InventorySection() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load inventory" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No inventory items" message="Create your first item to get started" /> : (
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="No inventory items yet"
+          description="Add your first stock item to start tracking quantities, values, and reorder levels."
+          actionLabel="New Item"
+          onAction={() => setCreateOpen(true)}
+        />
+       ) : (
         <AstuCardTable
           footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}
         >
@@ -243,7 +251,7 @@ function ItemDetailDrawer() {
   return (
     <Dialog open={!!selectedItemId} onOpenChange={(open) => !open && setSelectedItemId(null)}>
       <DialogContent className="sm:max-w-[760px] max-h-[90vh] overflow-y-auto">
-        {isLoading ? <SectionLoading label="Loading item..." /> : item ? (
+        {isLoading ? <SectionLoading variant="settings" label="Loading item..." /> : item ? (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-primary">
