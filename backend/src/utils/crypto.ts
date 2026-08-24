@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
 
-const SALT_ROUNDS = 10;
+// Increased from 10 to 12 for better security (4x harder to crack)
+// OWASP recommends 12+ rounds for 2024
+const SALT_ROUNDS = 12;
 
 export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, SALT_ROUNDS);
