@@ -23,7 +23,14 @@ const Schema = z.object({
   email: z.string().email(),
   username: z.string().min(3),
   fullName: z.string().min(2),
-  password: z.string().min(6),
+  password: z.string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .refine(
+      (password) => /[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password),
+      { message: "Password must contain at least one number or special character" }
+    ),
   department: z.string().optional(),
   phoneNumber: z.string().optional(),
 });
