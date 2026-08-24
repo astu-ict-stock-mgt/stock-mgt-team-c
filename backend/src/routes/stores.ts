@@ -42,6 +42,11 @@ router.get("/:storeId/locations", requirePermission("locations.read"), asyncHand
   res.json(ok({ items }));
 }));
 
+router.get("/:storeId/bin-stocks", requirePermission("stores.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const items = await svc.listStoreBinStocks(req.params.storeId);
+  res.json(ok({ items }));
+}));
+
 router.post("/:storeId/locations", requirePermission("locations.create"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.locationSchema.parse(req.body);
   const loc = await svc.createLocation(req.params.storeId, body, { userId: req.userId, ip: req.ip });

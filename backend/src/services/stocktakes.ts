@@ -1,4 +1,4 @@
-import { StockTakeStatus } from "@prisma/client";
+import { Prisma, StockTakeStatus } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 import { recordAudit, AuditContext } from "./audit";
@@ -7,6 +7,75 @@ function generateStockTakeCode(): string {
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const rand = Math.floor(1000 + Math.random() * 9000);
   return `ST-${dateStr}-${rand}`;
+}
+
+const stockTakeInclude = {
+  store: true,
+  conductedBy: { select: { id: true, fullName: true } },
+  items: {
+    include: {
+      item: { select: { id: true, code: true, name: true } },
+      bin: { select: { id: true, code: true, name: true } },
+    },
+  },
+  adjustment: {
+    include: {
+      items: {
+        include: {
+          item: { select: { id: true, code: true, name: true } },
+          bin: { select: { id: true, code: true, name: true } },
+        },
+      },
+    },
+  },
+} satisfies Prisma.StockTakeInclude;
+
+export async function listStockTakes(params: { storeId?: string; status?: StockTakeStatus; search?: string }) {
+  const where: Prisma.StockTakeWhereInput = {};
+  if (params.storeId) where.storeId = params.storeId;
+  if (params.status) where.status = params.status;
+  if (params.search) {
+    where.OR = [
+      { code: { contains: params.search, mode: "insensitive" } },
+      { notes: { contains: params.search, mode: "insensitive" } },
+    ];
+  }
+
+  return prisma.stockTake.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    include: stockTakeInclude,
+  });
+}
+
+export async function getStockTake(id: string) {
+  const st = await prisma.stockTake.findUnique({
+    where: { id },
+    include: stockTakeInclude,
+  });
+  if (!st) throw Errors.notFound("StockTake", id);
+  return st;
+}
+
+export async function updateStockTake(id: string, data: { notes?: string }, ctx: AuditContext) {
+  if (!ctx.userId) throw Errors.unauthorized();
+
+  return prisma.$transaction(async (tx) => {
+    const st = await tx.stockTake.findUnique({ where: { id } });
+    if (!st) throw Errors.notFound("StockTake", id);
+    if (st.status !== StockTakeStatus.DRAFT) {
+      throw Errors.conflict("Only DRAFT stock takes can be updated.");
+    }
+
+    const updated = await tx.stockTake.update({
+      where: { id },
+      data: { notes: data.notes },
+      include: stockTakeInclude,
+    });
+
+    await recordAudit({ ctx, action: "UPDATED", module: "stocktakes", entity: "stocktake", entityId: id });
+    return updated;
+  });
 }
 
 export async function createStockTake(data: any, ctx: AuditContext) {
@@ -27,7 +96,7 @@ export async function createStockTake(data: any, ctx: AuditContext) {
     });
 
     await recordAudit({ ctx, action: "CREATED", module: "stocktakes", entity: "stocktake", entityId: st.id });
-    return st;
+    return tx.stockTake.findUnique({ where: { id: st.id }, include: stockTakeInclude });
   });
 }
 
@@ -62,7 +131,7 @@ export async function addStockTakeItems(id: string, data: any, ctx: AuditContext
     }
 
     await recordAudit({ ctx, action: "UPDATED", module: "stocktakes", entity: "stocktake", entityId: st.id });
-    return tx.stockTake.findUnique({ where: { id }, include: { items: true } });
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }
 
@@ -89,13 +158,36 @@ export async function startStockTake(id: string, ctx: AuditContext) {
       });
     }
 
-    const updated = await tx.stockTake.update({
+    await tx.stockTake.update({
       where: { id },
       data: { status: StockTakeStatus.IN_PROGRESS, startDate: new Date() }
     });
 
     await recordAudit({ ctx, action: "STARTED", module: "stocktakes", entity: "stocktake", entityId: id });
-    return updated;
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
+  });
+}
+
+export async function resumeStockTake(id: string, ctx: AuditContext) {
+  if (!ctx.userId) throw Errors.unauthorized();
+
+  return prisma.$transaction(async (tx) => {
+    const st = await tx.stockTake.findUnique({ where: { id }, include: { items: true } });
+    if (!st) throw Errors.notFound("StockTake", id);
+    if (st.status !== StockTakeStatus.RECOUNT_REQUIRED) {
+      throw Errors.conflict("Can only resume RECOUNT_REQUIRED stock takes.");
+    }
+
+    const missingBaseline = st.items.some((i) => i.systemQty === null);
+    if (missingBaseline) throw Errors.conflict("System quantity baseline is missing. Cannot resume counting.");
+
+    await tx.stockTake.update({
+      where: { id },
+      data: { status: StockTakeStatus.IN_PROGRESS },
+    });
+
+    await recordAudit({ ctx, action: "RESUMED", module: "stocktakes", entity: "stocktake", entityId: id });
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }
 
@@ -127,7 +219,7 @@ export async function recordCount(id: string, data: any, ctx: AuditContext) {
     }
 
     await recordAudit({ ctx, action: "COUNT_RECORDED", module: "stocktakes", entity: "stocktake", entityId: id });
-    return tx.stockTake.findUnique({ where: { id }, include: { items: true } });
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }
 
@@ -149,7 +241,7 @@ export async function submitStockTake(id: string, ctx: AuditContext) {
     });
 
     await recordAudit({ ctx, action: "SUBMITTED", module: "stocktakes", entity: "stocktake", entityId: id });
-    return updated;
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }
 
@@ -167,7 +259,7 @@ export async function reviewStockTake(id: string, ctx: AuditContext) {
     });
 
     await recordAudit({ ctx, action: "REVIEWED", module: "stocktakes", entity: "stocktake", entityId: id });
-    return updated;
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }
 
@@ -187,7 +279,7 @@ export async function recountStockTake(id: string, ctx: AuditContext) {
     });
 
     await recordAudit({ ctx, action: "RECOUNT_REQUESTED", module: "stocktakes", entity: "stocktake", entityId: id });
-    return updated;
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }
 
@@ -207,7 +299,7 @@ export async function rejectStockTake(id: string, ctx: AuditContext) {
     });
 
     await recordAudit({ ctx, action: "REJECTED", module: "stocktakes", entity: "stocktake", entityId: id });
-    return updated;
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }
 
@@ -259,6 +351,6 @@ export async function approveStockTake(id: string, ctx: AuditContext) {
     }
 
     await recordAudit({ ctx, action: "APPROVED", module: "stocktakes", entity: "stocktake", entityId: id });
-    return updated;
+    return tx.stockTake.findUnique({ where: { id }, include: stockTakeInclude });
   });
 }

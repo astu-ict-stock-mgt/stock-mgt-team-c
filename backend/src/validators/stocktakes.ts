@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+export const UpdateStockTakeSchema = z.object({
+  notes: z.string().optional(),
+});
+
 export const CreateStockTakeSchema = z.object({
   storeId: z.string().min(1, "Store ID is required"),
   notes: z.string().optional(),

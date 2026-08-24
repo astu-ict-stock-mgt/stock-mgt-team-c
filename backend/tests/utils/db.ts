@@ -11,6 +11,10 @@ export async function clearDatabase() {
   await (prisma as any).stockTransaction.deleteMany();
 
   // 2. Returns, Transfers & Bin Transfers (Phase 5)
+  await prisma.stockAdjustmentItem.deleteMany();
+  await prisma.stockAdjustment.deleteMany();
+  await prisma.stockTakeItem.deleteMany();
+  await prisma.stockTake.deleteMany();
   await prisma.returnBinAllocation.deleteMany();
   await prisma.storeReturnItem.deleteMany();
   await prisma.storeReturnNote.deleteMany();
