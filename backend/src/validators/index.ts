@@ -1,5 +1,14 @@
 import { z } from "zod";
 
+// Strong password validation schema
+const passwordSchema = z.string()
+  .min(12, "Password must be at least 12 characters")
+  .max(128, "Password must not exceed 128 characters")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -7,7 +16,7 @@ export const loginSchema = z.object({
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
-  newPassword: z.string().min(6),
+  newPassword: passwordSchema,
 });
 
 export const profileSchema = z.object({
@@ -20,7 +29,7 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3),
   fullName: z.string().min(2),
-  password: z.string().min(6),
+  password: passwordSchema,
   department: z.string().optional(),
   phoneNumber: z.string().optional(),
   roleIds: z.array(z.string()).default([]),
