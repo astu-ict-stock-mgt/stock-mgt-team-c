@@ -29,6 +29,7 @@ import dashboardRoutes from "./routes/dashboard";
 import requisitionsRoutes from "./routes/requisitions";
 import sivsRoutes from "./routes/sivs";
 import returnsRoutes from "./routes/returns";
+import binTransfersRoutes from "./routes/bintransfers";
 
 const app = express();
 
@@ -114,6 +115,7 @@ app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/requisitions", requisitionsRoutes);
 app.use("/api/v1/sivs", sivsRoutes);
 app.use("/api/v1/returns", returnsRoutes);
+app.use("/api/v1/bin-transfers", binTransfersRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
