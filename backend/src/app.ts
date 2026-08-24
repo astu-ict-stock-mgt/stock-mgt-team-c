@@ -28,6 +28,7 @@ import notificationsRoutes from "./routes/notifications";
 import dashboardRoutes from "./routes/dashboard";
 import requisitionsRoutes from "./routes/requisitions";
 import sivsRoutes from "./routes/sivs";
+import returnsRoutes from "./routes/returns";
 
 const app = express();
 
@@ -112,6 +113,7 @@ app.use("/api/v1/notifications", notificationsRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/requisitions", requisitionsRoutes);
 app.use("/api/v1/sivs", sivsRoutes);
+app.use("/api/v1/returns", returnsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
