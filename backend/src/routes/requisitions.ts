@@ -3,7 +3,7 @@ import { Router, Response } from "express";
 import { prisma } from "../config/db";
 import { ok, paginate } from "../utils/response";
 import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
-import { qp, qpInt } from "../utils/query";
+import { qp, qpPage, qpLimit } from "../utils/query";
 import * as val from "../validators";
 import { recordAudit } from "../services/audit";
 import { Errors } from "../utils/errors";
@@ -14,8 +14,8 @@ router.get(
   "/",
   requirePermission("requisition.read"),
   asyncHandler(async (req: AuthedRequest, res: Response) => {
-    const page = qpInt(req, "page", 1);
-    const limit = qpInt(req, "limit", 15);
+    const page = qpPage(req);
+    const limit = qpLimit(req, 15);
     const search = qp(req, "search");
     const status = qp(req, "status");
     const department = qp(req, "department");

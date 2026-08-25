@@ -122,8 +122,15 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   if (err.code === "P2025") {
     return res.status(404).json(fail("NOT_FOUND", "Record not found"));
   }
+  // Never echo raw error text to the client — Prisma messages embed absolute
+  // server paths and source snippets. The full error goes to the server log;
+  // outside production the client gets the error name only, as a hint.
   console.error("[unhandled]", err);
-  res.status(500).json(fail("INTERNAL_ERROR", config.isProd ? "Internal server error" : err.message));
+  res.status(500).json(fail(
+    "INTERNAL_ERROR",
+    "Internal server error",
+    config.isProd ? undefined : { type: err?.name ?? "Error" }
+  ));
 });
 
 export default app;

@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { ok, paginate } from "../utils/response";
 import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
-import { qp, qpInt } from "../utils/query";
+import { qp, qpPage, qpLimit } from "../utils/query";
 import * as svc from "../services/reports";
 
 const router = Router();
@@ -26,7 +26,7 @@ router.get("/movement", requirePermission("reports.view"), asyncHandler(async (r
     startDate: qp(req, "startDate"), endDate: qp(req, "endDate"),
     storeId: qp(req, "storeId"), itemId: qp(req, "itemId"),
     type: qp(req, "type"), userId: qp(req, "userId"),
-    page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 50),
+    page: qpPage(req), limit: qpLimit(req, 50),
   };
   const result = await svc.movementReport(params);
   res.json(ok(paginate(result.items, result.total, params.page, params.limit)));
@@ -36,7 +36,7 @@ router.get("/audit", requirePermission("audit.view"), asyncHandler(async (req: A
   const params = {
     startDate: qp(req, "startDate"), endDate: qp(req, "endDate"),
     userId: qp(req, "userId"), module: qp(req, "module"), action: qp(req, "action"),
-    page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 50),
+    page: qpPage(req), limit: qpLimit(req, 50),
   };
   const result = await svc.auditReport(params);
   res.json(ok(paginate(result.items, result.total, params.page, params.limit)));

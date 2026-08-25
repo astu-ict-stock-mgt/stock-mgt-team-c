@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { ok, paginate } from "../utils/response";
 import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
-import { qp, qpInt } from "../utils/query";
+import { qp, qpPage, qpLimit } from "../utils/query";
 import * as svc from "../services/transfers";
 import * as val from "../validators";
 
@@ -9,7 +9,7 @@ const router = Router();
 
 router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const params = {
-    page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 20),
+    page: qpPage(req), limit: qpLimit(req, 20),
     search: qp(req, "search"), fromStoreId: qp(req, "fromStoreId"),
     toStoreId: qp(req, "toStoreId"), status: qp(req, "status"),
   };

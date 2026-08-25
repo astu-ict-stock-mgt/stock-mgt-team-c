@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { ok, paginate } from "../utils/response";
 import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
-import { qp, qpInt } from "../utils/query";
+import { qp, qpPage, qpLimit } from "../utils/query";
 import * as inv from "../services/inventory";
 import * as val from "../validators";
 
@@ -34,7 +34,7 @@ router.post("/stores", requirePermission("warehouses.create"), asyncHandler(asyn
 // Inventory items
 router.get("/inventory", requirePermission("inventory.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const params = {
-    page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 20),
+    page: qpPage(req), limit: qpLimit(req, 20),
     search: qp(req, "search"), categoryId: qp(req, "categoryId"), status: qp(req, "status"),
   };
   const result = await inv.listInventory(params);
