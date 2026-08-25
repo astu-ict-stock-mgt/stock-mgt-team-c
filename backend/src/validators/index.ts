@@ -22,6 +22,10 @@ export const changePasswordSchema = z.object({
   newPassword: passwordSchema,
 });
 
+export const resetPasswordSchema = z.object({
+  newPassword: passwordSchema,
+});
+
 export const profileSchema = z.object({
   fullName: z.string().min(2).optional(),
   department: z.string().nullable().optional(),
