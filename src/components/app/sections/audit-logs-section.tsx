@@ -1,29 +1,38 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Search, ScrollText } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { type ColumnDef } from "@tanstack/react-table";
+import { ScrollText } from "lucide-react";
 import { useAuditLogs } from "@/lib/api/hooks";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable, ResponsiveTable, MobileCard } from "@/components/app/section-utils";
+import { DataTable } from "@/components/ui/data-table";
+import { PageHeader, SectionError, SectionLoading, EmptyState, MobileCard } from "@/components/app/section-utils";
 import { formatRelative, formatDate } from "@/lib/utils/format";
 import { useUIStore } from "@/stores/ui-store";
+import type { AuditLog } from "@/lib/types";
 
 export function AuditLogsSection() {
-  const [page, setPage] = useState(1);
-  const [limit] = useState(25);
-  const [search, setSearch] = useState("");
-  const [module, setModule] = useState("");
-  const notificationTarget = useUIStore((s) => s.notificationTarget);
-  const setNotificationTarget = useUIStore((s) => s.setNotificationTarget);
-  const { data, isLoading, isError, refetch } = useAuditLogs({ page, limit, search: search || undefined, module: module || undefined });
+  const [page, setPage]         = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [search, setSearch]     = useState("");
+  const [module, setModule]     = useState("");
 
+  const notificationTarget    = useUIStore((s) => s.notificationTarget);
+  const setNotificationTarget = useUIStore((s) => s.setNotificationTarget);
+
+  const { data, isLoading, isError, refetch } = useAuditLogs({
+    page,
+    limit: pageSize,
+    search: search || undefined,
+    module: module || undefined,
+  });
+
+  /* Handle deep-link from notification bell */
   useEffect(() => {
     const filters: Record<string, string> = {
-      "gate-pass": "GATE_PASS",
-      "stock-take": "STOCK_TAKE",
+      "gate-pass":    "GATE_PASS",
+      "stock-take":   "STOCK_TAKE",
       "failed-login": "LOGIN_FAILED",
     };
     if (!notificationTarget || !filters[notificationTarget]) return;
@@ -33,6 +42,95 @@ export function AuditLogsSection() {
     setNotificationTarget(null);
   }, [notificationTarget, setNotificationTarget]);
 
+  /* ── Column definitions ─────────────────────────────────────────── */
+  const columns = useMemo<ColumnDef<AuditLog, unknown>[]>(() => [
+    {
+      id: "action",
+      accessorKey: "action",
+      header: "Action",
+      meta: { label: "Action" },
+      cell: ({ getValue }) => (
+        <Badge variant="secondary" className="font-mono text-[10px]">
+          {getValue() as string}
+        </Badge>
+      ),
+      size: 130,
+    },
+    {
+      id: "module",
+      accessorKey: "module",
+      header: "Module",
+      meta: { label: "Module" },
+      cell: ({ getValue }) => (
+        <span className="text-xs font-medium capitalize">{getValue() as string}</span>
+      ),
+      size: 110,
+    },
+    {
+      id: "entity",
+      header: "Entity",
+      meta: { label: "Entity" },
+      enableSorting: false,
+      accessorFn: (row) =>
+        row.entity
+          ? `${row.entity}${row.entityId ? ` · ${row.entityId.slice(-8)}` : ""}`
+          : "—",
+      cell: ({ getValue }) => (
+        <span className="text-xs text-muted-foreground">{getValue() as string}</span>
+      ),
+    },
+    {
+      id: "user",
+      header: "User",
+      meta: { label: "User" },
+      enableSorting: false,
+      accessorFn: (row) => row.user?.fullName ?? "system",
+      cell: ({ getValue }) => <span className="text-xs">{getValue() as string}</span>,
+      size: 130,
+    },
+    {
+      id: "description",
+      accessorKey: "description",
+      header: "Description",
+      meta: { label: "Description" },
+      enableSorting: false,
+      cell: ({ getValue }) => (
+        <span
+          className="block max-w-[220px] truncate text-xs"
+          title={(getValue() as string | null) ?? ""}
+        >
+          {(getValue() as string | null) ?? "—"}
+        </span>
+      ),
+    },
+    {
+      id: "ipAddress",
+      accessorKey: "ipAddress",
+      header: "IP",
+      meta: { label: "IP Address" },
+      enableSorting: false,
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs">{(getValue() as string | null) ?? "—"}</span>
+      ),
+      size: 120,
+    },
+    {
+      id: "timestamp",
+      accessorKey: "timestamp",
+      header: "Timestamp",
+      meta: { label: "Timestamp" },
+      cell: ({ getValue }) => (
+        <span
+          className="whitespace-nowrap text-xs"
+          title={formatDate(getValue() as string, true)}
+        >
+          {formatRelative(getValue() as string)}
+        </span>
+      ),
+      size: 140,
+    },
+  ], []);
+
   return (
     <div>
       <PageHeader
@@ -41,85 +139,82 @@ export function AuditLogsSection() {
         icon={ScrollText}
       />
 
-      <Card className="mb-4 p-3 border border-border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <div className="relative md:col-span-2">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-8 h-9" placeholder="Search by action, module, description..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
-          </div>
-          <Select value={module || "ALL"} onValueChange={(v) => { setModule(v === "ALL" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="h-9"><SelectValue placeholder="Module" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Modules</SelectItem>
-              <SelectItem value="auth">Auth</SelectItem>
-              <SelectItem value="users">Users</SelectItem>
-              <SelectItem value="suppliers">Suppliers</SelectItem>
-              <SelectItem value="categories">Categories</SelectItem>
-              <SelectItem value="stores">Stores</SelectItem>
-              <SelectItem value="inventory">Inventory</SelectItem>
-              <SelectItem value="receipts">Receipts</SelectItem>
-              <SelectItem value="issues">Issues</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
+      {/* Module filter — DataTable owns the text search */}
+      <div className="mb-3 flex flex-wrap gap-2">
+        <Select
+          value={module || "ALL"}
+          onValueChange={(v) => { setModule(v === "ALL" ? "" : v); setPage(1); }}
+        >
+          <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectValue placeholder="All Modules" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Modules</SelectItem>
+            <SelectItem value="auth">Auth</SelectItem>
+            <SelectItem value="users">Users</SelectItem>
+            <SelectItem value="suppliers">Suppliers</SelectItem>
+            <SelectItem value="categories">Categories</SelectItem>
+            <SelectItem value="stores">Stores</SelectItem>
+            <SelectItem value="inventory">Inventory</SelectItem>
+            <SelectItem value="receipts">Receipts</SelectItem>
+            <SelectItem value="issues">Issues</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {isLoading ? (
         <SectionLoading variant="table" />
       ) : isError ? (
         <SectionError message="Failed to load audit logs" onRetry={() => refetch()} />
-      ) : !data || data.items.length === 0 ? (
+      ) : !data ? null : data.total === 0 && !search && !module ? (
         <EmptyState
           icon={ScrollText}
           title="No audit logs yet"
           description="Every create, update, and delete action in the system is recorded here automatically."
-          size="md"
         />
       ) : (
-        <ResponsiveTable
-          mobileCards={data.items.map((a) => (
-            <MobileCard
-              key={a.id}
-              primary={a.description ?? a.action}
-              secondary={`${a.module}${a.entity ? ` · ${a.entity}` : ""}`}
-              badge={<span className="inline-flex items-center rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground ring-1 ring-inset ring-border">{a.action}</span>}
-              meta={[
-                { label: "User",      value: a.user?.fullName ?? "system" },
-                { label: "IP",        value: a.ipAddress ?? "—" },
-                { label: "When",      value: formatRelative(a.timestamp) },
-              ]}
+        <>
+          {/* ── Mobile card list (< sm) ── */}
+          <div className="sm:hidden astu-card overflow-hidden">
+            {data.items.map((a) => (
+              <MobileCard
+                key={a.id}
+                primary={a.description ?? a.action}
+                secondary={`${a.module}${a.entity ? ` · ${a.entity}` : ""}`}
+                badge={
+                  <span className="inline-flex items-center rounded bg-surface-2 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground ring-1 ring-inset ring-border">
+                    {a.action}
+                  </span>
+                }
+                meta={[
+                  { label: "User", value: a.user?.fullName ?? "system" },
+                  { label: "IP",   value: a.ipAddress ?? "—" },
+                  { label: "When", value: formatRelative(a.timestamp) },
+                ]}
+              />
+            ))}
+          </div>
+
+          {/* ── DataTable (sm+) ── */}
+          <div className="hidden sm:block">
+            <DataTable
+              columns={columns}
+              data={data.items}
+              searchValue={search}
+              onSearchChange={(v) => { setSearch(v); setPage(1); }}
+              searchPlaceholder="Search action, module, description…"
+              disableClientSearch
+              manualPagination={{
+                page,
+                pageSize,
+                total: data.total,
+                onPage: setPage,
+                onPageSize: (s) => { setPageSize(s); setPage(1); },
+              }}
             />
-          ))}
-        >
-          <table className="astu-table">
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>Module</th>
-                <th>Entity</th>
-                <th>User</th>
-                <th>Description</th>
-                <th>IP</th>
-                <th>Timestamp</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((a) => (
-                <tr key={a.id}>
-                  <td><Badge variant="secondary" className="text-[10px] font-mono">{a.action}</Badge></td>
-                  <td className="text-xs font-medium">{a.module}</td>
-                  <td className="text-xs text-muted-foreground">{a.entity ?? "—"}{a.entityId ? ` · ${a.entityId.slice(-8)}` : ""}</td>
-                  <td className="text-xs">{a.user?.fullName ?? "system"}</td>
-                  <td className="text-xs max-w-[200px] truncate">{a.description ?? "—"}</td>
-                  <td className="text-xs font-mono">{a.ipAddress ?? "—"}</td>
-                  <td className="text-xs whitespace-nowrap" title={formatDate(a.timestamp, true)}>{formatRelative(a.timestamp)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </ResponsiveTable>
-          )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

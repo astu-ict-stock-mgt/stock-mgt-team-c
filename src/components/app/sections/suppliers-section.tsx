@@ -1,18 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Search, Truck, Pencil } from "lucide-react";
+import { useMemo, useState } from "react";
+import { type ColumnDef } from "@tanstack/react-table";
+import { Plus, Truck, Pencil, CheckCircle2, XCircle } from "lucide-react";
 import { useSuppliers, useCreateSupplier, useUpdateSupplier } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
-import { statusColor } from "@/lib/utils/format";
+import { DataTable } from "@/components/ui/data-table";
+import { PageHeader, SectionError, SectionLoading, EmptyState, AstuAction, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,18 +26,22 @@ const Schema = z.object({
   address: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE", "BLACKLISTED"]).default("ACTIVE"),
 });
-
 type Form = z.infer<typeof Schema>;
 
 export function SuppliersSection() {
-  const [page, setPage] = useState(1);
-  const [limit] = useState(15);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [page, setPage]           = useState(1);
+  const [pageSize, setPageSize]   = useState(25);
+  const [search, setSearch]       = useState("");
+  const [status, setStatus]       = useState("");
   const [createOpen, setCreateOpen] = useState(false);
-  const [editing, setEditing] = useState<Supplier | null>(null);
+  const [editing, setEditing]     = useState<Supplier | null>(null);
 
-  const { data, isLoading, isError, refetch } = useSuppliers({ page, limit, search: search || undefined, status: status || undefined });
+  const { data, isLoading, isError, refetch } = useSuppliers({
+    page,
+    limit: pageSize,
+    search: search || undefined,
+    status: status || undefined,
+  });
   const create = useCreateSupplier();
   const update = useUpdateSupplier();
 
@@ -84,6 +87,105 @@ export function SuppliersSection() {
     }
   };
 
+  /* ── Bulk status update helper ──────────────────────────────────── */
+  const bulkSetStatus = async (
+    rows: Supplier[],
+    newStatus: "ACTIVE" | "INACTIVE",
+    clearSelection: () => void
+  ) => {
+    const toChange = rows.filter((r) => r.status !== newStatus);
+    if (toChange.length === 0) {
+      toast.info(`All selected suppliers are already ${newStatus.toLowerCase()}`);
+      return;
+    }
+    try {
+      await Promise.all(toChange.map((r) => update.mutateAsync({ id: r.id, status: newStatus })));
+      toast.success(
+        `${toChange.length} supplier${toChange.length !== 1 ? "s" : ""} set to ${newStatus.toLowerCase()}`
+      );
+      clearSelection();
+      refetch();
+    } catch {
+      toast.error("Some updates failed — please try again");
+    }
+  };
+
+  /* ── Column definitions ─────────────────────────────────────────── */
+  const columns = useMemo<ColumnDef<Supplier, unknown>[]>(() => [
+    {
+      id: "code",
+      accessorKey: "code",
+      header: "Code",
+      meta: { label: "Code" },
+      cell: ({ getValue }) => (
+        <span className="font-mono text-xs">{getValue() as string}</span>
+      ),
+      size: 110,
+    },
+    {
+      id: "name",
+      accessorKey: "name",
+      header: "Name",
+      meta: { label: "Name" },
+      cell: ({ getValue }) => (
+        <span className="font-medium text-sm">{getValue() as string}</span>
+      ),
+    },
+    {
+      id: "contactPerson",
+      accessorKey: "contactPerson",
+      header: "Contact",
+      meta: { label: "Contact Person" },
+      enableSorting: false,
+      cell: ({ getValue }) => (
+        <span className="text-xs">{(getValue() as string | null) ?? "—"}</span>
+      ),
+    },
+    {
+      id: "phone",
+      accessorKey: "phone",
+      header: "Phone",
+      meta: { label: "Phone" },
+      enableSorting: false,
+      cell: ({ getValue }) => (
+        <span className="text-xs">{(getValue() as string | null) ?? "—"}</span>
+      ),
+      size: 130,
+    },
+    {
+      id: "receiptCount",
+      accessorKey: "receiptCount",
+      header: "Receipts",
+      meta: { label: "Receipts" },
+      cell: ({ getValue }) => (
+        <span className="tabular text-xs">{getValue() as number}</span>
+      ),
+      size: 80,
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: "Status",
+      meta: { label: "Status" },
+      enableSorting: false,
+      cell: ({ getValue }) => <StatusPill status={getValue() as string} />,
+      size: 120,
+    },
+    {
+      id: "actions",
+      header: "",
+      meta: { label: "Actions" },
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row }) => (
+        <AstuAction onClick={() => openEdit(row.original)}>
+          <Pencil className="h-3 w-3" /> Edit
+        </AstuAction>
+      ),
+      size: 70,
+    },
+  ], []);
+
   return (
     <div>
       <PageHeader
@@ -97,27 +199,27 @@ export function SuppliersSection() {
         }
       />
 
-      <Card className="mb-4 p-3 border border-border shadow-sm">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <div className="relative sm:col-span-2">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-8 h-9" placeholder="Search by code, name, contact..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
-          </div>
-          <Select value={status || "ALL"} onValueChange={(v) => { setStatus(v === "ALL" ? "" : v); setPage(1); }}>
-            <SelectTrigger className="h-9"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All</SelectItem>
-              <SelectItem value="ACTIVE">Active</SelectItem>
-              <SelectItem value="INACTIVE">Inactive</SelectItem>
-              <SelectItem value="BLACKLISTED">Blacklisted</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </Card>
+      {/* Status filter — DataTable owns the text search */}
+      <div className="mb-3 flex flex-wrap gap-2">
+        <Select
+          value={status || "ALL"}
+          onValueChange={(v) => { setStatus(v === "ALL" ? "" : v); setPage(1); }}
+        >
+          <SelectTrigger className="h-8 w-40 text-xs">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Statuses</SelectItem>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="INACTIVE">Inactive</SelectItem>
+            <SelectItem value="BLACKLISTED">Blacklisted</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load suppliers" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? (
+       !data ? null : data.total === 0 && !search && !status ? (
         <EmptyState
           icon={Truck}
           title="No suppliers yet"
@@ -126,59 +228,77 @@ export function SuppliersSection() {
           onAction={openCreate}
         />
        ) : (
-        <ResponsiveTable
-          footerAction={<AstuAction onClick={openCreate}>+ New</AstuAction>}
-          mobileCards={data.items.map((s) => (
-            <MobileCard
-              key={s.id}
-              primary={s.name}
-              secondary={s.code}
-              badge={<StatusPill status={s.status} />}
-              meta={[
-                { label: "Contact",  value: s.contactPerson ?? "—" },
-                { label: "Phone",    value: s.phone ?? "—" },
-                { label: "Receipts", value: String(s.receiptCount) },
-              ]}
-              action={
-                <AstuAction onClick={() => openEdit(s)}>
-                  <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3" />Edit</span>
-                </AstuAction>
+        <>
+          {/* ── Mobile card list (< sm) ── */}
+          <div className="sm:hidden astu-card overflow-hidden">
+            {data.items.map((s) => (
+              <MobileCard
+                key={s.id}
+                primary={s.name}
+                secondary={s.code}
+                badge={<StatusPill status={s.status} />}
+                meta={[
+                  { label: "Contact",  value: s.contactPerson ?? "—" },
+                  { label: "Phone",    value: s.phone ?? "—" },
+                  { label: "Receipts", value: String(s.receiptCount) },
+                ]}
+                action={
+                  <AstuAction onClick={() => openEdit(s)}>
+                    <Pencil className="h-3 w-3" /> Edit
+                  </AstuAction>
+                }
+              />
+            ))}
+          </div>
+
+          {/* ── DataTable (sm+) ── */}
+          <div className="hidden sm:block">
+            <DataTable
+              columns={columns}
+              data={data.items}
+              searchValue={search}
+              onSearchChange={(v) => { setSearch(v); setPage(1); }}
+              searchPlaceholder="Search by code, name, contact…"
+              disableClientSearch
+              manualPagination={{
+                page,
+                pageSize,
+                total: data.total,
+                onPage: setPage,
+                onPageSize: (s) => { setPageSize(s); setPage(1); },
+              }}
+              toolbarRight={
+                <Button size="sm" className="h-8 text-xs" onClick={openCreate}>
+                  <Plus className="h-3.5 w-3.5" /> New
+                </Button>
               }
+              bulkActions={(rows, clearSelection) => (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1.5 text-xs text-success-strong border-success/40 hover:bg-success-subtle"
+                    disabled={update.isPending}
+                    onClick={() => bulkSetStatus(rows, "ACTIVE", clearSelection)}
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Activate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1.5 text-xs text-warning-strong border-warning/40 hover:bg-warning-subtle"
+                    disabled={update.isPending}
+                    onClick={() => bulkSetStatus(rows, "INACTIVE", clearSelection)}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    Deactivate
+                  </Button>
+                </>
+              )}
             />
-          ))}
-        >
-          <table className="astu-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Contact</th>
-                <th>Phone</th>
-                <th className="text-right">Receipts</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.items.map((s) => (
-                <tr key={s.id}>
-                  <td className="font-mono text-xs">{s.code}</td>
-                  <td className="font-medium text-sm">{s.name}</td>
-                  <td className="text-xs">{s.contactPerson ?? "—"}</td>
-                  <td className="text-xs">{s.phone ?? "—"}</td>
-                  <td className="text-right">{s.receiptCount}</td>
-                  <td><Badge variant={statusColor(s.status)} className="text-[10px]">{s.status}</Badge></td>
-                  <td>
-                    <AstuAction onClick={() => openEdit(s)}>
-                      <span className="inline-flex items-center gap-1"><Pencil className="h-3 w-3" />Edit</span>
-                    </AstuAction>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </ResponsiveTable>
+          </div>
+        </>
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -191,7 +311,9 @@ export function SuppliersSection() {
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Name *</Label>
               <Input {...form.register("name")} />
-              {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+              {form.formState.errors.name && (
+                <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
@@ -213,7 +335,10 @@ export function SuppliersSection() {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-semibold">Status</Label>
-              <Select value={form.watch("status")} onValueChange={(v) => form.setValue("status", v as any)}>
+              <Select
+                value={form.watch("status")}
+                onValueChange={(v) => form.setValue("status", v as "ACTIVE" | "INACTIVE" | "BLACKLISTED")}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ACTIVE">Active</SelectItem>
@@ -224,7 +349,11 @@ export function SuppliersSection() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={create.isPending || update.isPending} className="bg-primary hover:bg-primary-strong text-primary-foreground">
+              <Button
+                type="submit"
+                disabled={create.isPending || update.isPending}
+                className="bg-primary hover:bg-primary-strong text-primary-foreground"
+              >
                 {editing ? "Save Changes" : "Create Supplier"}
               </Button>
             </DialogFooter>
