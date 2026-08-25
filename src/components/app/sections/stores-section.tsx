@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, StatusPill } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, StatusPill } from "@/components/app/section-utils";
 import { formatNumber } from "@/lib/utils/format";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -79,9 +79,17 @@ export function StoresSection() {
           </Dialog>
         }
       />
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="stores" /> :
        isError ? <SectionError message="Failed to load" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No stores yet" /> : (
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={WarehouseIcon}
+          title="No stores yet"
+          description="Add your first storage location to start receiving and tracking stock by store."
+          actionLabel="New Store"
+          onAction={() => setOpen(true)}
+        />
+       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {data.items.map((w) => (
             <div key={w.id} className="astu-card astu-card-hover overflow-hidden">

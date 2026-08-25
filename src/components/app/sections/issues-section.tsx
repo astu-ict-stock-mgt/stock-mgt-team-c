@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { useUIStore } from "@/stores/ui-store";
 import { formatCurrency, formatNumber, statusColor, formatDate } from "@/lib/utils/format";
 import { toast } from "sonner";
@@ -54,10 +54,39 @@ export function IssuesSection() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load issues" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No issues yet" message="Issue stock to departments to consume FIFO layers" /> : (
-        <AstuCardTable footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}>
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={ArrowUpFromLine}
+          title="No stock issues yet"
+          description="Issue stock to departments to consume FIFO layers and record cost of goods sold automatically."
+          actionLabel="New Issue"
+          onAction={() => setCreateOpen(true)}
+        />
+       ) : (
+        <ResponsiveTable
+          footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}
+          mobileCards={data.items.map((i) => (
+            <MobileCard
+              key={i.id}
+              primary={i.department}
+              secondary={i.code}
+              badge={<StatusPill status={i.status} />}
+              meta={[
+                { label: "Store", value: i.sourceStore.name },
+                { label: "COGS",  value: formatCurrency(i.totalCogs) },
+                { label: "Qty",   value: formatNumber(i.totalQuantity) },
+                { label: "Date",  value: formatDate(i.issueDate) },
+              ]}
+              action={
+                <AstuAction onClick={() => setSelectedItemId(i.id)}>
+                  <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />View</span>
+                </AstuAction>
+              }
+            />
+          ))}
+        >
           <table className="astu-table">
             <thead>
               <tr>
@@ -93,7 +122,7 @@ export function IssuesSection() {
             </tbody>
           </table>
           <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
+        </ResponsiveTable>
       )}
 
       <IssueDetailDrawer />

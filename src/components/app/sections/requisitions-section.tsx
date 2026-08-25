@@ -13,10 +13,13 @@ import {
   AstuCardTable,
   PageHeader,
   Pagination,
-  SectionEmpty,
+  EmptyState,
   SectionError,
   SectionLoading,
   StatCard,
+  ResponsiveTable,
+  MobileCard,
+  StatusPill,
 } from "@/components/app/section-utils";
 import { useCreateRequisition, useDecisionRequisition, useInventory, useMe, useRequisitions, useSubmitRequisition } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
@@ -297,13 +300,98 @@ export function RequisitionsSection() {
       </Card>
 
       {isLoading ? (
-        <SectionLoading label="Loading requisitions..." />
+        <SectionLoading variant="table-with-stats" label="Loading requisitions..." />
       ) : isError ? (
         <SectionError message="Failed to load requisitions" onRetry={() => refetch()} />
       ) : !data || data.items.length === 0 ? (
-        <SectionEmpty title="No requisitions found" message="Create requisitions in the backend to see them here." />
+        <EmptyState
+          icon={FileText}
+          title="No requisitions found"
+          description={
+            search || status
+              ? "No requisitions match the current filters. Try adjusting the search or status."
+              : "Department Heads can create requisitions above. They appear here once submitted for approval."
+          }
+          size="md"
+        />
       ) : (
-        <AstuCardTable title="Requisition Records" footerAction={<AstuAction onClick={() => refetch()}>Refresh</AstuAction>}>
+        <ResponsiveTable
+          title="Requisition Records"
+          footerAction={<AstuAction onClick={() => refetch()}>Refresh</AstuAction>}
+          mobileCards={data.items.map((requisition) => (
+            <MobileCard
+              key={requisition.id}
+              primary={requisition.requestedBy.fullName}
+              secondary={requisition.code}
+              badge={<StatusPill status={requisition.status} />}
+              meta={[
+                { label: "Department", value: requisition.department },
+                { label: "Items",      value: `${requisition.itemCount} line${requisition.itemCount === 1 ? "" : "s"}` },
+                { label: "Required",   value: formatDate(requisition.requiredDate) },
+                { label: "Approvals",  value: `${requisition.approvalCount}/2` },
+              ]}
+              action={
+                <div className="flex flex-wrap gap-1.5">
+                  {requisition.status === "DRAFT" && canSubmit(requisition) ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-8 bg-info hover:bg-info-strong text-info-foreground"
+                      disabled={submitRequisition.isPending}
+                      onClick={async () => {
+                        try {
+                          await submitRequisition.mutateAsync(requisition.id);
+                          toast.success("Requisition submitted");
+                        } catch (error) {
+                          toast.error(error instanceof ApiClientError ? error.message : "Failed to submit requisition");
+                        }
+                      }}
+                    >
+                      Submit
+                    </Button>
+                  ) : null}
+                  {canApprove && ["SUBMITTED", "PENDING_APPROVAL"].includes(requisition.status) ? (
+                    <>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 bg-success hover:bg-success-strong text-success-foreground"
+                        disabled={decideRequisition.isPending}
+                        onClick={async () => {
+                          try {
+                            await decideRequisition.mutateAsync({ id: requisition.id, decision: "APPROVED" });
+                            toast.success("Requisition approved");
+                          } catch (error) {
+                            toast.error(error instanceof ApiClientError ? error.message : "Failed to approve");
+                          }
+                        }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-8 border-danger text-danger hover:bg-danger hover:text-danger-foreground"
+                        disabled={decideRequisition.isPending}
+                        onClick={async () => {
+                          try {
+                            await decideRequisition.mutateAsync({ id: requisition.id, decision: "REJECTED" });
+                            toast.success("Requisition rejected");
+                          } catch (error) {
+                            toast.error(error instanceof ApiClientError ? error.message : "Failed to reject");
+                          }
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    </>
+                  ) : null}
+                </div>
+              }
+            />
+          ))}
+        >
           <table className="astu-table">
             <thead>
               <tr>
@@ -414,7 +502,7 @@ export function RequisitionsSection() {
             </tbody>
           </table>
           <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
+        </ResponsiveTable>
       )}
 
       <Card className="mt-4 border border-border shadow-sm">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -17,6 +17,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  X,
   ChevronDown,
   KeyRound,
   Bell,
@@ -153,6 +154,24 @@ export function AppShell({
   const logout = useLogout();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Lock body scroll while mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
+  // Close sidebar on resize to md+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const handler = (e: MediaQueryListEvent) => { if (e.matches) setMobileOpen(false); };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const visibleGroups = useMemo(
     () =>
       NAV_GROUPS.map((g) => ({
@@ -173,16 +192,16 @@ export function AppShell({
 
   return (
     <div className="min-h-screen flex bg-surface">
-      {/* Sidebar — a dark rail against the light dashboard. The `dark` class
-          scopes the dark token palette to this subtree only. */}
+      {/* ── Sidebar ── dark rail, fixed on mobile / sticky on md+ */}
       <aside
         className={cn(
-          "dark fixed md:sticky top-0 left-0 z-40 h-screen w-[264px] flex flex-col bg-sidebar border-r border-sidebar-border transition-transform duration-200",
+          "dark fixed md:sticky top-0 left-0 z-40 h-screen w-[264px] flex flex-col bg-sidebar border-r border-sidebar-border",
+          "transition-transform duration-200 ease-in-out",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
-        {/* Branding — ASTU crest + product name, aligned to the topbar horizon */}
-        <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4">
+        {/* Branding + mobile close button */}
+        <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-md bg-white ring-1 ring-inset ring-border">
             <img
               src="/astu-logo.svg"
@@ -190,14 +209,22 @@ export function AppShell({
               className="h-full w-full object-contain p-0.5"
             />
           </div>
-          <div className="min-w-0 leading-tight">
+          <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-[13px] font-semibold text-foreground">Stock Management</p>
             <p className="truncate text-[10.5px] text-muted-foreground">Adama Science &amp; Technology University</p>
           </div>
+          {/* Close button — mobile only, 44×44 tap target */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="md:hidden flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+            aria-label="Close navigation"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
-        {/* Navigation (grouped) */}
-        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2.5 space-y-4">
           {visibleGroups.map((group) => (
             <div key={group.heading}>
               <p className="px-2.5 mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
@@ -214,8 +241,10 @@ export function AppShell({
                         setSection(item.id);
                         setMobileOpen(false);
                       }}
+                      /* min 44px tap target on mobile */
                       className={cn(
-                        "group relative flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition-colors",
+                        "group relative flex w-full items-center gap-2.5 rounded-md px-2.5 text-[13px] transition-colors",
+                        "min-h-[44px] py-2 md:min-h-0 md:py-2",
                         active
                           ? "bg-surface-2 font-medium text-foreground"
                           : "text-foreground/70 hover:bg-surface-2 hover:text-foreground"
@@ -248,37 +277,42 @@ export function AppShell({
         </div>
       </aside>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay — sits below sidebar (z-30 < z-40) */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 bg-foreground/40 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-30 bg-foreground/50 backdrop-blur-[2px] md:hidden"
           onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
         />
       )}
 
-      {/* Main content — light */}
+      {/* ── Main content ── */}
       <main className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-card px-4">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-card px-3 sm:px-4">
+          {/* Hamburger — 44×44 tap target */}
           <button
             onClick={() => setMobileOpen((v) => !v)}
-            className="rounded-md p-1.5 hover:bg-surface-2 md:hidden"
-            aria-label="Toggle menu"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground transition-colors md:hidden"
+            aria-label="Open navigation"
+            aria-expanded={mobileOpen}
           >
             <Menu className="h-5 w-5" />
           </button>
 
+          {/* Breadcrumb */}
           <div className="flex min-w-0 flex-1 items-center gap-1.5 text-[13px]">
-            <span className="hidden text-muted-foreground sm:inline">
+            <span className="hidden text-muted-foreground sm:inline shrink-0">
               {currentNav ? GROUP_LABEL[currentNav.id] : "Overview"}
             </span>
-            <ChevronDown className="hidden h-3 w-3 -rotate-90 text-muted-foreground/40 sm:inline" />
+            <ChevronDown className="hidden h-3 w-3 -rotate-90 text-muted-foreground/40 sm:inline shrink-0" />
             <span className="truncate font-medium text-foreground">
               {currentNav?.label ?? "Dashboard"}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          {/* Actions */}
+          <div className="flex items-center gap-1">
             <ThemeToggle />
             <NotificationsBell />
 
@@ -286,8 +320,9 @@ export function AppShell({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-md hover:bg-surface-2 transition-colors">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
+                {/* 44px tap target on mobile — just the avatar circle */}
+                <button className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-surface-2 transition-colors md:h-auto md:w-auto md:gap-2 md:pl-1 md:pr-2 md:py-1">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
                     {userInitials}
                   </div>
                   <div className="hidden md:block text-left">
@@ -321,6 +356,7 @@ export function AppShell({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  className="min-h-[44px] md:min-h-0"
                   onClick={() => {
                     setSection("settings");
                     setSettingsTab("profile");
@@ -330,6 +366,7 @@ export function AppShell({
                   <span>My Profile</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
+                  className="min-h-[44px] md:min-h-0"
                   onClick={() => {
                     setSection("settings");
                     setSettingsTab("security");
@@ -339,7 +376,10 @@ export function AppShell({
                   <span>Change Password</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout} className="text-danger focus:text-danger">
+                <DropdownMenuItem
+                  className="min-h-[44px] md:min-h-0 text-danger focus:text-danger"
+                  onClick={onLogout}
+                >
                   <LogOut className="h-4 w-4 mr-2" />
                   <span>Log out</span>
                 </DropdownMenuItem>
@@ -348,8 +388,8 @@ export function AppShell({
           </div>
         </header>
 
-        {/* Page content */}
-        <div className="flex-1 overflow-auto p-4 md:p-6">
+        {/* Page content — tighter padding on mobile */}
+        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
           <div className="max-w-[1400px] mx-auto">
             {section === "dashboard" && <DashboardSection />}
             {section === "inventory" && <InventorySection />}
@@ -379,7 +419,7 @@ function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
+      className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground md:h-9 md:w-9"
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
       aria-label="Toggle color theme"
     >
@@ -432,7 +472,7 @@ function NotificationsBell() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          className="relative h-9 w-9 rounded-md hover:bg-surface-2 flex items-center justify-center transition-colors"
+          className="relative h-11 w-11 rounded-md hover:bg-surface-2 flex items-center justify-center transition-colors md:h-9 md:w-9"
           title="Notifications"
           aria-label="Notifications"
         >
