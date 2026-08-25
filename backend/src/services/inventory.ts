@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 import { recordAudit } from "./audit";
 import { computeStockValue } from "./fifo";
+import { refreshItemStatus } from "./item-status";
 
 export async function listCategories() {
   const items = await prisma.category.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { items: true } } } });
@@ -115,6 +116,9 @@ export async function updateInventoryItem(id: string, input: any, auditCtx?: { u
   const existing = await prisma.inventoryItem.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw Errors.notFound("Inventory item", id);
   const it = await prisma.inventoryItem.update({ where: { id }, data: input, include: { category: true, uom: true } });
+  // Editing reorderLevel moves the low-stock threshold, so the derived status
+  // has to be recomputed even though no stock moved.
+  if (input.reorderLevel !== undefined) await refreshItemStatus(prisma, id);
   await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ITEM_UPDATED", module: "inventory", entity: "item", entityId: id, oldValue: existing, newValue: input });
   return it;
 }

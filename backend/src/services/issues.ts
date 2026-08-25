@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 import { recordAudit } from "./audit";
 import { consumeFifoTx, nextTxnCode } from "./fifo-consume";
+import { refreshItemStatus } from "./item-status";
 
 export async function listIssues(params: { page: number; limit: number; search?: string; storeId?: string; status?: string }) {
   const where: Prisma.StockIssueWhereInput = {};
@@ -93,6 +94,8 @@ export async function createIssue(input: any, auditCtx?: { userId?: string; ip?:
           referenceType: "ISSUE", referenceId: iss.id, userId: input.issuedById, remarks: `Issue ${code} — ${input.department}`,
         },
       });
+
+      await refreshItemStatus(tx, ii.itemId);
 
       totalCogs += cogs;
     }

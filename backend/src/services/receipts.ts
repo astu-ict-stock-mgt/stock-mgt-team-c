@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 import { recordAudit } from "./audit";
 import { nextTxnCode } from "./fifo-consume";
+import { refreshItemStatus } from "./item-status";
 
 export async function listReceipts(params: { page: number; limit: number; search?: string; supplierId?: string; storeId?: string; status?: string }) {
   const where: Prisma.StockReceiptWhereInput = {};
@@ -104,6 +105,8 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
       const totalVal = layers.reduce((s, l) => s + l.remainingQty * l.unitCost, 0);
       const avgCost = totalQty > 0 ? totalVal / totalQty : ri.unitCost;
       await tx.inventoryItem.update({ where: { id: ri.itemId }, data: { unitCost: avgCost } });
+
+      await refreshItemStatus(tx, ri.itemId);
     }
     return r;
   });

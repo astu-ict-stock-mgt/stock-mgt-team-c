@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 import { recordAudit } from "./audit";
 import { consumeFifoTx, nextTxnCode } from "./fifo-consume";
+import { refreshItemStatus } from "./item-status";
 
 export async function listTransfers(params: { page: number; limit: number; search?: string; fromStoreId?: string; toStoreId?: string; status?: string }) {
   const where: Prisma.StockTransferWhereInput = {};
@@ -123,6 +124,10 @@ export async function createTransfer(input: any, auditCtx?: { userId?: string; i
           referenceType: "TRANSFER", referenceId: tr.id, userId: input.transferredById, remarks: `Transfer ${code} in`,
         },
       });
+
+      // Stock moved between stores, so the item's overall level may have crossed
+      // a reorder threshold in either direction.
+      await refreshItemStatus(tx, ti.itemId);
     }
 
     return tr;
