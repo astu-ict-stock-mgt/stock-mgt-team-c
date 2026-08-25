@@ -64,7 +64,7 @@ export function SettingsSection() {
     setTab("profile");
   }
 
-  if (isLoading) return <SectionLoading />;
+  if (isLoading) return <SectionLoading variant="settings" />;
   if (isError || !me) return <SectionError message="Failed to load user data" onRetry={() => refetch()} />;
 
   const triggerCls =

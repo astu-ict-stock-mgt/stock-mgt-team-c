@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, AstuAction } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, AstuAction } from "@/components/app/section-utils";
 import { roleDisplayName } from "@/lib/utils/format";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
@@ -144,9 +144,17 @@ export function RolesSection() {
         />
       </div>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="roles" /> :
         isError ? <SectionError message="Failed to load roles" onRetry={() => refetch()} /> :
-          !data || data.items.length === 0 ? <SectionEmpty title="No roles defined" /> : (
+          !data || data.items.length === 0 ? (
+            <EmptyState
+              icon={Shield}
+              title="No roles defined"
+              description="Create roles and assign permissions to control what each type of user can view and manage."
+              actionLabel="New Role"
+              onAction={openCreate}
+            />
+          ) : (
             <div className="space-y-3">
               {filteredRoles.map((r) => {
                 const isSystem = SYSTEM_ROLES.includes(r.name);

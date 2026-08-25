@@ -88,6 +88,15 @@ export function useCreateUser() {
   });
 }
 
+export function useUpdateUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; status?: string; fullName?: string; department?: string | null; phoneNumber?: string | null }) =>
+      apiClient.patch(`/api/v1/users/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+
 // ---------------- Roles ----------------
 export function useRoles() {
   return useQuery({

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { BarChart3, Package } from "lucide-react";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuCardTable, TabBar } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable, TabBar, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { useInventoryReport, useValuationReport, useMovementReport, useCategoriesAndUoms, useStores } from "@/lib/api/hooks";
 import { formatCurrency, formatNumber, statusColor } from "@/lib/utils/format";
 
@@ -74,7 +74,7 @@ function InventoryReportView() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load report" onRetry={() => refetch()} /> :
        !data ? null : (
         <>
@@ -85,8 +85,30 @@ function InventoryReportView() {
             <Stat label="Low Stock" value={formatNumber(data.lowStockCount)} color="text-warning-strong" />
             <Stat label="Out of Stock" value={formatNumber(data.outOfStockCount)} color="text-danger" />
           </div>
-          {data.items.length === 0 ? <SectionEmpty title="No items match filters" /> : (
-            <AstuCardTable>
+          {data.items.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="No items match the current filters"
+              description="Try removing some filters or selecting a different category or store."
+              size="sm"
+            />
+          ) : (
+            <ResponsiveTable
+              mobileCards={data.items.map((it) => (
+                <MobileCard
+                  key={it.code}
+                  primary={it.name}
+                  secondary={it.code}
+                  badge={<StatusPill status={it.status} />}
+                  meta={[
+                    { label: "Category", value: it.category },
+                    { label: "Qty",      value: `${formatNumber(it.quantity)} ${it.uom}` },
+                    { label: "Value",    value: formatCurrency(it.totalValue) },
+                    { label: "Cost",     value: formatCurrency(it.unitCost) },
+                  ]}
+                />
+              ))}
+            >
               <table className="astu-table">
                 <thead>
                   <tr>
@@ -113,7 +135,7 @@ function InventoryReportView() {
                   ))}
                 </tbody>
               </table>
-            </AstuCardTable>
+            </ResponsiveTable>
           )}
         </>
       )}
@@ -152,7 +174,7 @@ function ValuationReportView() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed" onRetry={() => refetch()} /> :
        !data ? null : (
         <>
@@ -179,8 +201,29 @@ function ValuationReportView() {
               </CardContent>
             </Card>
           )}
-          {data.items.length === 0 ? <SectionEmpty title="No items to value" /> : (
-            <AstuCardTable>
+          {data.items.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="No items to value"
+              description="No inventory items have stock value under the current filters."
+              size="sm"
+            />
+          ) : (
+            <ResponsiveTable
+              mobileCards={data.items.map((it) => (
+                <MobileCard
+                  key={it.code}
+                  primary={it.name}
+                  secondary={it.code}
+                  meta={[
+                    { label: "Qty",    value: `${formatNumber(it.quantity)} ${it.uom}` },
+                    { label: "Avg Cost", value: formatCurrency(it.avgUnitCost) },
+                    { label: "Value",  value: formatCurrency(it.totalValue) },
+                    { label: "Layers", value: String(it.fifoLayers) },
+                  ]}
+                />
+              ))}
+            >
               <table className="astu-table">
                 <thead>
                   <tr>
@@ -205,7 +248,7 @@ function ValuationReportView() {
                   ))}
                 </tbody>
               </table>
-            </AstuCardTable>
+            </ResponsiveTable>
           )}
         </>
       )}
@@ -247,10 +290,32 @@ function MovementReportView() {
           <Button variant="outline" className="h-9" onClick={() => refetch()}>Refresh</Button>
         </div>
       </Card>
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No transactions found" /> : (
-        <AstuCardTable>
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          title="No transactions found"
+          description="No stock movements match the current filters. Try changing the store, type, or date range."
+          size="sm"
+        />
+       ) : (
+        <ResponsiveTable
+          mobileCards={data.items.map((t) => (
+            <MobileCard
+              key={t.id}
+              primary={t.itemName ? `${t.itemCode} · ${t.itemName}` : t.itemCode}
+              secondary={t.code}
+              badge={<StatusPill status={t.type} />}
+              meta={[
+                { label: "Qty",     value: formatNumber(Math.abs(t.quantity)) },
+                { label: "Balance", value: formatNumber(t.balanceAfter) },
+                { label: "Store",   value: t.store ?? "—" },
+                { label: "Date",    value: new Date(t.transactionDate).toLocaleDateString() },
+              ]}
+            />
+          ))}
+        >
           <table className="astu-table">
             <thead>
               <tr>
@@ -280,7 +345,7 @@ function MovementReportView() {
             </tbody>
           </table>
           <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
+        </ResponsiveTable>
       )}
     </div>
   );

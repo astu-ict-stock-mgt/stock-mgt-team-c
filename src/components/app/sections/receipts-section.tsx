@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PageHeader, SectionError, SectionLoading, SectionEmpty, Pagination, AstuAction, AstuCardTable } from "@/components/app/section-utils";
+import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { useUIStore } from "@/stores/ui-store";
 import { formatCurrency, formatNumber, statusColor, formatDate } from "@/lib/utils/format";
 import { toast } from "sonner";
@@ -47,10 +47,39 @@ export function ReceiptsSection() {
         </div>
       </Card>
 
-      {isLoading ? <SectionLoading /> :
+      {isLoading ? <SectionLoading variant="table" /> :
        isError ? <SectionError message="Failed to load receipts" onRetry={() => refetch()} /> :
-       !data || data.items.length === 0 ? <SectionEmpty title="No receipts yet" message="Create your first receipt to start tracking inventory" /> : (
-        <AstuCardTable footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}>
+       !data || data.items.length === 0 ? (
+        <EmptyState
+          icon={ArrowDownToLine}
+          title="No receipts yet"
+          description="Record your first goods receipt to create FIFO layers and update store stock automatically."
+          actionLabel="New Receipt"
+          onAction={() => setCreateOpen(true)}
+        />
+       ) : (
+        <ResponsiveTable
+          footerAction={<AstuAction onClick={() => setCreateOpen(true)}>+ New</AstuAction>}
+          mobileCards={data.items.map((r) => (
+            <MobileCard
+              key={r.id}
+              primary={r.supplier.name}
+              secondary={r.code}
+              badge={<StatusPill status={r.status} />}
+              meta={[
+                { label: "Store",  value: r.store.name },
+                { label: "Amount", value: formatCurrency(r.totalAmount) },
+                { label: "Qty",    value: formatNumber(r.totalQuantity) },
+                { label: "Date",   value: formatDate(r.receiptDate) },
+              ]}
+              action={
+                <AstuAction onClick={() => setSelectedItemId(r.id)}>
+                  <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />View</span>
+                </AstuAction>
+              }
+            />
+          ))}
+        >
           <table className="astu-table">
             <thead>
               <tr>
@@ -86,7 +115,7 @@ export function ReceiptsSection() {
             </tbody>
           </table>
           <Pagination page={data.page} totalPages={data.totalPages} total={data.total} limit={data.limit} onPage={setPage} />
-        </AstuCardTable>
+        </ResponsiveTable>
       )}
 
       <ReceiptDetailDrawer />
