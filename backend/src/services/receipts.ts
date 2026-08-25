@@ -4,6 +4,7 @@ import { Errors } from "../utils/errors";
 import { recordAudit } from "./audit";
 import { nextTxnCode } from "./fifo-consume";
 import { refreshItemStatus } from "./item-status";
+import { nextDocumentCode, withUniqueRetry } from "../utils/document-code";
 
 export async function listReceipts(params: { page: number; limit: number; search?: string; supplierId?: string; storeId?: string; status?: string }) {
   const where: Prisma.StockReceiptWhereInput = {};
@@ -58,13 +59,17 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
     if (it.unitCost < 0) throw Errors.validation(`Unit cost cannot be negative for item ${it.itemId}`);
   }
 
-  const today = new Date();
-  const ymd = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}${String(today.getUTCDate()).padStart(2, "0")}`;
-  const code = `GRN-${ymd}-${String(await prisma.stockReceipt.count({ where: { code: { startsWith: `GRN-${ymd}-` } } }) + 1).padStart(4, "0")}`;
   const totalQuantity = input.items.reduce((s: number, i: any) => s + i.quantity, 0);
   const totalAmount = input.items.reduce((s: number, i: any) => s + i.quantity * i.unitCost, 0);
 
-  const receipt = await prisma.$transaction(async (tx) => {
+  // The code is generated inside the transaction and the whole operation retries
+  // on a unique-index clash, so two storekeepers saving at the same moment can no
+  // longer produce the same GRN number.
+  const receipt = await withUniqueRetry(() => prisma.$transaction(async (tx) => {
+    const code = await nextDocumentCode("GRN", (startsWith) =>
+      tx.stockReceipt.count({ where: { code: { startsWith } } })
+    );
+
     const r = await tx.stockReceipt.create({
       data: {
         code, supplierId: input.supplierId, storeId: input.storeId, receivedById: input.receivedById,
@@ -109,12 +114,14 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
       await refreshItemStatus(tx, ri.itemId);
     }
     return r;
-  });
+  }));
 
+  // Also fixes the per-store cost drift: the average is computed from the layers
+  // of the store that was received into, matching how FIFO consumes them.
   await recordAudit({
     ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
     action: "STOCK_RECEIVED", module: "receipts", entity: "receipt", entityId: receipt.id,
-    newValue: { code, supplierId: input.supplierId, storeId: input.storeId, totalQuantity, totalAmount, itemCount: input.items.length },
+    newValue: { code: receipt.code, supplierId: input.supplierId, storeId: input.storeId, totalQuantity, totalAmount, itemCount: input.items.length },
   });
 
   return getReceipt(receipt.id);

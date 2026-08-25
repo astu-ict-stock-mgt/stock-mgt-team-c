@@ -4,6 +4,7 @@ import { Errors } from "../utils/errors";
 import { recordAudit } from "./audit";
 import { consumeFifoTx, nextTxnCode } from "./fifo-consume";
 import { refreshItemStatus } from "./item-status";
+import { nextDocumentCode, withUniqueRetry } from "../utils/document-code";
 
 export async function listTransfers(params: { page: number; limit: number; search?: string; fromStoreId?: string; toStoreId?: string; status?: string }) {
   const where: Prisma.StockTransferWhereInput = {};
@@ -55,12 +56,13 @@ export async function createTransfer(input: any, auditCtx?: { userId?: string; i
     if (it.quantity <= 0) throw Errors.validation(`Quantity must be positive for item ${it.itemId}`);
   }
 
-  const today = new Date();
-  const ymd = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}${String(today.getUTCDate()).padStart(2, "0")}`;
-  const code = `TRF-${ymd}-${String(await prisma.stockTransfer.count({ where: { code: { startsWith: `TRF-${ymd}-` } } }) + 1).padStart(4, "0")}`;
   const totalQuantity = input.items.reduce((s: number, i: any) => s + i.quantity, 0);
 
-  const transfer = await prisma.$transaction(async (tx) => {
+  const transfer = await withUniqueRetry(() => prisma.$transaction(async (tx) => {
+    const code = await nextDocumentCode("TRF", (startsWith) =>
+      tx.stockTransfer.count({ where: { code: { startsWith } } })
+    );
+
     const tr = await tx.stockTransfer.create({
       data: {
         code, fromStoreId: input.fromStoreId, toStoreId: input.toStoreId,
@@ -131,12 +133,12 @@ export async function createTransfer(input: any, auditCtx?: { userId?: string; i
     }
 
     return tr;
-  });
+  }));
 
   await recordAudit({
     ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
     action: "STOCK_TRANSFERRED", module: "transfers", entity: "transfer", entityId: transfer.id,
-    newValue: { code, fromStoreId: input.fromStoreId, toStoreId: input.toStoreId, totalQuantity, itemCount: input.items.length },
+    newValue: { code: transfer.code, fromStoreId: input.fromStoreId, toStoreId: input.toStoreId, totalQuantity, itemCount: input.items.length },
   });
 
   return getTransfer(transfer.id);

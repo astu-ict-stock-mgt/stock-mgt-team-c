@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
+import { nextDocumentCode } from "../utils/document-code";
 
 // Consume `quantity` units from the oldest FIFO layers (oldest-first).
 // Must be called inside a Prisma $transaction.
@@ -42,8 +43,7 @@ export async function consumeFifoTx(
 }
 
 export async function nextTxnCode(tx: Prisma.TransactionClient): Promise<string> {
-  const today = new Date();
-  const ymd = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}${String(today.getUTCDate()).padStart(2, "0")}`;
-  const count = await tx.stockTransaction.count({ where: { code: { startsWith: `TXN-${ymd}-` } } });
-  return `TXN-${ymd}-${String(count + 1).padStart(4, "0")}`;
+  return nextDocumentCode("TXN", (startsWith) =>
+    tx.stockTransaction.count({ where: { code: { startsWith } } })
+  );
 }
