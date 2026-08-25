@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { resolveSession, publicUser } from "../services/auth";
 import { Errors, AppError } from "../utils/errors";
+import { ROLES } from "../constants/roles";
 
 export type AuthedRequest = Request & {
   userId?: string;
@@ -48,7 +49,7 @@ export function requirePermission(...perms: string[]): RequestHandler {
   return (req, _res, next) => {
     const r = req as AuthedRequest;
     if (!r.userId) return next(Errors.unauthorized());
-    if (r.roles.has("ADMINISTRATOR")) return next();
+    if (r.roles.has(ROLES.ADMINISTRATOR)) return next();
     const hasAll = perms.every((p) => r.permissions.has(p));
     if (!hasAll) return next(Errors.forbidden());
     next();
@@ -59,7 +60,7 @@ export function requireAnyPermission(...perms: string[]): RequestHandler {
   return (req, _res, next) => {
     const r = req as AuthedRequest;
     if (!r.userId) return next(Errors.unauthorized());
-    if (r.roles.has("ADMINISTRATOR")) return next();
+    if (r.roles.has(ROLES.ADMINISTRATOR)) return next();
     const hasAny = perms.some((p) => r.permissions.has(p));
     if (!hasAny) return next(Errors.forbidden());
     next();
