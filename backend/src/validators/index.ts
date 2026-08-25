@@ -126,6 +126,12 @@ export const requisitionSchema = z.object({
 });
 
 export const requisitionDecisionSchema = z.object({
+  // Was read straight off req.body and hand-checked; validated here so an
+  // invalid decision fails with the standard validation error shape.
+  decision: z.preprocess(
+    (v) => (typeof v === "string" ? v.toUpperCase() : v),
+    z.enum(["APPROVED", "REJECTED"])
+  ),
   comments: z.string().optional(),
 });
 
