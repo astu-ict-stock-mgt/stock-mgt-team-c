@@ -12,12 +12,23 @@ let itemId: string;
 let storekeeperId: string;
 
 async function seedRole(name: string, permissions: string[]) {
+  // Use upsert so the test is idempotent if a prior run left stale data
+  const existing = await prisma.role.findUnique({ where: { name } });
+  if (existing) {
+    await prisma.rolePermission.deleteMany({ where: { roleId: existing.id } });
+    await prisma.role.delete({ where: { id: existing.id } });
+  }
   const role = await prisma.role.create({
     data: {
       name,
       permissions: {
         create: permissions.map((p) => ({
-          permission: { create: { name: p, module: p.split(".")[0] } },
+          permission: {
+            connectOrCreate: {
+              where: { name: p },
+              create: { name: p, module: p.split(".")[0] },
+            },
+          },
         })),
       },
     },
