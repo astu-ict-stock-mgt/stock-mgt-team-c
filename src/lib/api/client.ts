@@ -116,6 +116,49 @@ export class ApiClientError extends Error {
   }
 }
 
+/**
+ * Raw response for endpoints that do not return JSON — the CSV report exports and
+ * the printable GRN / voucher / requisition documents.
+ *
+ * `api()` above rejects any non-JSON body outright, so these need their own path.
+ * It still goes through `request()`, which means the bearer token and the
+ * single-flight refresh-and-replay on 401 behave exactly as they do everywhere
+ * else. An error response *is* JSON, so it is unwrapped into ApiClientError as
+ * usual and callers only ever see a success body.
+ */
+export async function apiRaw(path: string, init: RequestInit = {}): Promise<Response> {
+  const send = async () => {
+    const token = getToken();
+    const headers = new Headers(init.headers || {});
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    const url = path.startsWith("http") ? path : `${API_BASE_URL}${path}`;
+    return fetch(url, { ...init, headers });
+  };
+
+  let res = await send();
+  if (res.status === 401 && !!getRefreshToken() && (await refreshOnce())) {
+    res = await send();
+  }
+
+  if (!res.ok) {
+    if (res.status === 401) clearToken();
+    const body = (await res.json().catch(() => null)) as ApiError | null;
+    throw new ApiClientError(
+      res.status,
+      body?.error?.code ?? "INTERNAL_ERROR",
+      body?.message ?? `Request failed with status ${res.status}`,
+      body?.error?.details
+    );
+  }
+  return res;
+}
+
+/** Filename the server asked for, so an export keeps its date and -partial marker. */
+export function filenameFromResponse(res: Response, fallback: string): string {
+  const disposition = res.headers.get("content-disposition") ?? "";
+  return /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? fallback;
+}
+
 // Convenience HTTP method helpers.
 export const apiClient = {
   get: <T = unknown>(path: string) => api<T>(path),

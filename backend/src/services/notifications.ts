@@ -56,7 +56,7 @@ export async function getNotificationsForUser(userId: string, roles: Set<string>
   if (canApproveGatePasses) {
     const pendingGatePasses = await prisma.gatePass.count({ where: { status: "PENDING" } });
     if (pendingGatePasses > 0) {
-      items.push({ id: "pending_gate_passes", type: "pending_gate_pass", title: "Pending Gate Passes", message: `${pendingGatePasses} gate pass${pendingGatePasses === 1 ? "" : "es"} awaiting approval`, severity: "warning", link: { section: "audit-logs", filter: "gate-pass" }, createdAt: new Date().toISOString() });
+      items.push({ id: "pending_gate_passes", type: "pending_gate_pass", title: "Pending Gate Passes", message: `${pendingGatePasses} gate pass${pendingGatePasses === 1 ? "" : "es"} awaiting approval`, severity: "warning", link: { section: "gate-passes", filter: "pending" }, createdAt: new Date().toISOString() });
     }
   }
 
@@ -64,7 +64,7 @@ export async function getNotificationsForUser(userId: string, roles: Set<string>
   if (canSeeStockTakes) {
     const pendingStockTakes = await prisma.stockTake.count({ where: { status: { in: ["DRAFT", "IN_PROGRESS"] } } });
     if (pendingStockTakes > 0) {
-      items.push({ id: "pending_stocktakes", type: "pending_stocktake", title: "Active Stock Takes", message: `${pendingStockTakes} stock take${pendingStockTakes === 1 ? "" : "s"} in progress`, severity: "info", link: { section: "audit-logs", filter: "stock-take" }, createdAt: new Date().toISOString() });
+      items.push({ id: "pending_stocktakes", type: "pending_stocktake", title: "Active Stock Takes", message: `${pendingStockTakes} stock take${pendingStockTakes === 1 ? "" : "s"} in progress`, severity: "info", link: { section: "stocktakes", filter: "open" }, createdAt: new Date().toISOString() });
     }
   }
 

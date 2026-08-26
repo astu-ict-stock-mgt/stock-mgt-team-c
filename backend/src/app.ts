@@ -22,6 +22,10 @@ import reportsRoutes from "./routes/reports";
 import notificationsRoutes from "./routes/notifications";
 import dashboardRoutes from "./routes/dashboard";
 import requisitionsRoutes from "./routes/requisitions";
+import stockTakesRoutes from "./routes/stocktakes";
+import gatePassesRoutes from "./routes/gate-passes";
+import printRoutes from "./routes/print";
+import { dispositionRouter } from "./routes/dispositions";
 
 const app = express();
 
@@ -113,6 +117,13 @@ app.use("/api/v1/reports", reportsRoutes);
 app.use("/api/v1/notifications", notificationsRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/requisitions", requisitionsRoutes);
+app.use("/api/v1/stocktakes", stockTakesRoutes);
+app.use("/api/v1/gate-passes", gatePassesRoutes);
+// Damaged and obsolete stock are the same table shape, so one router factory
+// serves both under its own permission.
+app.use("/api/v1/damaged", dispositionRouter("damaged", "damaged.manage"));
+app.use("/api/v1/obsolete", dispositionRouter("obsolete", "obsolete.manage"));
+app.use("/api/v1/print", printRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

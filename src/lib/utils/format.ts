@@ -61,7 +61,7 @@ export function formatRelative(value: string | Date | null): string {
 // is a type error at the call site.
 export function statusColor(status: string): "default" | "secondary" | "destructive" | "outline" {
   const s = status.toUpperCase();
-  if (["ACTIVE", "CONFIRMED", "COMPLETED", "APPROVED", "FULFILLED"].includes(s)) return "default";
+  if (["ACTIVE", "CONFIRMED", "COMPLETED", "APPROVED", "FULFILLED", "RECONCILED"].includes(s)) return "default";
   if (["LOW_STOCK", "PENDING", "PENDING_APPROVAL", "SUBMITTED", "IN_PROGRESS", "INSPECTING", "IN_TRANSIT", "DRAFT"].includes(s)) return "secondary";
   if (["OUT_OF_STOCK", "REJECTED", "CANCELLED", "LOCKED", "BLACKLISTED", "INACTIVE", "DISPOSED"].includes(s)) return "destructive";
   if (["DAMAGED", "OBSOLETE", "REPORTED"].includes(s)) return "destructive";

@@ -3,12 +3,24 @@ import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 import { nextDocumentCode } from "../utils/document-code";
 
+// One consumed slice of a FIFO layer. `receiptId` is carried out so a caller that
+// re-lands the goods somewhere else — a transfer into another store — can point the
+// new layer at the receipt the goods actually arrived on, rather than inventing a
+// reference. It is null when the source layer was itself an adjustment.
+export type FifoConsumption = {
+  layerId: string;
+  receiptId: string | null;
+  quantity: number;
+  unitCost: number;
+  cogs: number;
+};
+
 // Consume `quantity` units from the oldest FIFO layers (oldest-first).
 // Must be called inside a Prisma $transaction.
 export async function consumeFifoTx(
   tx: Prisma.TransactionClient,
   params: { itemId: string; storeId: string; quantity: number }
-): Promise<{ consumptions: Array<{ layerId: string; quantity: number; unitCost: number; cogs: number }>; totalCogs: number; avgUnitCost: number }> {
+): Promise<{ consumptions: FifoConsumption[]; totalCogs: number; avgUnitCost: number }> {
   const { itemId, storeId, quantity } = params;
   if (quantity <= 0) return { consumptions: [], totalCogs: 0, avgUnitCost: 0 };
 
@@ -23,7 +35,7 @@ export async function consumeFifoTx(
   }
 
   let remaining = quantity;
-  const consumptions: Array<{ layerId: string; quantity: number; unitCost: number; cogs: number }> = [];
+  const consumptions: FifoConsumption[] = [];
   let totalCogs = 0;
 
   for (const layer of layers) {
@@ -34,7 +46,13 @@ export async function consumeFifoTx(
       where: { id: layer.id },
       data: { remainingQty: layer.remainingQty - take },
     });
-    consumptions.push({ layerId: layer.id, quantity: take, unitCost: layer.unitCost, cogs });
+    consumptions.push({
+      layerId: layer.id,
+      receiptId: layer.receiptId,
+      quantity: take,
+      unitCost: layer.unitCost,
+      cogs,
+    });
     totalCogs += cogs;
     remaining -= take;
   }

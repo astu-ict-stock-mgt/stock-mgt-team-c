@@ -14,23 +14,46 @@ Tags: **[P0]** = fix first · **[P1]** = fix soon · Size = Small / Medium / Lar
 
 The database tables and the permissions for these are already written. Only the API and the screens are missing.
 
-- [ ] **Stock taking (physical counting)** — Size: Large
+- [x] **Stock taking (physical counting)** — Size: Large
   Count real items in the store, compare with the system, fix the difference, print a report.
   The SRS says this must happen at least once every year. Nothing is built.
 
-- [ ] **Damaged and obsolete items** — Size: Medium
+  *Done.* `DRAFT → IN_PROGRESS → COMPLETED → RECONCILED` at `/api/v1/stocktakes`, plus a
+  Stock Taking screen. The system quantity is frozen when the count opens, so the sheet is
+  measured against what the books said when counting started. Reconciliation is the only step
+  that writes stock: surplus opens a FIFO layer at current average cost, shortage consumes the
+  oldest layers, and each adjusted line gets an `ADJUSTMENT_IN`/`ADJUSTMENT_OUT` transaction.
+  One open count per store, and the counter cannot reconcile their own count.
+
+- [x] **Damaged and obsolete items** — Size: Medium
   Report a broken or too-old item, get approval, then dispose of it.
   The admin dashboard already shows a counter for these, but there is no way to add any.
 
-- [ ] **Gate pass (items leaving the campus)** — Size: Medium
+  *Done.* `REPORTED → APPROVED → DISPOSED` (`CANCELLED` from either of the first two) at
+  `/api/v1/damaged` and `/api/v1/obsolete`, with a two-tab screen. Stock does not move on
+  report or approve — the goods are still on the shelf — so the single stock movement is the
+  disposal. The dashboard counters at `services/dashboard.ts:22-23` now have data behind them.
+
+- [x] **Gate pass (items leaving the campus)** — Size: Medium
   Request a pass, security approves it, security confirms the exit.
   This is the **whole job of the Security Officer role**. Their dashboard points to a feature that does not exist.
 
-- [ ] **Export and print reports** — Size: Medium
+  *Done.* `PENDING → APPROVED → EXIT_CONFIRMED` at `/api/v1/gate-passes`, plus a screen. A
+  requester cannot approve their own pass, and an issue can carry only one pass. The Security
+  Officer dashboard now points at something real.
+
+- [x] **Export and print reports** — Size: Medium
   Save reports as CSV or PDF, and print the GRN (goods receiving note), issue voucher, and requisition form.
   The `reports.export` permission is already given to Admin, PAO and Accountant, but there is no export button and no export API.
 
-You can check this yourself — all of these return "404 Not Found":
+  *Done.* CSV at `/api/v1/reports/{inventory,valuation,movement,audit}/export`, reusing the
+  report services so an export can never disagree with the screen it came from. Printing is
+  print-styled HTML at `/api/v1/print/{receipts,issues,requisitions}/:id`, which the browser
+  renders to paper or PDF — chosen over bundling Chromium (~300 MB) for server-side PDF.
+  Movement and audit exports are capped at 5,000 rows and **say so** in a response header and
+  a toast rather than handing over a partial file that looks complete.
+
+All five of these now respond instead of 404:
 ```
 /api/v1/stocktakes    /api/v1/gate-passes    /api/v1/damaged
 /api/v1/obsolete      /api/v1/uoms
@@ -40,25 +63,32 @@ You can check this yourself — all of these return "404 Not Found":
 
 These are the fastest things to deliver.
 
-- [ ] **Stock transfer screen** — Size: Small
+- [x] **Stock transfer screen** — Size: Small
   `backend/src/routes/transfers.ts` and `services/transfers.ts` are complete and correct. Nobody built the page.
 
-- [ ] **Edit and deactivate users** — Size: Small
+  *Done — but the claim above was wrong.* The screen exists now, and building it exposed a
+  latent bug: `services/transfers.ts` wrote the consumed **layer** id into `receiptId`, a
+  foreign key onto `StockReceipt`. `PRAGMA foreign_keys` is on, so **every transfer failed**
+  with `P2003`. It had never been caught because the table held 0 rows — the service was never
+  once executed. The destination layer now inherits the source layer's `receiptId`, which
+  satisfies the key and is the truer record: the goods really did arrive on that GRN.
+
+- [x] **Edit and deactivate users** — Size: Small
   The API for editing and deleting a user works. The Users page can only *list* and *create*.
 
-- [ ] **Edit and delete an inventory item** — Size: Small
+- [x] **Edit and delete an inventory item** — Size: Small
   The API works. The helper function `useUpdateItem` is already written in `src/lib/api/hooks.ts:263` and no page uses it.
 
 ## 1.3 Missing API endpoints
 
 The permissions exist, but the endpoints were never written.
 
-- [ ] Edit and delete a **category**
-- [ ] Edit and delete a **store**
-- [ ] Add, edit, delete a **unit of measure** (`/api/v1/uoms` returns 404, so units can only be created by the seed script)
-- [ ] **Reset a user's password** — the function is already written at `backend/src/services/users.ts:109`, but no endpoint calls it, so it can never run
-- [ ] **Unlock a locked user** — there is no way to do this at all (see bug P0-5)
-- [ ] Requisition: view one by ID, edit a draft, cancel
+- [x] Edit and delete a **category**
+- [x] Edit and delete a **store**
+- [x] Add, edit, delete a **unit of measure** (`/api/v1/uoms` returns 404, so units can only be created by the seed script)
+- [x] **Reset a user's password** — the function is already written at `backend/src/services/users.ts:109`, but no endpoint calls it, so it can never run
+- [x] **Unlock a locked user** — there is no way to do this at all (see bug P0-5)
+- [x] Requisition: view one by ID, edit a draft, cancel
 
 ## 1.4 Basic things the app still needs
 
