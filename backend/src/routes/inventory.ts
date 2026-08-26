@@ -19,6 +19,40 @@ router.post("/categories", requirePermission("categories.create"), asyncHandler(
   res.status(201).json(ok(c, "Category created"));
 }));
 
+router.patch("/categories/:id", requirePermission("categories.update"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const body = val.categoryUpdateSchema.parse(req.body);
+  const c = await inv.updateCategory(req.params.id, body, actorOf(req));
+  res.json(ok(c, "Category updated"));
+}));
+
+router.delete("/categories/:id", requirePermission("categories.delete"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  await inv.deleteCategory(req.params.id, actorOf(req));
+  res.json(ok({ deleted: true }, "Category deleted"));
+}));
+
+// Units of measure — previously only creatable by the seed script.
+router.get("/uoms", requirePermission("categories.read"), asyncHandler(async (_req: AuthedRequest, res: Response) => {
+  const items = await inv.listUoms();
+  res.json(ok({ items }));
+}));
+
+router.post("/uoms", requirePermission("categories.create"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const body = val.uomSchema.parse(req.body);
+  const u = await inv.createUom(body, actorOf(req));
+  res.status(201).json(ok(u, "Unit of measure created"));
+}));
+
+router.patch("/uoms/:id", requirePermission("categories.update"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const body = val.uomSchema.partial().parse(req.body);
+  const u = await inv.updateUom(req.params.id, body, actorOf(req));
+  res.json(ok(u, "Unit of measure updated"));
+}));
+
+router.delete("/uoms/:id", requirePermission("categories.delete"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  await inv.deleteUom(req.params.id, actorOf(req));
+  res.json(ok({ deleted: true }, "Unit of measure deleted"));
+}));
+
 // Stores
 router.get("/stores", requirePermission("warehouses.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const items = await inv.listStores();
@@ -29,6 +63,17 @@ router.post("/stores", requirePermission("warehouses.create"), asyncHandler(asyn
   const body = val.storeSchema.parse(req.body);
   const w = await inv.createStore(body, actorOf(req));
   res.status(201).json(ok(w, "Store created"));
+}));
+
+router.patch("/stores/:id", requirePermission("warehouses.update"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const body = val.storeUpdateSchema.parse(req.body);
+  const w = await inv.updateStore(req.params.id, body, actorOf(req));
+  res.json(ok(w, "Store updated"));
+}));
+
+router.delete("/stores/:id", requirePermission("warehouses.delete"), asyncHandler(async (req: AuthedRequest, res: Response) => {
+  await inv.deleteStore(req.params.id, actorOf(req));
+  res.json(ok({ deleted: true }, "Store deleted"));
 }));
 
 // Inventory items

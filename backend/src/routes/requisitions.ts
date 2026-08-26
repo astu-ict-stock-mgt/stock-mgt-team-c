@@ -176,6 +176,74 @@ router.post(
   })
 );
 
+router.patch(
+  "/:id",
+  requirePermission("requisition.create"),
+  asyncHandler(async (req: AuthedRequest, res: Response) => {
+    if (!req.userId) throw Errors.unauthorized();
+    const body = val.requisitionUpdateSchema.parse(req.body);
+
+    const requisition = await prisma.requisition.findUnique({ where: { id: req.params.id } });
+    if (!requisition) throw Errors.notFound("Requisition", req.params.id);
+    if (requisition.requestedById !== req.userId && !req.roles.has(ROLES.ADMINISTRATOR)) {
+      throw Errors.forbidden("You can only edit your own requisitions");
+    }
+    // Once submitted, the basket is what approvers are voting on — changing it
+    // underneath them would invalidate any approval already recorded.
+    if (requisition.status !== "DRAFT") {
+      throw Errors.invalidRequisition(
+        `Only draft requisitions can be edited — this one is ${requisition.status.toLowerCase().replace(/_/g, " ")}`
+      );
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.requisition.update({
+        where: { id: requisition.id },
+        data: {
+          ...(body.department !== undefined ? { department: body.department } : {}),
+          ...(body.notes !== undefined ? { notes: body.notes } : {}),
+          ...(body.requiredDate !== undefined ? { requiredDate: new Date(body.requiredDate) } : {}),
+        },
+      });
+
+      // Lines are replaced wholesale rather than diffed: a draft has no
+      // fulfilment history yet, so there is nothing to preserve.
+      if (body.items) {
+        await tx.requisitionItem.deleteMany({ where: { requisitionId: requisition.id } });
+        await tx.requisitionItem.createMany({
+          data: body.items.map((item) => ({
+            requisitionId: requisition.id,
+            itemId: item.itemId,
+            quantity: item.quantity,
+          })),
+        });
+      }
+
+      return tx.requisition.findUniqueOrThrow({
+        where: { id: requisition.id },
+        include: REQUISITION_INCLUDE,
+      });
+    });
+
+    await recordAudit({
+      ctx: actorOf(req),
+      action: "REQUISITION_UPDATED",
+      module: "requisitions",
+      entity: "requisition",
+      entityId: updated.id,
+      oldValue: {
+        department: requisition.department,
+        notes: requisition.notes,
+        requiredDate: requisition.requiredDate.toISOString(),
+      },
+      newValue: body,
+      description: `Edited draft requisition ${updated.code}`,
+    });
+
+    res.json(ok(serializeRequisition(updated), "Requisition updated"));
+  })
+);
+
 router.post(
   "/:id/submit",
   requirePermission("requisition.create"),

@@ -16,8 +16,106 @@ export async function createCategory(input: any, auditCtx?: AuditContext) {
   return c;
 }
 
+export async function updateCategory(id: string, input: any, auditCtx?: AuditContext) {
+  const existing = await prisma.category.findUnique({ where: { id } });
+  if (!existing) throw Errors.notFound("Category", id);
+
+  const data: Prisma.CategoryUpdateInput = {};
+  if (input.code !== undefined) data.code = input.code.toUpperCase();
+  if (input.name !== undefined) data.name = input.name;
+  if (input.description !== undefined) data.description = input.description;
+  if (input.parentId !== undefined) {
+    // A category that is its own ancestor would make the tree walk in
+    // listCategories loop forever.
+    if (input.parentId === id) throw Errors.conflict("A category cannot be its own parent");
+    if (input.parentId && (await isDescendantCategory(input.parentId, id))) {
+      throw Errors.conflict("That parent is already below this category");
+    }
+    data.parent = input.parentId ? { connect: { id: input.parentId } } : { disconnect: true };
+  }
+
+  const c = await prisma.category.update({ where: { id }, data });
+  await recordAudit({ ctx: auditCtx, action: "CATEGORY_UPDATED", module: "categories", entity: "category", entityId: id, oldValue: existing, newValue: input });
+  return c;
+}
+
+// Walks up from `startId` looking for `ancestorId`.
+async function isDescendantCategory(startId: string, ancestorId: string): Promise<boolean> {
+  let cursor: string | null = startId;
+  const seen = new Set<string>();
+  while (cursor && !seen.has(cursor)) {
+    if (cursor === ancestorId) return true;
+    seen.add(cursor);
+    const row: { parentId: string | null } | null = await prisma.category.findUnique({
+      where: { id: cursor }, select: { parentId: true },
+    });
+    cursor = row?.parentId ?? null;
+  }
+  return false;
+}
+
+export async function deleteCategory(id: string, auditCtx?: AuditContext) {
+  const existing = await prisma.category.findUnique({
+    where: { id },
+    include: { _count: { select: { items: true, children: true } } },
+  });
+  if (!existing) throw Errors.notFound("Category", id);
+  // Category has no deletedAt column, so this is a hard delete — refuse while
+  // anything still points at it rather than orphaning items.
+  if (existing._count.items > 0) {
+    throw Errors.conflict(`Cannot delete ${existing.name} — ${existing._count.items} item(s) still use it`);
+  }
+  if (existing._count.children > 0) {
+    throw Errors.conflict(`Cannot delete ${existing.name} — it has ${existing._count.children} sub-categor(y/ies)`);
+  }
+
+  await prisma.category.delete({ where: { id } });
+  await recordAudit({ ctx: auditCtx, action: "CATEGORY_DELETED", module: "categories", entity: "category", entityId: id, oldValue: { code: existing.code, name: existing.name } });
+  return true;
+}
+
 export async function listUoms() {
-  return prisma.unitOfMeasure.findMany({ orderBy: { name: "asc" } });
+  const rows = await prisma.unitOfMeasure.findMany({
+    orderBy: { name: "asc" },
+    include: { _count: { select: { items: true } } },
+  });
+  return rows.map((u) => ({ id: u.id, code: u.code, name: u.name, itemCount: u._count.items }));
+}
+
+export async function createUom(input: { code: string; name: string }, auditCtx?: AuditContext) {
+  const u = await prisma.unitOfMeasure.create({
+    data: { code: input.code.toUpperCase(), name: input.name },
+  });
+  await recordAudit({ ctx: auditCtx, action: "UOM_CREATED", module: "uoms", entity: "uom", entityId: u.id, newValue: u });
+  return u;
+}
+
+export async function updateUom(id: string, input: { code?: string; name?: string }, auditCtx?: AuditContext) {
+  const existing = await prisma.unitOfMeasure.findUnique({ where: { id } });
+  if (!existing) throw Errors.notFound("Unit of measure", id);
+  const u = await prisma.unitOfMeasure.update({
+    where: { id },
+    data: {
+      ...(input.code !== undefined ? { code: input.code.toUpperCase() } : {}),
+      ...(input.name !== undefined ? { name: input.name } : {}),
+    },
+  });
+  await recordAudit({ ctx: auditCtx, action: "UOM_UPDATED", module: "uoms", entity: "uom", entityId: id, oldValue: existing, newValue: input });
+  return u;
+}
+
+export async function deleteUom(id: string, auditCtx?: AuditContext) {
+  const existing = await prisma.unitOfMeasure.findUnique({
+    where: { id }, include: { _count: { select: { items: true } } },
+  });
+  if (!existing) throw Errors.notFound("Unit of measure", id);
+  // uomId on InventoryItem is required, so a used unit can never be removed.
+  if (existing._count.items > 0) {
+    throw Errors.conflict(`Cannot delete ${existing.code} — ${existing._count.items} item(s) are measured in it`);
+  }
+  await prisma.unitOfMeasure.delete({ where: { id } });
+  await recordAudit({ ctx: auditCtx, action: "UOM_DELETED", module: "uoms", entity: "uom", entityId: id, oldValue: { code: existing.code, name: existing.name } });
+  return true;
 }
 
 export async function listStores() {
@@ -35,6 +133,40 @@ export async function createStore(input: any, auditCtx?: AuditContext) {
   const w = await prisma.store.create({ data: { code: input.code.toUpperCase(), name: input.name, location: input.location ?? null } });
   await recordAudit({ ctx: auditCtx, action: "STORE_CREATED", module: "stores", entity: "store", entityId: w.id, newValue: w });
   return w;
+}
+
+export async function updateStore(id: string, input: any, auditCtx?: AuditContext) {
+  const existing = await prisma.store.findFirst({ where: { id, deletedAt: null } });
+  if (!existing) throw Errors.notFound("Store", id);
+
+  const data: Prisma.StoreUpdateInput = {};
+  if (input.code !== undefined) data.code = input.code.toUpperCase();
+  if (input.name !== undefined) data.name = input.name;
+  if (input.location !== undefined) data.location = input.location;
+  if (input.status !== undefined) data.status = input.status;
+
+  const w = await prisma.store.update({ where: { id }, data });
+  await recordAudit({ ctx: auditCtx, action: "STORE_UPDATED", module: "stores", entity: "store", entityId: id, oldValue: existing, newValue: input });
+  return w;
+}
+
+export async function deleteStore(id: string, auditCtx?: AuditContext) {
+  const existing = await prisma.store.findFirst({ where: { id, deletedAt: null } });
+  if (!existing) throw Errors.notFound("Store", id);
+
+  // Closing a store that still physically holds goods would strand them: the
+  // stock stays on the books but no screen offers the store any more.
+  const onHand = await prisma.storeStock.aggregate({
+    where: { storeId: id }, _sum: { quantity: true },
+  });
+  const remaining = onHand._sum.quantity ?? 0;
+  if (remaining > 0) {
+    throw Errors.conflict(`Cannot delete ${existing.name} — it still holds ${remaining} unit(s). Transfer them out first`);
+  }
+
+  await prisma.store.update({ where: { id }, data: { deletedAt: new Date(), status: "INACTIVE" } });
+  await recordAudit({ ctx: auditCtx, action: "STORE_DELETED", module: "stores", entity: "store", entityId: id, oldValue: { code: existing.code, name: existing.name } });
+  return true;
 }
 
 export async function listInventory(params: { page: number; limit: number; search?: string; categoryId?: string; status?: string }) {
