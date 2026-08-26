@@ -189,6 +189,33 @@ export type IssueDetail = Issue & {
   gatePass: { id: string; code: string; status: string } | null;
 };
 
+export type Transfer = {
+  id: string;
+  code: string;
+  fromStore: { id: string; code: string; name: string };
+  toStore: { id: string; code: string; name: string };
+  transferredBy: { id: string; fullName: string };
+  status: string;
+  totalQuantity: number;
+  itemCount: number;
+  transferDate: string;
+  notes: string | null;
+};
+
+export type TransferDetail = Omit<Transfer, "fromStore" | "toStore" | "itemCount"> & {
+  fromStore: Store;
+  toStore: Store;
+  items: Array<{
+    id: string;
+    itemId: string;
+    itemCode: string;
+    itemName: string;
+    uom: string;
+    quantity: number;
+    unitCost: number;
+  }>;
+};
+
 export type Requisition = {
   id: string;
   code: string;

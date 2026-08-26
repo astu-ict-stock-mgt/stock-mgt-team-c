@@ -16,6 +16,8 @@ import type {
   ReceiptDetail,
   Issue,
   IssueDetail,
+  Transfer,
+  TransferDetail,
   Requisition,
   AuditLog,
   DashboardStats,
@@ -91,9 +93,32 @@ export function useCreateUser() {
 export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: string; status?: string; fullName?: string; department?: string | null; phoneNumber?: string | null }) =>
+    mutationFn: ({ id, ...body }: { id: string; email?: string; username?: string; status?: string; fullName?: string; department?: string | null; phoneNumber?: string | null; roleIds?: string[] }) =>
       apiClient.patch(`/api/v1/users/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/v1/users/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+
+export function useUnlockUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post(`/api/v1/users/${id}/unlock`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+
+export function useResetUserPassword() {
+  return useMutation({
+    mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
+      apiClient.post(`/api/v1/users/${id}/reset-password`, { newPassword }),
   });
 }
 
@@ -281,6 +306,17 @@ export function useUpdateItem() {
   });
 }
 
+export function useDeleteItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/v1/inventory/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
 // ---------------- Receipts ----------------
 export function useReceipts(params: { page: number; limit: number; search?: string; supplierId?: string; storeId?: string; status?: string }) {
   const search = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
@@ -352,6 +388,47 @@ export function useCreateIssue() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["issues"] });
       qc.invalidateQueries({ queryKey: ["inventory"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+}
+
+// ---------------- Transfers ----------------
+export function useTransfers(params: { page: number; limit: number; search?: string; fromStoreId?: string; toStoreId?: string; status?: string }) {
+  const search = new URLSearchParams({ page: String(params.page), limit: String(params.limit) });
+  if (params.search) search.set("search", params.search);
+  if (params.fromStoreId) search.set("fromStoreId", params.fromStoreId);
+  if (params.toStoreId) search.set("toStoreId", params.toStoreId);
+  if (params.status) search.set("status", params.status);
+  return useQuery({
+    queryKey: ["transfers", params],
+    queryFn: () => apiClient.get<Paginated<Transfer>>(`/api/v1/transfers?${search}`),
+  });
+}
+
+export function useTransfer(id: string | null) {
+  return useQuery({
+    queryKey: ["transfers", id],
+    queryFn: () => apiClient.get<TransferDetail>(`/api/v1/transfers/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      fromStoreId: string;
+      toStoreId: string;
+      notes?: string;
+      items: Array<{ itemId: string; quantity: number }>;
+    }) => apiClient.post<TransferDetail>("/api/v1/transfers", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      // A transfer moves FIFO layers between stores, so per-store stock and the
+      // dashboard totals both change.
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+      qc.invalidateQueries({ queryKey: ["stores"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });

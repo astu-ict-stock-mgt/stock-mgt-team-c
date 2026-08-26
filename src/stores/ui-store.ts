@@ -10,6 +10,7 @@ export type Section =
   | "stores"
   | "receipts"
   | "issues"
+  | "transfers"
   | "requisitions"
   | "reports"
   | "audit-logs"

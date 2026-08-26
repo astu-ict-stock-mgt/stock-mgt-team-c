@@ -9,6 +9,7 @@ import {
   Warehouse as WarehouseIcon,
   ArrowDownToLine,
   ArrowUpFromLine,
+  ArrowLeftRight,
   FileText,
   BarChart3,
   ScrollText,
@@ -56,6 +57,7 @@ import { CategoriesSection } from "@/components/app/sections/categories-section"
 import { StoresSection } from "@/components/app/sections/stores-section";
 import { ReceiptsSection } from "@/components/app/sections/receipts-section";
 import { IssuesSection } from "@/components/app/sections/issues-section";
+import { TransfersSection } from "@/components/app/sections/transfers-section";
 import { ReportsSection } from "@/components/app/sections/reports-section";
 import { AuditLogsSection } from "@/components/app/sections/audit-logs-section";
 import { UsersSection } from "@/components/app/sections/users-section";
@@ -87,6 +89,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "receipts", label: "Stock Receipts", icon: ArrowDownToLine, permission: "inventory.read" },
       { id: "issues", label: "Stock Issues", icon: ArrowUpFromLine, permission: "inventory.read" },
+      { id: "transfers", label: "Stock Transfers", icon: ArrowLeftRight, permission: "inventory.read" },
       { id: "requisitions", label: "Requisitions", icon: FileText, permission: "requisition.read" },
     ],
   },
@@ -398,6 +401,7 @@ export function AppShell({
             {section === "stores" && <StoresSection />}
             {section === "receipts" && <ReceiptsSection />}
             {section === "issues" && <IssuesSection />}
+            {section === "transfers" && <TransfersSection />}
             {section === "requisitions" && <RequisitionsSection />}
             {section === "reports" && <ReportsSection />}
             {section === "audit-logs" && <AuditLogsSection />}

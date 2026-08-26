@@ -56,7 +56,10 @@ export function formatRelative(value: string | Date | null): string {
   return formatDate(d);
 }
 
-export function statusColor(status: string): string {
+// Returns a Badge `variant`, so the return type is the union Badge accepts
+// rather than plain `string` — otherwise every <Badge variant={statusColor(...)}>
+// is a type error at the call site.
+export function statusColor(status: string): "default" | "secondary" | "destructive" | "outline" {
   const s = status.toUpperCase();
   if (["ACTIVE", "CONFIRMED", "COMPLETED", "APPROVED", "FULFILLED"].includes(s)) return "default";
   if (["LOW_STOCK", "PENDING", "PENDING_APPROVAL", "SUBMITTED", "IN_PROGRESS", "INSPECTING", "IN_TRANSIT", "DRAFT"].includes(s)) return "secondary";
