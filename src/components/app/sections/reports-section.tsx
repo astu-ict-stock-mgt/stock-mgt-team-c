@@ -7,10 +7,57 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { BarChart3, Package } from "lucide-react";
+import { BarChart3, Package, Download } from "lucide-react";
 import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuCardTable, TabBar, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
-import { useInventoryReport, useValuationReport, useMovementReport, useCategoriesAndUoms, useStores } from "@/lib/api/hooks";
+import { useInventoryReport, useValuationReport, useMovementReport, useCategoriesAndUoms, useStores, usePermissions, downloadReportCsv } from "@/lib/api/hooks";
+import { ApiClientError } from "@/lib/api/client";
 import { formatCurrency, formatNumber, statusColor } from "@/lib/utils/format";
+import { toast } from "sonner";
+
+/**
+ * CSV download for a report, with the exact filters currently on screen — so the
+ * file always matches what the user is looking at.
+ *
+ * Hidden without reports.export rather than shown and refused. The movement and
+ * audit histories are capped server-side; the response says whether it bit, and
+ * that is passed on instead of handing over a partial file that looks complete.
+ */
+function ExportCsvButton({
+  report, params, label = "Export CSV",
+}: {
+  report: "inventory" | "valuation" | "movement" | "audit";
+  params: Record<string, string | boolean | undefined>;
+  label?: string;
+}) {
+  const { can } = usePermissions();
+  const [busy, setBusy] = useState(false);
+
+  if (!can("reports.export")) return null;
+
+  const onClick = async () => {
+    setBusy(true);
+    try {
+      const result = await downloadReportCsv(report, params);
+      if (result.truncated) {
+        toast.warning(
+          `${result.filename} holds the first ${formatNumber(result.rows)} of ${formatNumber(result.total)} rows — narrow the filters for the rest`
+        );
+      } else {
+        toast.success(`${result.filename} — ${formatNumber(result.rows)} row(s)`);
+      }
+    } catch (e) {
+      toast.error(e instanceof ApiClientError ? e.message : "Export failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" className="h-9" onClick={onClick} disabled={busy}>
+      <Download className="h-3.5 w-3.5" /> {busy ? "Exporting..." : label}
+    </Button>
+  );
+}
 
 export function ReportsSection() {
   const [tab, setTab] = useState("inventory");
@@ -48,7 +95,7 @@ function InventoryReportView() {
   return (
     <div>
       <Card className="mb-4 p-3 border border-border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
           <Select value={categoryId || "ALL"} onValueChange={(v) => setCategoryId(v === "ALL" ? "" : v)}>
             <SelectTrigger className="h-9"><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>
@@ -71,6 +118,7 @@ function InventoryReportView() {
             {lowStockOnly ? "Showing low stock only" : "Show low stock only"}
           </Button>
           <Button variant="outline" className="h-9" onClick={() => refetch()}>Refresh</Button>
+          <ExportCsvButton report="inventory" params={{ categoryId, storeId, lowStockOnly }} />
         </div>
       </Card>
 
@@ -155,7 +203,7 @@ function ValuationReportView() {
   return (
     <div>
       <Card className="mb-4 p-3 border border-border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <Select value={categoryId || "ALL"} onValueChange={(v) => setCategoryId(v === "ALL" ? "" : v)}>
             <SelectTrigger className="h-9"><SelectValue placeholder="Category" /></SelectTrigger>
             <SelectContent>
@@ -171,6 +219,7 @@ function ValuationReportView() {
             </SelectContent>
           </Select>
           <Button variant="outline" className="h-9" onClick={() => refetch()}>Refresh</Button>
+          <ExportCsvButton report="valuation" params={{ categoryId, storeId }} />
         </div>
       </Card>
 
@@ -267,7 +316,7 @@ function MovementReportView() {
   return (
     <div>
       <Card className="mb-4 p-3 border border-border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <Select value={storeId || "ALL"} onValueChange={(v) => { setStoreId(v === "ALL" ? "" : v); setPage(1); }}>
             <SelectTrigger className="h-9"><SelectValue placeholder="Store" /></SelectTrigger>
             <SelectContent>
@@ -285,9 +334,14 @@ function MovementReportView() {
               <SelectItem value="TRANSFER_OUT">Transfer Out</SelectItem>
               <SelectItem value="ADJUSTMENT_IN">Adjustment In</SelectItem>
               <SelectItem value="ADJUSTMENT_OUT">Adjustment Out</SelectItem>
+              {/* Stock taking posts the two adjustments above; disposal posts these. */}
+              <SelectItem value="DAMAGE">Damage</SelectItem>
+              <SelectItem value="OBSOLETE">Obsolete</SelectItem>
+              <SelectItem value="DISPOSAL">Disposal</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" className="h-9" onClick={() => refetch()}>Refresh</Button>
+          <ExportCsvButton report="movement" params={{ storeId, type }} />
         </div>
       </Card>
       {isLoading ? <SectionLoading variant="table" /> :

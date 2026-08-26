@@ -177,3 +177,51 @@ export const togglePermissionSchema = z.object({
   permission: z.string().min(1),
   enable: z.boolean(),
 });
+
+// ── Stock taking ───────────────────────────────────────────────────────
+// Omitting `itemIds` counts everything the store currently holds. Naming them
+// counts a subset, and may include items with no stock row in this store — their
+// system quantity is then 0, which is how misplaced stock gets found.
+export const stockTakeSchema = z.object({
+  storeId: z.string().min(1),
+  notes: z.string().optional(),
+  itemIds: z.array(z.string().min(1)).optional(),
+});
+
+export const stockTakeCountsSchema = z.object({
+  counts: z.array(z.object({
+    itemId: z.string().min(1),
+    physicalQty: z.coerce.number().min(0, "A physical count cannot be negative"),
+    remarks: z.string().optional(),
+  })).min(1, "Record at least one count"),
+});
+
+// ── Damaged / obsolete stock ───────────────────────────────────────────
+// storeId is required even though the column is nullable: disposal consumes FIFO
+// layers, and those are held per store, so there is nothing to remove without it.
+export const dispositionSchema = z.object({
+  itemId: z.string().min(1),
+  storeId: z.string().min(1),
+  quantity: z.coerce.number().positive("Quantity must be greater than zero"),
+  reason: z.string().min(3, "Give a reason of at least 3 characters"),
+});
+
+export const disposalSchema = z.object({
+  disposalMethod: z.string().min(2, "Record how the goods were disposed of"),
+});
+
+// ── Gate passes ────────────────────────────────────────────────────────
+export const gatePassSchema = z.object({
+  issueId: z.string().min(1).nullable().optional(),
+  carrier: z.string().optional(),
+  vehiclePlate: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const gatePassDecisionSchema = z.object({
+  decision: z.preprocess(
+    (v) => (typeof v === "string" ? v.toUpperCase() : v),
+    z.enum(["APPROVED", "REJECTED"])
+  ),
+  notes: z.string().optional(),
+});

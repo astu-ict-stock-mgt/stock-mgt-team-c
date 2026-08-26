@@ -27,6 +27,9 @@ import {
   User as UserIcon,
   AlertTriangle,
   AlertCircle,
+  AlertOctagon,
+  ClipboardCheck,
+  ShieldCheck,
   Info,
   CheckCircle2,
 } from "lucide-react";
@@ -64,6 +67,9 @@ import { UsersSection } from "@/components/app/sections/users-section";
 import { RolesSection } from "@/components/app/sections/roles-section";
 import { SettingsSection } from "@/components/app/sections/settings-section";
 import { RequisitionsSection } from "@/components/app/sections/requisitions-section";
+import { StockTakesSection } from "@/components/app/sections/stocktakes-section";
+import { GatePassesSection } from "@/components/app/sections/gate-passes-section";
+import { DispositionsSection } from "@/components/app/sections/dispositions-section";
 
 type NavItem = {
   id: Section;
@@ -91,6 +97,8 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "issues", label: "Stock Issues", icon: ArrowUpFromLine, permission: "inventory.read" },
       { id: "transfers", label: "Stock Transfers", icon: ArrowLeftRight, permission: "inventory.read" },
       { id: "requisitions", label: "Requisitions", icon: FileText, permission: "requisition.read" },
+      { id: "stocktakes", label: "Stock Taking", icon: ClipboardCheck, permission: "stocktake.read" },
+      { id: "gate-passes", label: "Gate Passes", icon: ShieldCheck, permission: "gatepass.read" },
     ],
   },
   {
@@ -100,6 +108,8 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "suppliers", label: "Suppliers", icon: Truck, permission: "suppliers.read" },
       { id: "categories", label: "Categories", icon: FolderTree, permission: "categories.read" },
       { id: "stores", label: "Stores", icon: WarehouseIcon, permission: "warehouses.read" },
+      // Either permission is enough — the section shows only the tabs you hold.
+      { id: "dispositions", label: "Damaged & Obsolete", icon: AlertOctagon, permission: ["damaged.manage", "obsolete.manage"] },
     ],
   },
   {
@@ -403,6 +413,9 @@ export function AppShell({
             {section === "issues" && <IssuesSection />}
             {section === "transfers" && <TransfersSection />}
             {section === "requisitions" && <RequisitionsSection />}
+            {section === "stocktakes" && <StockTakesSection />}
+            {section === "gate-passes" && <GatePassesSection />}
+            {section === "dispositions" && <DispositionsSection />}
             {section === "reports" && <ReportsSection />}
             {section === "audit-logs" && <AuditLogsSection />}
             {section === "users" && <UsersSection />}

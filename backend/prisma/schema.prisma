@@ -280,12 +280,15 @@ model FifoLayer {
   originalQty  Float
   remainingQty Float
   unitCost     Float
-  receiptId    String
+  // Optional: a layer is usually created by a receipt, but a transfer-in carries
+  // the source layer's receipt forward and a stock-take surplus has no receipt
+  // behind it at all — the goods were found on the shelf, not delivered.
+  receiptId    String?
   createdAt    DateTime @default(now())
 
   item    InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
   store   Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  receipt StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  receipt StockReceipt? @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@index([itemId, storeId, createdAt])
   @@index([receiptId])

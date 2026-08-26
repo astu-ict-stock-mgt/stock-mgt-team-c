@@ -86,11 +86,14 @@ export async function createTransfer(input: any, auditCtx?: AuditContext) {
       if (!srcStock) throw Errors.insufficientStock(ti.itemId, ti.quantity, 0);
       await tx.storeStock.update({ where: { id: srcStock.id }, data: { quantity: srcStock.quantity - ti.quantity } });
 
-      // Create new FIFO layer at destination preserving the original cost
+      // Create new FIFO layer at destination preserving the original cost.
+      // The layer inherits the *receipt* the goods arrived on, not the id of the
+      // layer just consumed — that column is a foreign key onto StockReceipt, so
+      // writing a layer id there made every transfer fail with P2003.
       for (const c of consumptions) {
         await tx.fifoLayer.create({
           data: {
-            itemId: ti.itemId, storeId: input.toStoreId, receiptId: c.layerId,
+            itemId: ti.itemId, storeId: input.toStoreId, receiptId: c.receiptId,
             originalQty: c.quantity, remainingQty: c.quantity, unitCost: c.unitCost,
           },
         });

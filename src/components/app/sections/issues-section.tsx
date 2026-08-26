@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader, SectionError, SectionLoading, EmptyState, Pagination, AstuAction, AstuCardTable, ResponsiveTable, MobileCard, StatusPill } from "@/components/app/section-utils";
+import { PrintDocumentButton } from "@/components/app/print-button";
 import { useUIStore } from "@/stores/ui-store";
 import { formatCurrency, formatNumber, statusColor, formatDate } from "@/lib/utils/format";
 import { toast } from "sonner";
@@ -283,6 +284,9 @@ function IssueDetailDrawer() {
                 Issued {formatDate(issue.issueDate, true)} · {issue.sourceStore.name} → {issue.department}
               </DialogDescription>
             </DialogHeader>
+            <div className="mb-3 flex justify-end">
+              <PrintDocumentButton kind="issues" id={issue.id} label="Print Voucher" />
+            </div>
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="rounded border border-border bg-surface-2 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground uppercase">Total Quantity</p>

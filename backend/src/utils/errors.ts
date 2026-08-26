@@ -39,6 +39,9 @@ export const Errors = {
   duplicateItemCode: () => new AppError("DUPLICATE_ITEM_CODE", "An item with this code already exists", 409),
   invalidRequisition: (msg: string) => new AppError("INVALID_REQUISITION", msg, 422),
   invalidStockTransfer: (msg: string) => new AppError("INVALID_STOCK_TRANSFER", msg, 422),
+  invalidStockTake: (msg: string) => new AppError("INVALID_STOCKTAKE", msg, 422),
+  invalidDisposition: (msg: string) => new AppError("INVALID_DISPOSITION", msg, 422),
+  invalidGatePass: (msg: string) => new AppError("INVALID_GATEPASS", msg, 422),
 
   // System
   database: (msg: string) => new AppError("DATABASE_ERROR", msg, 500),
