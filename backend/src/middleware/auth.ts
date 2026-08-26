@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { resolveSession, publicUser } from "../services/auth";
+import { AuditContext } from "../services/audit";
 import { Errors, AppError } from "../utils/errors";
 import { ROLES } from "../constants/roles";
 
@@ -8,8 +9,18 @@ export type AuthedRequest = Request & {
   user?: ReturnType<typeof publicUser>;
   permissions: Set<string>;
   roles: Set<string>;
-  ip?: string;
+  // Express's own req.ip is read-only, so the resolved client address lives here.
+  clientIp?: string | null;
 };
+
+/**
+ * The actor behind the current request, in the shape every service and
+ * recordAudit() expects. Routes used to build this inline and most of them
+ * left the IP out, which is why audit rows had an empty ipAddress.
+ */
+export function actorOf(req: AuthedRequest): AuditContext {
+  return { userId: req.userId, ip: req.clientIp };
+}
 
 export async function attachAuth(req: Request, _res: Response, next: NextFunction) {
   const auth = req.headers.authorization || "";
@@ -17,8 +28,7 @@ export async function attachAuth(req: Request, _res: Response, next: NextFunctio
   const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? null;
   const session = await resolveSession(token);
   const r = req as AuthedRequest;
-  // Store ip on a custom property (req.ip is read-only in Express)
-  (r as any)._clientIp = ip;
+  r.clientIp = ip;
   if (!session) {
     r.permissions = new Set();
     r.roles = new Set();

@@ -19,5 +19,7 @@ export const config = {
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "900000", 10),
     max: parseInt(process.env.RATE_LIMIT_MAX || "100", 10),
+    // Per IP+email, so this is a per-account ceiling rather than a shared one.
+    loginMax: parseInt(process.env.RATE_LIMIT_LOGIN_MAX || "10", 10),
   },
 };

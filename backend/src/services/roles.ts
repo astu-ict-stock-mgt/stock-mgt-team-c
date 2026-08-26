@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 
 const SYSTEM_ROLES = ["ADMINISTRATOR", "PAO", "STOREKEEPER", "STOCK_CLERK", "ACCOUNTANT", "DEPARTMENT_HEAD", "SECURITY_OFFICER", "SUPPLIER"];
 
@@ -28,7 +28,7 @@ export async function getRole(id: string) {
   };
 }
 
-export async function createRole(input: { name: string; description?: string; permissionIds?: string[] }, auditCtx?: { userId?: string }) {
+export async function createRole(input: { name: string; description?: string; permissionIds?: string[] }, auditCtx?: AuditContext) {
   const existing = await prisma.role.findUnique({ where: { name: input.name.toUpperCase() } });
   if (existing) throw Errors.duplicate("Role", "name");
 
@@ -40,11 +40,11 @@ export async function createRole(input: { name: string; description?: string; pe
     return r;
   });
 
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ROLE_CREATED", module: "roles", entity: "role", entityId: role.id, newValue: { name: role.name, description: role.description } });
+  await recordAudit({ ctx: auditCtx, action: "ROLE_CREATED", module: "roles", entity: "role", entityId: role.id, newValue: { name: role.name, description: role.description } });
   return getRole(role.id);
 }
 
-export async function updateRole(id: string, input: { name?: string; description?: string | null }, auditCtx?: { userId?: string }) {
+export async function updateRole(id: string, input: { name?: string; description?: string | null }, auditCtx?: AuditContext) {
   const existing = await prisma.role.findUnique({ where: { id } });
   if (!existing) throw Errors.notFound("Role", id);
 
@@ -58,11 +58,11 @@ export async function updateRole(id: string, input: { name?: string; description
   if (input.description !== undefined) data.description = input.description;
 
   await prisma.role.update({ where: { id }, data });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ROLE_UPDATED", module: "roles", entity: "role", entityId: id, oldValue: existing, newValue: input });
+  await recordAudit({ ctx: auditCtx, action: "ROLE_UPDATED", module: "roles", entity: "role", entityId: id, oldValue: existing, newValue: input });
   return getRole(id);
 }
 
-export async function togglePermission(roleId: string, permissionName: string, enable: boolean, auditCtx?: { userId?: string }) {
+export async function togglePermission(roleId: string, permissionName: string, enable: boolean, auditCtx?: AuditContext) {
   const role = await prisma.role.findUnique({ where: { id: roleId } });
   if (!role) throw Errors.notFound("Role", roleId);
   const permission = await prisma.permission.findUnique({ where: { name: permissionName } });
@@ -81,7 +81,7 @@ export async function togglePermission(roleId: string, permissionName: string, e
   }
 
   await recordAudit({
-    ctx: { userId: auditCtx?.userId },
+    ctx: auditCtx,
     action: enable ? "PERMISSION_GRANTED" : "PERMISSION_REVOKED", module: "roles", entity: "role", entityId: roleId,
     newValue: { role: role.name, permission: permissionName, action: enable ? "GRANTED" : "REVOKED" },
   });
@@ -89,13 +89,13 @@ export async function togglePermission(roleId: string, permissionName: string, e
   return getRole(roleId);
 }
 
-export async function deleteRole(id: string, auditCtx?: { userId?: string }) {
+export async function deleteRole(id: string, auditCtx?: AuditContext) {
   const existing = await prisma.role.findUnique({ where: { id }, include: { _count: { select: { users: true } } } });
   if (!existing) throw Errors.notFound("Role", id);
   if (SYSTEM_ROLES.includes(existing.name)) throw Errors.forbidden("Cannot delete a built-in system role");
   if (existing._count.users > 0) throw Errors.conflict("Cannot delete a role that has users assigned — reassign them first");
   await prisma.role.delete({ where: { id } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ROLE_DELETED", module: "roles", entity: "role", entityId: id });
+  await recordAudit({ ctx: auditCtx, action: "ROLE_DELETED", module: "roles", entity: "role", entityId: id });
   return true;
 }
 

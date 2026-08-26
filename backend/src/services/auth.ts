@@ -13,7 +13,7 @@ export async function login(email: string, password: string, ip?: string) {
     include: { userRoles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } },
   });
   if (!user) {
-    await recordAudit({ ctx: { ipAddress: ip }, action: "LOGIN_FAILED", module: "auth", entity: "user", description: `Unknown email: ${email}` });
+    await recordAudit({ ctx: { ip }, action: "LOGIN_FAILED", module: "auth", entity: "user", description: `Unknown email: ${email}` });
     throw Errors.invalidCredentials();
   }
 
@@ -43,7 +43,7 @@ export async function login(email: string, password: string, ip?: string) {
         status: shouldLock ? "LOCKED" : user.status,
       },
     });
-    await recordAudit({ ctx: { userId: user.id, ipAddress: ip }, action: "LOGIN_FAILED", module: "auth", entity: "user", entityId: user.id, description: `Failed attempt ${failed}` });
+    await recordAudit({ ctx: { userId: user.id, ip }, action: "LOGIN_FAILED", module: "auth", entity: "user", entityId: user.id, description: `Failed attempt ${failed}` });
     throw Errors.invalidCredentials();
   }
 
@@ -55,7 +55,7 @@ export async function login(email: string, password: string, ip?: string) {
     where: { id: user.id },
     data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date(), status: "ACTIVE" },
   });
-  await recordAudit({ ctx: { userId: user.id, ipAddress: ip }, action: "LOGIN_SUCCESS", module: "auth", entity: "user", entityId: user.id });
+  await recordAudit({ ctx: { userId: user.id, ip }, action: "LOGIN_SUCCESS", module: "auth", entity: "user", entityId: user.id });
 
   return { user: publicUser(user), token, refresh, expiresAt: expiresAt.toISOString() };
 }
@@ -63,6 +63,18 @@ export async function login(email: string, password: string, ip?: string) {
 export async function logout(token: string) {
   if (token) await prisma.userSession.deleteMany({ where: { token } }).catch(() => { });
   return true;
+}
+
+/**
+ * Deletes sessions whose expiry has passed. Previously a session row was only
+ * removed if that exact token was presented again after expiring, so abandoned
+ * sessions accumulated forever. Called on an interval from server.ts.
+ */
+export async function purgeExpiredSessions(): Promise<number> {
+  const { count } = await prisma.userSession.deleteMany({
+    where: { expiresAt: { lt: new Date() } },
+  });
+  return count;
 }
 
 export async function resolveSession(token: string | null | undefined) {
@@ -108,7 +120,7 @@ export function publicUser(user: any) {
   };
 }
 
-export async function changePassword(userId: string, currentPassword: string, newPassword: string, currentToken?: string) {
+export async function changePassword(userId: string, currentPassword: string, newPassword: string, currentToken?: string, ip?: string | null) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw Errors.notFound("User");
   const ok = await verifyPassword(currentPassword, user.passwordHash);
@@ -119,6 +131,6 @@ export async function changePassword(userId: string, currentPassword: string, ne
   await prisma.userSession.deleteMany({
     where: currentToken ? { userId, token: { not: currentToken } } : { userId },
   });
-  await recordAudit({ ctx: { userId }, action: "PASSWORD_CHANGED", module: "auth", entity: "user", entityId: userId });
+  await recordAudit({ ctx: { userId, ip }, action: "PASSWORD_CHANGED", module: "auth", entity: "user", entityId: userId });
   return true;
 }

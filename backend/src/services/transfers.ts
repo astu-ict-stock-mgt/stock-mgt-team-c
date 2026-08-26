@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 import { consumeFifoTx, nextTxnCode } from "./fifo-consume";
 import { refreshItemStatus } from "./item-status";
 import { nextDocumentCode, withUniqueRetry } from "../utils/document-code";
@@ -49,7 +49,7 @@ export async function getTransfer(id: string) {
   };
 }
 
-export async function createTransfer(input: any, auditCtx?: { userId?: string; ip?: string }) {
+export async function createTransfer(input: any, auditCtx?: AuditContext) {
   if (input.fromStoreId === input.toStoreId) throw Errors.invalidStockTransfer("Source and destination stores must be different");
   if (!input.items.length) throw Errors.validation("Transfer must have at least one item");
   for (const it of input.items) {
@@ -136,7 +136,7 @@ export async function createTransfer(input: any, auditCtx?: { userId?: string; i
   }));
 
   await recordAudit({
-    ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
+    ctx: auditCtx,
     action: "STOCK_TRANSFERRED", module: "transfers", entity: "transfer", entityId: transfer.id,
     newValue: { code: transfer.code, fromStoreId: input.fromStoreId, toStoreId: input.toStoreId, totalQuantity, itemCount: input.items.length },
   });

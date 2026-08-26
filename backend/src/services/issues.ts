@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 import { consumeFifoTx, nextTxnCode } from "./fifo-consume";
 import { refreshItemStatus } from "./item-status";
 import { nextDocumentCode, withUniqueRetry } from "../utils/document-code";
@@ -51,7 +51,7 @@ export async function getIssue(id: string) {
   };
 }
 
-export async function createIssue(input: any, auditCtx?: { userId?: string; ip?: string }) {
+export async function createIssue(input: any, auditCtx?: AuditContext) {
   if (!input.items.length) throw Errors.validation("Issue must have at least one item");
   for (const it of input.items) {
     if (it.quantity <= 0) throw Errors.validation(`Quantity must be positive for item ${it.itemId}`);
@@ -121,7 +121,7 @@ export async function createIssue(input: any, auditCtx?: { userId?: string; ip?:
   }));
 
   await recordAudit({
-    ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
+    ctx: auditCtx,
     action: "STOCK_ISSUED", module: "issues", entity: "issue", entityId: issue.id,
     newValue: {
       code: issue.code, sourceStoreId: input.sourceStoreId, department: input.department,

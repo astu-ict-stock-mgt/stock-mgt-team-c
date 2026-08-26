@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { ok, paginate } from "../utils/response";
-import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
+import { asyncHandler, actorOf, requirePermission, AuthedRequest } from "../middleware/auth";
 import { qp, qpPage, qpLimit } from "../utils/query";
 import * as svc from "../services/transfers";
 import * as val from "../validators";
@@ -19,7 +19,7 @@ router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: Au
 
 router.post("/", requirePermission("stock.transfer"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.transferSchema.parse(req.body);
-  const t = await svc.createTransfer({ ...body, transferredById: req.userId! }, { userId: req.userId, ip: (req as any)._clientIp });
+  const t = await svc.createTransfer({ ...body, transferredById: req.userId! }, actorOf(req));
   res.status(201).json(ok(t, "Stock transferred successfully"));
 }));
 

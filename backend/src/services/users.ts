@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
 import { hashPassword } from "../utils/crypto";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 import { publicUser } from "./auth";
 import { ROLES } from "../constants/roles";
 
@@ -50,7 +50,7 @@ export async function getUser(id: string) {
 export async function createUser(input: {
   email: string; username: string; fullName: string; password: string;
   department?: string; phoneNumber?: string; roleIds: string[];
-}, auditCtx?: { userId?: string }) {
+}, auditCtx?: AuditContext) {
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email: input.email.toLowerCase() }, { username: input.username }], deletedAt: null },
   });
@@ -65,7 +65,7 @@ export async function createUser(input: {
     },
     include: { userRoles: { include: { role: true } } },
   });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "USER_CREATED", module: "users", entity: "user", entityId: user.id, newValue: { email: user.email, username: user.username, roleIds: input.roleIds } });
+  await recordAudit({ ctx: auditCtx, action: "USER_CREATED", module: "users", entity: "user", entityId: user.id, newValue: { email: user.email, username: user.username, roleIds: input.roleIds } });
   return publicUser(user);
 }
 
@@ -101,7 +101,7 @@ async function assertNotLastAdmin(userId: string, action: string) {
 export async function updateUser(id: string, input: Partial<{
   email: string; username: string; fullName: string; department: string | null;
   phoneNumber: string | null; status: "ACTIVE" | "INACTIVE" | "LOCKED" | "PENDING"; roleIds: string[];
-}>, auditCtx?: { userId?: string; ip?: string }) {
+}>, auditCtx?: AuditContext) {
   const existing = await prisma.user.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw Errors.notFound("User", id);
 
@@ -141,34 +141,34 @@ export async function updateUser(id: string, input: Partial<{
     return tx.user.findUniqueOrThrow({ where: { id }, include: { userRoles: { include: { role: true } } } });
   });
 
-  await recordAudit({ ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip }, action: "USER_UPDATED", module: "users", entity: "user", entityId: id, newValue: input });
+  await recordAudit({ ctx: auditCtx, action: "USER_UPDATED", module: "users", entity: "user", entityId: id, newValue: input });
   return publicUser(updated);
 }
 
-export async function deleteUser(id: string, auditCtx?: { userId?: string; ip?: string }) {
+export async function deleteUser(id: string, auditCtx?: AuditContext) {
   const existing = await prisma.user.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw Errors.notFound("User", id);
   if (auditCtx?.userId === id) throw Errors.conflict("You cannot delete your own account");
   await assertNotLastAdmin(id, "delete");
   await prisma.user.update({ where: { id }, data: { deletedAt: new Date(), status: "INACTIVE" } });
   await prisma.userSession.deleteMany({ where: { userId: id } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip }, action: "USER_DELETED", module: "users", entity: "user", entityId: id, description: `Deleted ${existing.email}` });
+  await recordAudit({ ctx: auditCtx, action: "USER_DELETED", module: "users", entity: "user", entityId: id, description: `Deleted ${existing.email}` });
   return true;
 }
 
-export async function resetUserPassword(id: string, newPassword: string, auditCtx?: { userId?: string; ip?: string }) {
+export async function resetUserPassword(id: string, newPassword: string, auditCtx?: AuditContext) {
   const user = await prisma.user.findFirst({ where: { id, deletedAt: null } });
   if (!user) throw Errors.notFound("User", id);
   const passwordHash = await hashPassword(newPassword);
   await prisma.user.update({ where: { id }, data: { passwordHash, failedLoginCount: 0, lockedUntil: null, status: "ACTIVE" } });
   await prisma.userSession.deleteMany({ where: { userId: id } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip }, action: "PASSWORD_RESET", module: "users", entity: "user", entityId: id, description: `Password reset for ${user.email}` });
+  await recordAudit({ ctx: auditCtx, action: "PASSWORD_RESET", module: "users", entity: "user", entityId: id, description: `Password reset for ${user.email}` });
   return true;
 }
 
 // Clears a lockout without touching the password. Without this there is no way
 // back for an account that hit MAX_FAILED_LOGINS — including the last admin.
-export async function unlockUser(id: string, auditCtx?: { userId?: string; ip?: string }) {
+export async function unlockUser(id: string, auditCtx?: AuditContext) {
   const user = await prisma.user.findFirst({ where: { id, deletedAt: null } });
   if (!user) throw Errors.notFound("User", id);
   await prisma.user.update({
@@ -176,7 +176,7 @@ export async function unlockUser(id: string, auditCtx?: { userId?: string; ip?: 
     data: { status: "ACTIVE", failedLoginCount: 0, lockedUntil: null },
   });
   await recordAudit({
-    ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
+    ctx: auditCtx,
     action: "USER_UNLOCKED", module: "users", entity: "user", entityId: id,
     oldValue: { status: user.status, failedLoginCount: user.failedLoginCount },
     newValue: { status: "ACTIVE", failedLoginCount: 0 },
