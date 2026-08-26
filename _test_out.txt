@@ -1,0 +1,341 @@
+=== BACKEND TESTS === 
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mD:/ALL/projects/ICT_CENTER_INTERN/Stock-MS/stock-mgt-team-c/backend[39m
+
+[90mstdout[2m | tests/siv.test.ts
+[22m[39m◇ injected env (1) from .env // tip: ⌘ override existing { override: true }
+
+[90mstdout[2m | tests/siv.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/requisitions [32m201[0m 253.327 ms - 514[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mRequisition creation -> NO stock mutation[33m 1999[2mms[22m[39m
+[0mPOST /api/v1/requisitions/cmt9qnfjp000ms1rsp5oz77xk/submit [32m200[0m 178.215 ms - 360[0m
+[0mPOST /api/v1/requisitions/cmt9qnfjp000ms1rsp5oz77xk/approve [32m200[0m 168.856 ms - 359[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mRequisition submission and approval -> NO stock mutation[33m 451[2mms[22m[39m
+[0mPOST /api/v1/sivs [32m201[0m 345.991 ms - 819[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mSIV preliminary allocation -> reservedQty increases correctly, physical unchanged[33m 398[2mms[22m[39m
+[0mPOST /api/v1/sivs [33m409[0m 40.097 ms - 124[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mReservation cannot exceed available stock
+[0mPOST /api/v1/sivs [32m201[0m 33.490 ms - 816[0m
+[0mPOST /api/v1/sivs/cmt9qngc70016s1rsu848oy1l/reject [32m200[0m 24.324 ms - 418[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mRejected SIV releases reservations
+[0mPATCH /api/v1/sivs/cmt9qng1j000ys1rsukj909gy [32m200[0m 46.716 ms - 816[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mAmendment correctly calculates reservation deltas
+[0mPOST /api/v1/sivs/cmt9qng1j000ys1rsukj909gy/submit [32m200[0m 54.013 ms - 424[0m
+[0mPOST /api/v1/sivs/cmt9qng1j000ys1rsukj909gy/approve [32m200[0m 34.028 ms - 441[0m
+[0mPOST /api/v1/sivs/cmt9qng1j000ys1rsukj909gy/finalize [32m200[0m 125.990 ms - 464[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mFinalization decreases physical stock once, creates ledgers, consumes FIFO
+[0mPOST /api/v1/sivs/cmt9qng1j000ys1rsukj909gy/finalize [33m409[0m 16.178 ms - 140[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mDuplicate finalization is rejected and does NOT decrease stock again
+[0mPOST /api/v1/sivs [33m422[0m 7.143 ms - 232[0m
+[0mPOST /api/v1/sivs [33m422[0m 9.930 ms - 232[0m
+ [32m✓[39m tests/siv.test.ts[2m > [22mPhase 4: Requisitions & SIV Workflow[2m > [22mISIV requires destinationStoreId and standard SIV rejects it
+[90mstdout[2m | tests/stocktakes.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+[90mstdout[2m | tests/stocktakes.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/stock-takes [32m201[0m 159.500 ms - 719[0m
+[0mPOST /api/v1/stock-takes/cmt9qnhoi002us1rs9rw9khlu/items [32m200[0m 35.445 ms - -[0m
+[0mPOST /api/v1/stock-takes/cmt9qnhoi002us1rs9rw9khlu/start [32m200[0m 34.922 ms - -[0m
+ [32m✓[39m tests/stocktakes.test.ts[2m > [22mStock Takes & Adjustments[2m > [22mcreating and starting a stock take does not mutate stock
+[0mPATCH /api/v1/stock-takes/cmt9qnhoi002us1rs9rw9khlu/count [32m200[0m 29.051 ms - -[0m
+[0mPOST /api/v1/stock-takes/cmt9qnhoi002us1rs9rw9khlu/submit [32m200[0m 28.731 ms - -[0m
+ [32m✓[39m tests/stocktakes.test.ts[2m > [22mStock Takes & Adjustments[2m > [22mrecords count and submits without mutating stock
+[0mPATCH /api/v1/stock-takes/cmt9qnhoi002us1rs9rw9khlu/count [33m409[0m 41.426 ms - 109[0m
+ [32m✓[39m tests/stocktakes.test.ts[2m > [22mStock Takes & Adjustments[2m > [22mblocks count edits after submit
+[0mPOST /api/v1/stock-takes/cmt9qnhoi002us1rs9rw9khlu/approve [32m200[0m 49.743 ms - -[0m
+ [32m✓[39m tests/stocktakes.test.ts[2m > [22mStock Takes & Adjustments[2m > [22mapproves stock take and creates adjustment draft
+[0mPOST /api/v1/stock-adjustments/cmt9qnhzj0038s1rsbc1ua2bk/approve [32m200[0m 26.675 ms - -[0m
+[0mPOST /api/v1/stock-adjustments/cmt9qnhzj0038s1rsbc1ua2bk/post [32m200[0m 55.546 ms - -[0m
+[0mPOST /api/v1/stock-adjustments/cmt9qnhzj0038s1rsbc1ua2bk/post [33m409[0m 11.413 ms - 140[0m
+ [32m✓[39m tests/stocktakes.test.ts[2m > [22mStock Takes & Adjustments[2m > [22msimulates stock movement during count and posts delta against current stock
+[0mPOST /api/v1/stock-takes [32m201[0m 20.172 ms - 721[0m
+[0mPOST /api/v1/stock-takes/cmt9qni4g003qs1rsv9x7n0bm/items [32m200[0m 28.551 ms - -[0m
+[0mPOST /api/v1/stock-takes/cmt9qni4g003qs1rsv9x7n0bm/start [32m200[0m 22.695 ms - -[0m
+[0mPATCH /api/v1/stock-takes/cmt9qni4g003qs1rsv9x7n0bm/count [32m200[0m 22.097 ms - -[0m
+[0mPOST /api/v1/stock-takes/cmt9qni4g003qs1rsv9x7n0bm/submit [32m200[0m 30.355 ms - -[0m
+[0mPOST /api/v1/stock-takes/cmt9qni4g003qs1rsv9x7n0bm/approve [32m200[0m 47.758 ms - -[0m
+[0mPOST /api/v1/stock-adjustments/cmt9qni9n0044s1rsqamjpxsn/approve [32m200[0m 57.031 ms - -[0m
+[0mPOST /api/v1/stock-adjustments/cmt9qni9n0044s1rsqamjpxsn/post [32m200[0m 53.494 ms - -[0m
+ [32m✓[39m tests/stocktakes.test.ts[2m > [22mStock Takes & Adjustments[2m > [22mhandles positive variance with fifo-derived cost[33m 373[2mms[22m[39m
+[90mstdout[2m | tests/receipts.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[90mstdout[2m | tests/receipts.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/goods-receipts [32m201[0m 71.651 ms - 648[0m
+[90mstdout[2m | tests/receipts.test.ts[2m > [22m[2mPhase 3: Receiving & Technical Evaluation API[2m > [22m[2m1. Create Goods Receipt
+[22m[39mRESPONSE: [33m201[39m {
+  success: [33mtrue[39m,
+  message: [32m'OK'[39m,
+  data: {
+    id: [32m'cmt9qnj690058s1rs6yr9hd39'[39m,
+    code: [32m'RECP-20260826-7472'[39m,
+    supplierId: [32m'cmt9qnj4s004vs1rsebkq41i3'[39m,
+    storeId: [32m'cmt9qnj4v004ws1rsnqupipez'[39m,
+    receivedById: [32m'cmt9qnj4h004ss1rsozamrft2'[39m,
+    status: [32m'DRAFT'[39m,
+    deliveryNote: [32m'DN-123'[39m,
+    purchaseOrder: [1mnull[22m,
+    inspectionNotes: [1mnull[22m,
+    receiptDate: [32m'2026-08-26T06:54:21.393Z'[39m,
+    createdAt: [32m'2026-08-26T06:54:21.393Z'[39m,
+    updatedAt: [32m'2026-08-26T06:54:21.393Z'[39m,
+    items: [ [36m[Object][39m ]
+  }
+}
+
+ [32m✓[39m tests/receipts.test.ts[2m > [22mPhase 3: Receiving & Technical Evaluation API[2m > [22m1. Create Goods Receipt
+[0mPOST /api/v1/goods-receipts/cmt9qnj690058s1rs6yr9hd39/submit [32m200[0m 18.863 ms - 431[0m
+ [32m✓[39m tests/receipts.test.ts[2m > [22mPhase 3: Receiving & Technical Evaluation API[2m > [22m2. Submit Goods Receipt
+[0mPOST /api/v1/goods-receipts/cmt9qnj690058s1rs6yr9hd39/evaluation [32m201[0m 80.369 ms - 550[0m
+ [32m✓[39m tests/receipts.test.ts[2m > [22mPhase 3: Receiving & Technical Evaluation API[2m > [22m3. Technical Evaluation (Partial Acceptance)
+[0mPOST /api/v1/goods-receipts/cmt9qnj690058s1rs6yr9hd39/grn [32m201[0m 175.112 ms - 286[0m
+ [32m✓[39m tests/receipts.test.ts[2m > [22mPhase 3: Receiving & Technical Evaluation API[2m > [22m4. Generate GRN & Verify Atomic Stock Mutation
+[0mPOST /api/v1/goods-receipts/cmt9qnj690058s1rs6yr9hd39/grn [33m422[0m 16.827 ms - 134[0m
+ [32m✓[39m tests/receipts.test.ts[2m > [22mPhase 3: Receiving & Technical Evaluation API[2m > [22m5. Duplicate GRN generation is rejected
+[90mstdout[2m | tests/returns.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+[90mstdout[2m | tests/returns.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/returns [32m201[0m 244.670 ms - 608[0m
+ [32m✓[39m tests/returns.test.ts[2m > [22mReturns API[2m > [22mshould create a store return note
+[0mPOST /api/v1/returns/cmt9qnksl006ks1rs3txtni8n/submit [32m200[0m 53.375 ms - 410[0m
+ [32m✓[39m tests/returns.test.ts[2m > [22mReturns API[2m > [22mshould submit the return note
+[0mPOST /api/v1/returns/cmt9qnksl006ks1rs3txtni8n/evaluate [32m200[0m 68.500 ms - 439[0m
+ [32m✓[39m tests/returns.test.ts[2m > [22mReturns API[2m > [22mshould evaluate and partially accept the return
+[0mPOST /api/v1/returns/cmt9qnksl006ks1rs3txtni8n/receive [33m409[0m 49.029 ms - 128[0m
+ [32m✓[39m tests/returns.test.ts[2m > [22mReturns API[2m > [22mshould reject receiving if not APPROVED
+[0mPOST /api/v1/returns/cmt9qnksl006ks1rs3txtni8n/approve [32m200[0m 83.225 ms - 431[0m
+ [32m✓[39m tests/returns.test.ts[2m > [22mReturns API[2m > [22mshould approve the return
+[0mPOST /api/v1/returns/cmt9qnksl006ks1rs3txtni8n/receive [33m422[0m 93.581 ms - 209[0m
+ [32m✓[39m tests/returns.test.ts[2m > [22mReturns API[2m > [22mshould fail to receive if valuation is missing (no originalSivId)
+[0mPOST /api/v1/returns/cmt9qnksl006ks1rs3txtni8n/receive [32m200[0m 119.809 ms - 454[0m
+ [32m✓[39m tests/returns.test.ts[2m > [22mReturns API[2m > [22mshould receive the return after setting originalSivId
+[90mstdout[2m | tests/transfers.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+
+[90mstdout[2m | tests/transfers.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/transfers [32m201[0m 40.657 ms - 519[0m
+ [32m✓[39m tests/transfers.test.ts[2m > [22mInter-Store Transfers API[2m > [22mshould create a transfer request
+[0mPOST /api/v1/transfers/cmt9qnmit008ks1rsxgxj4a1a/submit [32m200[0m 34.961 ms - 352[0m
+ [32m✓[39m tests/transfers.test.ts[2m > [22mInter-Store Transfers API[2m > [22mshould submit the transfer request
+[0mPOST /api/v1/transfers/cmt9qnmit008ks1rsxgxj4a1a/approve [32m200[0m 93.546 ms - 351[0m
+ [32m✓[39m tests/transfers.test.ts[2m > [22mInter-Store Transfers API[2m > [22mshould approve the transfer request
+[0mPOST /api/v1/transfers/cmt9qnmit008ks1rsxgxj4a1a/dispatch [32m200[0m 531.650 ms - 353[0m
+ [32m✓[39m tests/transfers.test.ts[2m > [22mInter-Store Transfers API[2m > [22mshould dispatch the transfer request[33m 557[2mms[22m[39m
+[0mPOST /api/v1/transfers/cmt9qnmit008ks1rsxgxj4a1a/receive [32m200[0m 79.245 ms - 599[0m
+ [32m✓[39m tests/transfers.test.ts[2m > [22mInter-Store Transfers API[2m > [22mshould receive the transfer request with discrepancy tracking
+[90mstdout[2m | tests/bintransfers.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+[90mstdout[2m | tests/bintransfers.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/bin-transfers [33m422[0m 52.850 ms - 169[0m
+ [32m✓[39m tests/bintransfers.test.ts[2m > [22mBin Transfers API[2m > [22mshould fail to transfer if source and destination are different stores
+[0mPOST /api/v1/bin-transfers [33m422[0m 13.408 ms - 139[0m
+ [32m✓[39m tests/bintransfers.test.ts[2m > [22mBin Transfers API[2m > [22mshould fail to transfer if insufficient stock
+[0mPOST /api/v1/bin-transfers [32m201[0m 58.251 ms - 409[0m
+ [32m✓[39m tests/bintransfers.test.ts[2m > [22mBin Transfers API[2m > [22mshould successfully execute an internal bin transfer
+[90mstdout[2m | tests/stores.test.ts
+[22m[39m◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+
+[90mstdout[2m | tests/stores.test.ts
+[22m[39mRECEIPTS ROUTER INITIALIZED
+
+[0mPOST /api/v1/stores [32m201[0m 329.062 ms - 307[0m
+[90mstdout[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m1. Create Store
+[22m[39mprisma:error 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+
+[90mstderr[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m1. Create Store
+[22m[39m[audit] failed to record audit log PrismaClientKnownRequestError: 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+    at ei.handleRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:228:13[90m)[39m
+    at ei.handleAndLogRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:174:12[90m)[39m
+    at ei.request [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:143:12[90m)[39m
+    at a [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\getPrismaClient.ts:833:24[90m)[39m
+    at Module.recordAudit [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\audit.ts:23:5[90m)[39m
+    at Module.createStore [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\stores.ts:41:3[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\stores.ts:19:17 {
+  code: [32m'P2003'[39m,
+  meta: { modelName: [32m'AuditLog'[39m, constraint: [32m'AuditLog_userId_fkey'[39m },
+  clientVersion: [32m'6.19.3'[39m
+}
+
+ [32m✓[39m tests/stores.test.ts[2m > [22mStore Hierarchy API[2m > [22m1. Create Store[33m 336[2mms[22m[39m
+[0mPOST /api/v1/stores/cmt9qnoa700ams1rsmx17lb1c/locations [32m201[0m 15.178 ms - 208[0m
+[90mstdout[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m2. Create Location under Store
+[22m[39mprisma:error 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+
+[90mstderr[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m2. Create Location under Store
+[22m[39m[audit] failed to record audit log PrismaClientKnownRequestError: 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+    at ei.handleRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:228:13[90m)[39m
+    at ei.handleAndLogRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:174:12[90m)[39m
+    at ei.request [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:143:12[90m)[39m
+    at a [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\getPrismaClient.ts:833:24[90m)[39m
+    at Module.recordAudit [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\audit.ts:23:5[90m)[39m
+    at Module.createLocation [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\stores.ts:107:3[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\stores.ts:52:15 {
+  code: [32m'P2003'[39m,
+  meta: { modelName: [32m'AuditLog'[39m, constraint: [32m'AuditLog_userId_fkey'[39m },
+  clientVersion: [32m'6.19.3'[39m
+}
+
+ [32m✓[39m tests/stores.test.ts[2m > [22mStore Hierarchy API[2m > [22m2. Create Location under Store
+[0mPOST /api/v1/locations/cmt9qnojj00aqs1rsfs1gbxk2/shelves [32m201[0m 13.171 ms - 204[0m
+[90mstdout[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m3. Create Shelf under Location
+[22m[39mprisma:error 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+
+[90mstderr[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m3. Create Shelf under Location
+[22m[39m[audit] failed to record audit log PrismaClientKnownRequestError: 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+    at ei.handleRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:228:13[90m)[39m
+    at ei.handleAndLogRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:174:12[90m)[39m
+    at ei.request [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:143:12[90m)[39m
+    at a [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\getPrismaClient.ts:833:24[90m)[39m
+    at Module.recordAudit [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\audit.ts:23:5[90m)[39m
+    at Module.createShelf [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\stores.ts:176:3[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\locations.ts:33:17 {
+  code: [32m'P2003'[39m,
+  meta: { modelName: [32m'AuditLog'[39m, constraint: [32m'AuditLog_userId_fkey'[39m },
+  clientVersion: [32m'6.19.3'[39m
+}
+
+ [32m✓[39m tests/stores.test.ts[2m > [22mStore Hierarchy API[2m > [22m3. Create Shelf under Location
+[0mPOST /api/v1/shelves/cmt9qnok300aus1rs1uhpntrf/bins [32m201[0m 10.000 ms - 198[0m
+[90mstdout[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m4. Create Bin under Shelf
+[22m[39mprisma:error 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+
+[90mstderr[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m4. Create Bin under Shelf
+[22m[39m[audit] failed to record audit log PrismaClientKnownRequestError: 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+    at ei.handleRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:228:13[90m)[39m
+    at ei.handleAndLogRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:174:12[90m)[39m
+    at ei.request [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:143:12[90m)[39m
+    at a [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\getPrismaClient.ts:833:24[90m)[39m
+    at Module.recordAudit [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\audit.ts:23:5[90m)[39m
+    at Module.createBin [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\stores.ts:240:3[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\shelves.ts:33:15 {
+  code: [32m'P2003'[39m,
+  meta: { modelName: [32m'AuditLog'[39m, constraint: [32m'AuditLog_userId_fkey'[39m },
+  clientVersion: [32m'6.19.3'[39m
+}
+
+ [32m✓[39m tests/stores.test.ts[2m > [22mStore Hierarchy API[2m > [22m4. Create Bin under Shelf
+[0mGET /api/v1/stores/cmt9qnoa700ams1rsmx17lb1c [32m200[0m 17.579 ms - 489[0m
+ [32m✓[39m tests/stores.test.ts[2m > [22mStore Hierarchy API[2m > [22m5. Retrieve hierarchy
+[0mPATCH /api/v1/stores/cmt9qnoa700ams1rsmx17lb1c [32m200[0m 21.797 ms - 310[0m
+[90mstdout[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m6. Update each entity
+[22m[39mprisma:error 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+
+[90mstderr[2m | tests/stores.test.ts[2m > [22m[2mStore Hierarchy API[2m > [22m[2m6. Update each entity
+[22m[39m[audit] failed to record audit log PrismaClientKnownRequestError: 
+Invalid `prisma.auditLog.create()` invocation in
+D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\src\services\audit.ts:23:27
+
+  20   ctx, action, module, entity, entityId, oldValue, newValue, description,
+  21 }: AuditParams): Promise<void> {
+  22   try {
+→ 23     await prisma.auditLog.create(
+Foreign key constraint violated on the constraint: `AuditLog_userId_fkey`
+    at ei.handleRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:228:13[90m)[39m
+    at ei.handleAndLogRequestError [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:174:12[90m)[39m
+    at ei.request [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\RequestHandler.ts:143:12[90m)[39m
+    at a [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39mnode_modules\[4m@prisma\client[24m\src\runtime\getPrismaClient.ts:833:24[90m)[39m
+    at Module.recordAudit [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\audit.ts:23:5[90m)[39m
+    at Module.updateStore [90m(D:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\services\stores.ts:50:3[90m)[39m
+    at [90mD:\ALL\projects\ICT_CENTER_INTERN\Stock-MS\stock-mgt-team-c\backend\[39msrc\routes\stores.ts:30:17 {
+  code: [32m'P2003'[39m,
+  meta: { modelName: [32m'AuditLog'[39m, constraint: [32m'AuditLog_userId_fkey'[39m },
+  clientVersion: [32m'6.19.3'[39m
+}
+
+ [32m✓[39m tests/stores.test.ts[2m > [22mStore Hierarchy API[2m > [22m6. Update each entity
+[0mDELETE /api/v1/shelves/cmt9qnok300aus1rs1uhpntrf [33m409[0m 9.802 ms - 113[0m
+ [32m✓[39m tests/stores.test.ts[2m > [22mStore Hierarchy API[2m > [22m7. Prevent destructive deletion when hierarchy exists
+
+[2m Test Files [22m [1m[32m7 passed[39m[22m[90m (7)[39m
+[2m      Tests [22m [1m[32m42 passed[39m[22m[90m (42)[39m
+[2m   Start at [22m 09:53:19
+[2m   Duration [22m 69.47s[2m (transform 5.45s, setup 0ms, collect 50.64s, tests 12.06s, environment 0ms, prepare 4.93s)[22m
+
+=== EXIT 0 === 

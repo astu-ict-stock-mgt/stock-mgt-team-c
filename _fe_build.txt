@@ -1,0 +1,78 @@
+=== FRONTEND TSC === 
+backend/src/services/inventory.ts(42,16): error TS2345: Argument of type '{ id: string; code: string; name: string; description: string | null; status: $Enums.ItemStatus; minStock: number; maxStock: number; safetyStock: number; reorderLevel: number; unitCost: number; category: { ...; }; uom: { ...; }; totalQuantity: number; totalValue: number; }' is not assignable to parameter of type 'never'.
+backend/src/services/reports.ts(16,14): error TS2345: Argument of type '{ code: string; name: string; category: string; uom: string; status: $Enums.ItemStatus; quantity: number; unitCost: number; totalValue: number; minStock: number; maxStock: number; reorderLevel: number; safetyStock: number; isLowStock: boolean; isOutOfStock: boolean; }' is not assignable to parameter of type 'never'.
+backend/src/services/reports.ts(25,44): error TS2339: Property 'totalValue' does not exist on type 'never'.
+backend/src/services/reports.ts(26,47): error TS2339: Property 'quantity' does not exist on type 'never'.
+backend/src/services/reports.ts(27,40): error TS2339: Property 'isLowStock' does not exist on type 'never'.
+backend/src/services/reports.ts(28,42): error TS2339: Property 'isOutOfStock' does not exist on type 'never'.
+backend/src/services/reports.ts(41,14): error TS2345: Argument of type '{ code: string; name: string; category: string; uom: string; quantity: number; avgUnitCost: number; totalValue: number; fifoLayers: number; layers: never[]; }' is not assignable to parameter of type 'never'.
+backend/src/services/reports.ts(49,44): error TS2339: Property 'totalValue' does not exist on type 'never'.
+backend/src/services/reports.ts(50,47): error TS2339: Property 'quantity' does not exist on type 'never'.
+backend/src/services/reports.ts(51,33): error TS2339: Property 'totalValue' does not exist on type 'never'.
+backend/src/services/reports.ts(51,48): error TS2339: Property 'totalValue' does not exist on type 'never'.
+src/components/app/sections/reports-section.tsx(111,34): error TS2322: Type 'string' is not assignable to type '"default" | "secondary" | "destructive" | "outline" | null | undefined'.
+src/components/app/sections/reports-section.tsx(271,30): error TS2322: Type 'string' is not assignable to type '"default" | "secondary" | "destructive" | "outline" | null | undefined'.
+src/components/app/sections/requisitions-section.tsx(76,5): error TS2322: Type 'Resolver<{ department: string; requiredDate: string; items: { itemId: string; quantity: unknown; }[]; notes?: string | undefined; }, any, { department: string; requiredDate: string; items: { itemId: string; quantity: number; }[]; notes?: string | undefined; }>' is not assignable to type 'Resolver<{ department: string; requiredDate: string; items: { itemId: string; quantity: number; }[]; notes?: string | undefined; }, any, { department: string; requiredDate: string; items: { itemId: string; quantity: number; }[]; notes?: string | undefined; }>'.
+  Types of parameters 'options' and 'options' are incompatible.
+    Type 'ResolverOptions<{ department: string; requiredDate: string; items: { itemId: string; quantity: number; }[]; notes?: string | undefined; }>' is not assignable to type 'ResolverOptions<{ department: string; requiredDate: string; items: { itemId: string; quantity: unknown; }[]; notes?: string | undefined; }>'.
+      Type '{ itemId: string; quantity: unknown; }[]' is not assignable to type '{ itemId: string; quantity: number; }[]'.
+        Type '{ itemId: string; quantity: unknown; }' is not assignable to type '{ itemId: string; quantity: number; }'.
+          Types of property 'quantity' are incompatible.
+            Type 'unknown' is not assignable to type 'number'.
+src/components/app/sections/requisitions-section.tsx(156,47): error TS2345: Argument of type '(values: RequisitionFormValues) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues, Promise<void>>'.
+  Types of parameters 'values' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ department: string; requiredDate: string; items: { itemId: string; quantity: number; }[]; notes?: string | undefined; }'.
+      Type 'FieldValues' is missing the following properties from type '{ department: string; requiredDate: string; items: { itemId: string; quantity: number; }[]; notes?: string | undefined; }': department, requiredDate, items
+src/components/app/sections/requisitions-section.tsx(340,28): error TS2322: Type 'string' is not assignable to type '"default" | "secondary" | "destructive" | "outline" | null | undefined'.
+src/components/app/sections/suppliers-section.tsx(46,5): error TS2322: Type 'Resolver<{ name: string; contactPerson?: string | undefined; email?: string | undefined; phone?: string | undefined; address?: string | undefined; status?: "ACTIVE" | "INACTIVE" | "BLACKLISTED" | undefined; }, any, { ...; }>' is not assignable to type 'Resolver<{ name: string; status: "ACTIVE" | "INACTIVE" | "BLACKLISTED"; contactPerson?: string | undefined; email?: string | undefined; phone?: string | undefined; address?: string | undefined; }, any, { ...; }>'.
+  Types of parameters 'options' and 'options' are incompatible.
+    Type 'ResolverOptions<{ name: string; status: "ACTIVE" | "INACTIVE" | "BLACKLISTED"; contactPerson?: string | undefined; email?: string | undefined; phone?: string | undefined; address?: string | undefined; }>' is not assignable to type 'ResolverOptions<{ name: string; contactPerson?: string | undefined; email?: string | undefined; phone?: string | undefined; address?: string | undefined; status?: "ACTIVE" | "INACTIVE" | "BLACKLISTED" | undefined; }>'.
+      Type '"ACTIVE" | "INACTIVE" | "BLACKLISTED" | undefined' is not assignable to type '"ACTIVE" | "INACTIVE" | "BLACKLISTED"'.
+        Type 'undefined' is not assignable to type '"ACTIVE" | "INACTIVE" | "BLACKLISTED"'.
+src/components/app/sections/suppliers-section.tsx(76,34): error TS2345: Argument of type '{ email: string | null; name: string; status: "ACTIVE" | "INACTIVE" | "BLACKLISTED"; contactPerson?: string | undefined; phone?: string | undefined; address?: string | undefined; }' is not assignable to parameter of type '{ name: string; contactPerson?: string | undefined; email?: string | undefined; phone?: string | undefined; address?: string | undefined; status?: "ACTIVE" | "INACTIVE" | "BLACKLISTED" | undefined; }'.
+  Types of property 'email' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.
+src/components/app/sections/suppliers-section.tsx(142,30): error TS2322: Type 'string' is not assignable to type '"default" | "secondary" | "destructive" | "outline" | null | undefined'.
+src/components/app/sections/suppliers-section.tsx(162,45): error TS2345: Argument of type '(values: Form) => Promise<void>' is not assignable to parameter of type 'SubmitHandler<TFieldValues, Promise<void>>'.
+  Types of parameters 'values' and 'data' are incompatible.
+    Type 'TFieldValues' is not assignable to type '{ name: string; status: "ACTIVE" | "INACTIVE" | "BLACKLISTED"; contactPerson?: string | undefined; email?: string | undefined; phone?: string | undefined; address?: string | undefined; }'.
+      Type 'FieldValues' is missing the following properties from type '{ name: string; status: "ACTIVE" | "INACTIVE" | "BLACKLISTED"; contactPerson?: string | undefined; email?: string | undefined; phone?: string | undefined; address?: string | undefined; }': name, status
+src/components/app/sections/users-section.tsx(185,30): error TS2322: Type 'string' is not assignable to type '"default" | "secondary" | "destructive" | "outline" | null | undefined'.
+src/lib/middleware/auth.ts(22,61): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/lib/middleware/auth.ts(40,5): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/lib/services/notifications.ts(93,35): error TS2322: Type '"PENDING_APPROVAL"' is not assignable to type 'RequisitionStatus'.
+src/lib/services/suppliers.ts(72,22): error TS2339: Property 'totalAmount' does not exist on type '{ _count: { items: number; }; } & { id: string; status: ReceiptStatus; createdAt: Date; updatedAt: Date; code: string; storeId: string; supplierId: string; receivedById: string; deliveryNote: string | null; purchaseOrder: string | null; inspectionNotes: string | null; receiptDate: Date; }'.
+src/lib/services/suppliers.ts(73,24): error TS2339: Property 'totalQuantity' does not exist on type '{ _count: { items: number; }; } & { id: string; status: ReceiptStatus; createdAt: Date; updatedAt: Date; code: string; storeId: string; supplierId: string; receivedById: string; deliveryNote: string | null; purchaseOrder: string | null; inspectionNotes: string | null; receiptDate: Date; }'.
+vitest.config.ts(14,5): error TS2769: No overload matches this call.
+  The last overload gave the following error.
+    Object literal may only specify known properties, and 'poolOptions' does not exist in type 'InlineConfig'.
+=== TSC EXIT 2 === 
+=== NEXT BUILD === 
+
+> astu-stock-management-system@1.0.0 build
+> next build && node -e "const fs=require('fs');const path=require('path');const copy=(src,dst)=>{if(!fs.existsSync(src)) return; fs.mkdirSync(dst,{recursive:true}); for(const entry of fs.readdirSync(src,{withFileTypes:true})){const from=path.join(src,entry.name); const to=path.join(dst,entry.name); if(entry.isDirectory()) copy(from,to); else fs.copyFileSync(from,to);}}; copy('.next/static','.next/standalone/.next/static'); copy('public','.next/standalone/public');"
+
+▲ Next.js 16.3.0 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 3.6s
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.1min
+  Skipping validation of types
+  Finished TypeScript config validation in 1611ms ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/3) ...
+✓ Generating static pages using 3 workers (3/3) in 1115ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+=== BUILD EXIT 0 === 

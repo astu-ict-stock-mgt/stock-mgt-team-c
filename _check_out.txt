@@ -1,0 +1,11 @@
+=== NODE === 
+v24.11.1
+=== ROOT DEPS === 
+ROOT_DEPS_OK 
+=== BACKEND DEPS === 
+BE_DEPS_OK 
+=== PG CONNECT (node) === 
+PG_CONNECT_OK
+=== PRISMA TABLES === 
+AuditLog, Bin, BinCard, BinStock, BinTransfer, Category, DisposalItem, DisposalRequest, FifoLayer, FixedAsset, GRN, GatePass, GoodsReceipt, GoodsReceiptItem, InventoryItem, Permission, Requisition, RequisitionApproval, RequisitionItem, ReturnBinAllocation, Role, RolePermission, SIVBinAllocation, SIVItem, Shelf, StockAdjustment, StockAdjustmentItem, StockCard, StockTake, StockTakeItem, StockTransaction, Store, StoreIssueVoucher, StoreLocation, StoreReturnItem, StoreReturnNote, StoreStock, Supplier, TechnicalEvaluation, TechnicalEvaluationItem, TransferInBinAllocation, TransferOutBinAllocation, TransferRequest, TransferRequestItem, UnitOfMeasure, User, UserCard, UserRole, UserSession, _prisma_migrations
+=== DONE === 

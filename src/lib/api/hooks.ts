@@ -26,6 +26,9 @@ import type {
   StockTake,
   StockAdjustment,
   StoreBinStock,
+  StoreReturn,
+  TransferRequest,
+  BinTransfer,
 } from "@/lib/types";
 
 // ---------------- Auth ----------------
@@ -642,6 +645,199 @@ export function usePostStockAdjustment() {
       qc.invalidateQueries({ queryKey: ["stock-adjustments"] });
       qc.invalidateQueries({ queryKey: ["stock-adjustments", id] });
       qc.invalidateQueries({ queryKey: ["stock-takes"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+}
+
+// ---------------- Inter-Store Transfers ----------------
+export function useTransfers() {
+  return useQuery({
+    queryKey: ["transfers"],
+    queryFn: () => apiClient.get<TransferRequest[]>("/api/v1/transfers"),
+  });
+}
+
+export function useTransfer(id: string | null) {
+  return useQuery({
+    queryKey: ["transfers", id],
+    queryFn: () => apiClient.get<TransferRequest>(`/api/v1/transfers/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { fromStoreId: string; toStoreId: string; reason?: string; notes?: string; items: Array<{ itemId: string; quantity: number }> }) =>
+      apiClient.post<TransferRequest>("/api/v1/transfers", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useSubmitTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<TransferRequest>(`/api/v1/transfers/${id}/submit`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      qc.invalidateQueries({ queryKey: ["transfers", id] });
+    },
+  });
+}
+
+export function useApproveTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<TransferRequest>(`/api/v1/transfers/${id}/approve`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      qc.invalidateQueries({ queryKey: ["transfers", id] });
+    },
+  });
+}
+
+export function useRejectTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<TransferRequest>(`/api/v1/transfers/${id}/reject`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      qc.invalidateQueries({ queryKey: ["transfers", id] });
+    },
+  });
+}
+
+export function useDispatchTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, items }: { id: string; items: Array<{ itemId: string; allocations: Array<{ binId: string; quantity: number }> }> }) =>
+      apiClient.post<TransferRequest>(`/api/v1/transfers/${id}/dispatch`, { items }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      qc.invalidateQueries({ queryKey: ["transfers", vars.id] });
+      qc.invalidateQueries({ queryKey: ["store-bin-stocks"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+}
+
+export function useReceiveTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, items }: { id: string; items: Array<{ itemId: string; receivedQty: number; allocations: Array<{ binId: string; quantity: number }> }> }) =>
+      apiClient.post<TransferRequest>(`/api/v1/transfers/${id}/receive`, { items }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["transfers"] });
+      qc.invalidateQueries({ queryKey: ["transfers", vars.id] });
+      qc.invalidateQueries({ queryKey: ["store-bin-stocks"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+}
+// ---------------- Returns ----------------
+export function useReturns(params?: { storeId?: string; status?: string }) {
+  const search = new URLSearchParams();
+  if (params?.storeId) search.set("storeId", params.storeId);
+  if (params?.status) search.set("status", params.status);
+  const qs = search.toString();
+  return useQuery({
+    queryKey: ["returns", params],
+    queryFn: () => apiClient.get<StoreReturn[]>(`/api/v1/returns${qs ? `?${qs}` : ""}`),
+  });
+}
+
+export function useReturn(id: string | null) {
+  return useQuery({
+    queryKey: ["returns", id],
+    queryFn: () => apiClient.get<StoreReturn>(`/api/v1/returns/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useCreateReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { storeId: string; department: string; originalSivId?: string; notes?: string; items: Array<{ itemId: string; quantity: number; reason?: string; condition?: string }> }) =>
+      apiClient.post<StoreReturn>("/api/v1/returns", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["returns"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useSubmitReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StoreReturn>(`/api/v1/returns/${id}/submit`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["returns"] });
+      qc.invalidateQueries({ queryKey: ["returns", id] });
+    },
+  });
+}
+
+export function useEvaluateReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, items }: { id: string; items: Array<{ itemId: string; acceptedQty: number }> }) =>
+      apiClient.post<StoreReturn>(`/api/v1/returns/${id}/evaluate`, { items }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["returns"] });
+      qc.invalidateQueries({ queryKey: ["returns", vars.id] });
+    },
+  });
+}
+
+export function useApproveReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StoreReturn>(`/api/v1/returns/${id}/approve`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["returns"] });
+      qc.invalidateQueries({ queryKey: ["returns", id] });
+    },
+  });
+}
+
+export function useRejectReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.post<StoreReturn>(`/api/v1/returns/${id}/reject`),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["returns"] });
+      qc.invalidateQueries({ queryKey: ["returns", id] });
+    },
+  });
+}
+
+export function useReceiveReturn() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, items }: { id: string; items: Array<{ itemId: string; allocations: Array<{ binId: string; quantity: number }> }> }) =>
+      apiClient.post<StoreReturn>(`/api/v1/returns/${id}/receive`, { items }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["returns"] });
+      qc.invalidateQueries({ queryKey: ["returns", vars.id] });
+      qc.invalidateQueries({ queryKey: ["store-bin-stocks"] });
+      qc.invalidateQueries({ queryKey: ["inventory"] });
+    },
+  });
+}
+
+// ---------------- Internal Bin Transfers ----------------
+export function useExecuteBinTransfer() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { itemId: string; fromBinId: string; toBinId: string; quantity: number }) =>
+      apiClient.post<BinTransfer>("/api/v1/bin-transfers", body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["store-bin-stocks"] });
       qc.invalidateQueries({ queryKey: ["inventory"] });
     },
   });

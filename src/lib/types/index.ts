@@ -401,3 +401,71 @@ export type StoreBinStock = {
     shelf: { id: string; code: string; name: string; location: { id: string; code: string; name: string } };
   };
 };
+export type StoreReturnItem = {
+  id: string;
+  itemId: string;
+  itemCode?: string | null;
+  itemName?: string | null;
+  quantity: number;
+  acceptedQty: number | null;
+  reason: string | null;
+  condition: string | null;
+  unitCost: number | null;
+  allocations?: Array<{ id: string; binId: string; quantity: number }>;
+};
+
+export type StoreReturn = {
+  id: string;
+  code: string;
+  storeId: string;
+  store?: { id: string; code: string; name: string };
+  department: string | null;
+  originalSivId: string | null;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+  requestedBy?: { id: string; fullName: string };
+  items?: StoreReturnItem[];
+};
+
+export type TransferRequestItem = {
+  id: string;
+  itemId: string;
+  item?: { id: string; code: string; name: string };
+  quantity: number;
+  dispatchedQty: number;
+  receivedQty: number;
+  outAllocations?: Array<{ id: string; binId: string; quantity: number }>;
+  inAllocations?: Array<{ id: string; binId: string; quantity: number }>;
+};
+
+export type TransferRequest = {
+  id: string;
+  code: string;
+  fromStoreId: string;
+  fromStore?: { id: string; code: string; name: string };
+  toStoreId: string;
+  toStore?: { id: string; code: string; name: string };
+  reason: string | null;
+  notes: string | null;
+  status: string;
+  createdAt: string;
+  requestedBy?: { id: string; fullName: string };
+  items?: TransferRequestItem[];
+};
+
+export type BinTransfer = {
+  id: string;
+  code: string;
+  storeId: string;
+  itemId: string;
+  item?: { id: string; code: string; name: string };
+  fromBinId: string;
+  fromBin?: { id: string; code: string; name: string };
+  toBinId: string;
+  toBin?: { id: string; code: string; name: string };
+  quantity: number;
+  status: string;
+  createdAt: string;
+  requestedBy?: { id: string; fullName: string };
+};
