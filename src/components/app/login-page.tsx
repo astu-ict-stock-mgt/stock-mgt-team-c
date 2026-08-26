@@ -28,6 +28,12 @@ const DEMO_ACCOUNTS = [
   { email: "security@sms.et", role: "Security Officer" },
 ];
 
+// Off unless NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS=true. This panel prints a working
+// password for six real accounts and the form used to arrive pre-filled with
+// the administrator's credentials, which must never reach a deployed build.
+const DEMO_MODE = process.env.NEXT_PUBLIC_ENABLE_DEMO_ACCOUNTS === "true";
+const DEMO_PASSWORD = "Password@123";
+
 export function LoginPage() {
   const [showAccounts, setShowAccounts] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +43,9 @@ export function LoginPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(Schema),
-    defaultValues: { email: "admin@sms.et", password: "Password@123" },
+    defaultValues: DEMO_MODE
+      ? { email: "admin@sms.et", password: DEMO_PASSWORD }
+      : { email: "", password: "" },
   });
 
   const onSubmit = async (values: FormValues) => {
@@ -53,7 +61,7 @@ export function LoginPage() {
 
   const quickFill = (email: string) => {
     form.setValue("email", email);
-    form.setValue("password", "Password@123");
+    form.setValue("password", DEMO_PASSWORD);
   };
 
   return (
@@ -152,41 +160,43 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-6 border-t border-border pt-5">
-            <button
-              type="button"
-              onClick={() => setShowAccounts((s) => !s)}
-              className="flex w-full items-center justify-between rounded-md px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <span>{showAccounts ? "Hide" : "Show"} demo accounts</span>
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${showAccounts ? "rotate-180" : ""}`}
-              />
-            </button>
+          {/* Demo accounts — development convenience only, see DEMO_MODE above */}
+          {DEMO_MODE && (
+            <div className="mt-6 border-t border-border pt-5">
+              <button
+                type="button"
+                onClick={() => setShowAccounts((s) => !s)}
+                className="flex w-full items-center justify-between rounded-md px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <span>{showAccounts ? "Hide" : "Show"} demo accounts</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showAccounts ? "rotate-180" : ""}`}
+                />
+              </button>
 
-            {showAccounts && (
-              <div className="mt-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {DEMO_ACCOUNTS.map((a) => (
-                    <button
-                      key={a.email}
-                      type="button"
-                      onClick={() => quickFill(a.email)}
-                      className="rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary hover:bg-accent"
-                    >
-                      <div className="text-xs font-semibold text-foreground">{a.role}</div>
-                      <div className="truncate text-[11px] text-muted-foreground">{a.email}</div>
-                    </button>
-                  ))}
+              {showAccounts && (
+                <div className="mt-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    {DEMO_ACCOUNTS.map((a) => (
+                      <button
+                        key={a.email}
+                        type="button"
+                        onClick={() => quickFill(a.email)}
+                        className="rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary hover:bg-accent"
+                      >
+                        <div className="text-xs font-semibold text-foreground">{a.role}</div>
+                        <div className="truncate text-[11px] text-muted-foreground">{a.email}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-[11px] text-muted-foreground">
+                    Password for all demo accounts:{" "}
+                    <span className="font-mono font-medium text-foreground">{DEMO_PASSWORD}</span>
+                  </p>
                 </div>
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  Password for all demo accounts:{" "}
-                  <span className="font-mono font-medium text-foreground">Password@123</span>
-                </p>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
 
         <p className="mt-6 text-center text-[11px] text-muted-foreground">

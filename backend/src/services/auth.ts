@@ -6,6 +6,12 @@ import { recordAudit } from "./audit";
 const SESSION_DURATION_HOURS = 12;
 const MAX_FAILED_LOGINS = 5;
 const LOCK_MINUTES = 15;
+// A refresh token outlives its access token so a user who steps away for a day
+// can resume without signing in again.
+const REFRESH_DURATION_DAYS = 7;
+
+const sessionExpiry = () => new Date(Date.now() + SESSION_DURATION_HOURS * 3_600_000);
+const refreshExpiry = () => new Date(Date.now() + REFRESH_DURATION_DAYS * 86_400_000);
 
 export async function login(email: string, password: string, ip?: string) {
   const user = await prisma.user.findFirst({
@@ -49,8 +55,10 @@ export async function login(email: string, password: string, ip?: string) {
 
   const token = generateToken();
   const refresh = generateToken();
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_HOURS * 3_600_000);
-  await prisma.userSession.create({ data: { userId: user.id, token, refresh, expiresAt, ip, userAgent: null } });
+  const expiresAt = sessionExpiry();
+  await prisma.userSession.create({
+    data: { userId: user.id, token, refresh, expiresAt, refreshExpiresAt: refreshExpiry(), ip, userAgent: null },
+  });
   await prisma.user.update({
     where: { id: user.id },
     data: { failedLoginCount: 0, lockedUntil: null, lastLoginAt: new Date(), status: "ACTIVE" },
@@ -66,13 +74,67 @@ export async function logout(token: string) {
 }
 
 /**
+ * Exchanges a refresh token for a fresh access token.
+ *
+ * Login always handed the browser a refresh token and stored it, but no endpoint
+ * ever accepted one, so every user was signed out 12 hours after logging in with
+ * no way back. Both tokens are rotated on each use — a replayed refresh token is
+ * therefore already unknown — and `refreshExpiresAt` caps the total session life
+ * so refreshing cannot extend it forever.
+ */
+export async function refreshSession(refreshToken: string | null | undefined, ip?: string | null) {
+  if (!refreshToken) throw Errors.invalidRefreshToken();
+
+  const session = await prisma.userSession.findUnique({
+    where: { refresh: refreshToken },
+    include: {
+      user: {
+        include: { userRoles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } },
+      },
+    },
+  });
+  if (!session) throw Errors.invalidRefreshToken();
+
+  const now = new Date();
+  // Legacy rows predate refreshExpiresAt; fall back to the access expiry so an
+  // old session cannot be refreshed indefinitely.
+  const refreshDeadline = session.refreshExpiresAt ?? session.expiresAt;
+  const rejected =
+    refreshDeadline < now || session.user.deletedAt !== null || session.user.status !== "ACTIVE";
+  if (rejected) {
+    await prisma.userSession.delete({ where: { id: session.id } }).catch(() => { });
+    throw Errors.invalidRefreshToken();
+  }
+
+  const token = generateToken();
+  const refresh = generateToken();
+  const expiresAt = sessionExpiry();
+  await prisma.userSession.update({
+    where: { id: session.id },
+    // refreshExpiresAt is deliberately not extended — it is an absolute cap.
+    data: { token, refresh, expiresAt, ip: ip ?? session.ip },
+  });
+
+  return { user: publicUser(session.user), token, refresh, expiresAt: expiresAt.toISOString() };
+}
+
+/**
  * Deletes sessions whose expiry has passed. Previously a session row was only
  * removed if that exact token was presented again after expiring, so abandoned
  * sessions accumulated forever. Called on an interval from server.ts.
+ *
+ * A session is only dead once its refresh window has closed too, otherwise the
+ * sweep would delete rows that POST /auth/refresh could still legitimately use.
  */
 export async function purgeExpiredSessions(): Promise<number> {
+  const now = new Date();
   const { count } = await prisma.userSession.deleteMany({
-    where: { expiresAt: { lt: new Date() } },
+    where: {
+      OR: [
+        { refreshExpiresAt: { lt: now } },
+        { refreshExpiresAt: null, expiresAt: { lt: now } },
+      ],
+    },
   });
   return count;
 }
@@ -90,14 +152,20 @@ export async function resolveSession(token: string | null | undefined) {
     },
   });
   if (!session) return null;
-  if (
-    session.expiresAt < new Date() ||
-    session.user.deletedAt ||
-    session.user.status !== "ACTIVE"
-  ) {
+
+  const now = new Date();
+  const userGone = session.user.deletedAt !== null || session.user.status !== "ACTIVE";
+  const refreshDeadline = session.refreshExpiresAt ?? session.expiresAt;
+
+  // An expired access token is not authenticated, but the row must survive so
+  // POST /auth/refresh can still rotate it. Only drop the row once the refresh
+  // window has closed as well, or the account is no longer usable.
+  if (userGone || refreshDeadline < now) {
     await prisma.userSession.delete({ where: { id: session.id } }).catch(() => { });
     return null;
   }
+  if (session.expiresAt < now) return null;
+
   return session;
 }
 

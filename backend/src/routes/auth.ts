@@ -1,7 +1,7 @@
 import { Router, Response, Request } from "express";
 import { ok, fail } from "../utils/response";
 import { asyncHandler, AuthedRequest } from "../middleware/auth";
-import { login, logout, changePassword } from "../services/auth";
+import { login, logout, changePassword, refreshSession } from "../services/auth";
 import { publicUser } from "../services/auth";
 import * as val from "../validators";
 import { Errors } from "../utils/errors";
@@ -13,6 +13,12 @@ router.post("/login", asyncHandler(async (req: AuthedRequest, res: Response) => 
   // attachAuth already resolved x-forwarded-for / socket address into clientIp.
   const result = await login(body.email, body.password, req.clientIp ?? undefined);
   res.json(ok(result, "Login successful"));
+}));
+
+router.post("/refresh", asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const body = val.refreshSchema.parse(req.body);
+  const result = await refreshSession(body.refresh, req.clientIp);
+  res.json(ok(result, "Session refreshed"));
 }));
 
 router.post("/logout", asyncHandler(async (req: Request, res: Response) => {

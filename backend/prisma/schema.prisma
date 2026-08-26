@@ -53,6 +53,10 @@ model UserSession {
   token     String   @unique
   refresh   String   @unique
   expiresAt DateTime
+  // Absolute ceiling on how long this session may be refreshed for. The access
+  // token in `expiresAt` is short-lived and rotated by POST /auth/refresh;
+  // once this passes, the user must sign in again.
+  refreshExpiresAt DateTime?
   createdAt DateTime @default(now())
   ip        String?
   userAgent String?
@@ -60,6 +64,7 @@ model UserSession {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([refreshExpiresAt])
 }
 
 enum UserStatus {

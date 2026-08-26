@@ -20,6 +20,8 @@ export const Errors = {
   accountLocked: () => new AppError("AUTH_ACCOUNT_LOCKED", "Account is locked due to repeated failed logins", 423),
   accountInactive: () => new AppError("AUTH_ACCOUNT_INACTIVE", "Account is not active", 403),
   sessionExpired: () => new AppError("AUTH_SESSION_EXPIRED", "Session expired", 401),
+  invalidRefreshToken: () =>
+    new AppError("AUTH_INVALID_REFRESH_TOKEN", "Refresh token is invalid or has expired, please sign in again", 401),
 
   // Resource
   notFound: (entity: string, id?: string) =>
