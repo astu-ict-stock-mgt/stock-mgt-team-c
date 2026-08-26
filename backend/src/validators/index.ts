@@ -71,10 +71,25 @@ export const categorySchema = z.object({
   description: z.string().optional(),
 });
 
+// parentId is only editable, not settable at creation, so it lives here rather
+// than on categorySchema. `null` detaches the category from its parent.
+export const categoryUpdateSchema = categorySchema.partial().extend({
+  parentId: z.string().min(1).nullable().optional(),
+});
+
+export const uomSchema = z.object({
+  code: z.string().min(1).max(12),
+  name: z.string().min(2),
+});
+
 export const storeSchema = z.object({
   code: z.string().min(2),
   name: z.string().min(2),
   location: z.string().optional(),
+});
+
+export const storeUpdateSchema = storeSchema.partial().extend({
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
 export const itemSchema = z.object({
@@ -128,6 +143,10 @@ export const requisitionSchema = z.object({
     quantity: z.number().positive(),
   })).min(1),
 });
+
+// Editing a draft replaces the whole requisition, lines included, so every
+// field stays optional but `items` (when given) must still be a real basket.
+export const requisitionUpdateSchema = requisitionSchema.partial();
 
 export const requisitionDecisionSchema = z.object({
   // Was read straight off req.body and hand-checked; validated here so an
