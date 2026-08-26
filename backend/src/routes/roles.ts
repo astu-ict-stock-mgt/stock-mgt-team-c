@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { ok } from "../utils/response";
-import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
+import { asyncHandler, actorOf, requirePermission, AuthedRequest } from "../middleware/auth";
 import * as svc from "../services/roles";
 import * as val from "../validators";
 
@@ -13,7 +13,7 @@ router.get("/", requirePermission("roles.read"), asyncHandler(async (_req: Authe
 
 router.post("/", requirePermission("roles.manage"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.roleSchema.parse(req.body);
-  const role = await svc.createRole(body, { userId: req.userId });
+  const role = await svc.createRole(body, actorOf(req));
   res.status(201).json(ok(role, "Role created"));
 }));
 
@@ -29,18 +29,18 @@ router.get("/:id", requirePermission("roles.read"), asyncHandler(async (req: Aut
 
 router.patch("/:id", requirePermission("roles.manage"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.roleSchema.partial().parse(req.body);
-  const role = await svc.updateRole(req.params.id, body, { userId: req.userId });
+  const role = await svc.updateRole(req.params.id, body, actorOf(req));
   res.json(ok(role, "Role updated"));
 }));
 
 router.delete("/:id", requirePermission("roles.manage"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  await svc.deleteRole(req.params.id, { userId: req.userId });
+  await svc.deleteRole(req.params.id, actorOf(req));
   res.json(ok({ deleted: true }, "Role deleted"));
 }));
 
 router.patch("/:id/permissions", requirePermission("roles.manage"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.togglePermissionSchema.parse(req.body);
-  const role = await svc.togglePermission(req.params.id, body.permission, body.enable, { userId: req.userId });
+  const role = await svc.togglePermission(req.params.id, body.permission, body.enable, actorOf(req));
   res.json(ok(role, `Permission ${body.enable ? "granted" : "revoked"}`));
 }));
 

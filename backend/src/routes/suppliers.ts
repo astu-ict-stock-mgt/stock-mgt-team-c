@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { ok, paginate } from "../utils/response";
-import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
+import { asyncHandler, actorOf, requirePermission, AuthedRequest } from "../middleware/auth";
 import { qp, qpPage, qpLimit } from "../utils/query";
 import * as svc from "../services/suppliers";
 import * as val from "../validators";
@@ -15,7 +15,7 @@ router.get("/", requirePermission("suppliers.read"), asyncHandler(async (req: Au
 
 router.post("/", requirePermission("suppliers.create"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.supplierSchema.parse(req.body);
-  const s = await svc.createSupplier(body, { userId: req.userId });
+  const s = await svc.createSupplier(body, actorOf(req));
   res.status(201).json(ok(s, "Supplier created"));
 }));
 
@@ -26,12 +26,12 @@ router.get("/:id", requirePermission("suppliers.read"), asyncHandler(async (req:
 
 router.patch("/:id", requirePermission("suppliers.update"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.supplierSchema.partial().parse(req.body);
-  const s = await svc.updateSupplier(req.params.id, body, { userId: req.userId });
+  const s = await svc.updateSupplier(req.params.id, body, actorOf(req));
   res.json(ok(s, "Supplier updated"));
 }));
 
 router.delete("/:id", requirePermission("suppliers.delete"), asyncHandler(async (req: AuthedRequest, res: Response) => {
-  await svc.deleteSupplier(req.params.id, { userId: req.userId });
+  await svc.deleteSupplier(req.params.id, actorOf(req));
   res.json(ok({ deleted: true }, "Supplier deleted"));
 }));
 

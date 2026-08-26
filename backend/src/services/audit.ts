@@ -1,8 +1,13 @@
 import { prisma } from "../config/db";
 
+/**
+ * Who performed an action. Every service that writes an audit row takes this
+ * shape and passes it straight through, so the caller only has to build it
+ * once — see `actorOf()` in middleware/auth.ts.
+ */
 export type AuditContext = {
   userId?: string | null;
-  ipAddress?: string | null;
+  ip?: string | null;
 };
 
 type AuditParams = {
@@ -29,7 +34,7 @@ export async function recordAudit({
         entityId: entityId ?? null,
         oldValue: oldValue ? JSON.stringify(oldValue) : null,
         newValue: newValue ? JSON.stringify(newValue) : null,
-        ipAddress: ctx?.ipAddress ?? null,
+        ipAddress: ctx?.ip ?? null,
         description: description ?? null,
       },
     });

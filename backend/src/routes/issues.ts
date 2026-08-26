@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { ok, paginate } from "../utils/response";
-import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
+import { asyncHandler, actorOf, requirePermission, AuthedRequest } from "../middleware/auth";
 import { qp, qpPage, qpLimit } from "../utils/query";
 import * as svc from "../services/issues";
 import * as val from "../validators";
@@ -15,7 +15,7 @@ router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: Au
 
 router.post("/", requirePermission("stock.issue"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.issueSchema.parse(req.body);
-  const i = await svc.createIssue({ ...body, issuedById: req.userId! }, { userId: req.userId, ip: (req as any)._clientIp });
+  const i = await svc.createIssue({ ...body, issuedById: req.userId! }, actorOf(req));
   res.status(201).json(ok(i, "Stock issued successfully"));
 }));
 

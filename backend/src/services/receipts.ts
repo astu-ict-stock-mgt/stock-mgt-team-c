@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 import { nextTxnCode } from "./fifo-consume";
 import { refreshItemStatus } from "./item-status";
 import { nextDocumentCode, withUniqueRetry } from "../utils/document-code";
@@ -52,7 +52,7 @@ export async function getReceipt(id: string) {
   };
 }
 
-export async function createReceipt(input: any, auditCtx?: { userId?: string; ip?: string }) {
+export async function createReceipt(input: any, auditCtx?: AuditContext) {
   if (!input.items.length) throw Errors.validation("Receipt must have at least one item");
   for (const it of input.items) {
     if (it.quantity <= 0) throw Errors.validation(`Quantity must be positive for item ${it.itemId}`);
@@ -105,6 +105,10 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
         },
       });
 
+      // InventoryItem.unitCost is a single organisation-wide figure, so the
+      // average is deliberately taken across every store's remaining layers.
+      // Per-store cost stays exact in FifoLayer.unitCost, which is what issues
+      // and valuation actually consume.
       const layers = await tx.fifoLayer.findMany({ where: { itemId: ri.itemId, remainingQty: { gt: 0 } } });
       const totalQty = layers.reduce((s, l) => s + l.remainingQty, 0);
       const totalVal = layers.reduce((s, l) => s + l.remainingQty * l.unitCost, 0);
@@ -116,10 +120,8 @@ export async function createReceipt(input: any, auditCtx?: { userId?: string; ip
     return r;
   }));
 
-  // Also fixes the per-store cost drift: the average is computed from the layers
-  // of the store that was received into, matching how FIFO consumes them.
   await recordAudit({
-    ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
+    ctx: auditCtx,
     action: "STOCK_RECEIVED", module: "receipts", entity: "receipt", entityId: receipt.id,
     newValue: { code: receipt.code, supplierId: input.supplierId, storeId: input.storeId, totalQuantity, totalAmount, itemCount: input.items.length },
   });

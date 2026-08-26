@@ -2,7 +2,7 @@ import { Prisma, RequisitionStatus } from "@prisma/client";
 import { Router, Response } from "express";
 import { prisma } from "../config/db";
 import { ok, paginate } from "../utils/response";
-import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
+import { asyncHandler, actorOf, requirePermission, AuthedRequest } from "../middleware/auth";
 import { qp, qpPage, qpLimit } from "../utils/query";
 import * as val from "../validators";
 import { recordAudit } from "../services/audit";
@@ -157,7 +157,7 @@ router.post(
     }));
 
     await recordAudit({
-      ctx: { userId: req.userId, ipAddress: (req as any)._clientIp },
+      ctx: actorOf(req),
       action: "REQUISITION_CREATED",
       module: "requisitions",
       entity: "requisition",
@@ -198,7 +198,7 @@ router.post(
     });
 
     await recordAudit({
-      ctx: { userId: req.userId, ipAddress: (req as any)._clientIp },
+      ctx: actorOf(req),
       action: "REQUISITION_SUBMITTED",
       module: "requisitions",
       entity: "requisition",
@@ -267,7 +267,7 @@ router.post(
     });
 
     await recordAudit({
-      ctx: { userId: req.userId, ipAddress: (req as any)._clientIp },
+      ctx: actorOf(req),
       action: decision === "APPROVED" ? "REQUISITION_APPROVED" : "REQUISITION_REJECTED",
       module: "requisitions",
       entity: "requisition",
@@ -310,7 +310,7 @@ router.post(
     });
 
     await recordAudit({
-      ctx: { userId: req.userId, ipAddress: (req as any)._clientIp },
+      ctx: actorOf(req),
       action: "REQUISITION_CANCELLED",
       module: "requisitions",
       entity: "requisition",

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 import { computeStockValue } from "./fifo";
 import { refreshItemStatus } from "./item-status";
 
@@ -10,9 +10,9 @@ export async function listCategories() {
   return items.map((c) => ({ id: c.id, code: c.code, name: c.name, description: c.description, parentId: c.parentId, itemCount: c._count.items }));
 }
 
-export async function createCategory(input: any, auditCtx?: { userId?: string }) {
+export async function createCategory(input: any, auditCtx?: AuditContext) {
   const c = await prisma.category.create({ data: { code: input.code.toUpperCase(), name: input.name, description: input.description ?? null } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "CATEGORY_CREATED", module: "categories", entity: "category", entityId: c.id, newValue: c });
+  await recordAudit({ ctx: auditCtx, action: "CATEGORY_CREATED", module: "categories", entity: "category", entityId: c.id, newValue: c });
   return c;
 }
 
@@ -31,9 +31,9 @@ export async function listStores() {
   }));
 }
 
-export async function createStore(input: any, auditCtx?: { userId?: string }) {
+export async function createStore(input: any, auditCtx?: AuditContext) {
   const w = await prisma.store.create({ data: { code: input.code.toUpperCase(), name: input.name, location: input.location ?? null } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "STORE_CREATED", module: "stores", entity: "store", entityId: w.id, newValue: w });
+  await recordAudit({ ctx: auditCtx, action: "STORE_CREATED", module: "stores", entity: "store", entityId: w.id, newValue: w });
   return w;
 }
 
@@ -96,7 +96,7 @@ export async function getInventoryItem(id: string) {
   };
 }
 
-export async function createInventoryItem(input: any, auditCtx?: { userId?: string }) {
+export async function createInventoryItem(input: any, auditCtx?: AuditContext) {
   const dup = await prisma.inventoryItem.findFirst({ where: { code: input.code.toUpperCase() } });
   if (dup) throw Errors.duplicateItemCode();
   const it = await prisma.inventoryItem.create({
@@ -108,25 +108,25 @@ export async function createInventoryItem(input: any, auditCtx?: { userId?: stri
     },
     include: { category: true, uom: true },
   });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ITEM_CREATED", module: "inventory", entity: "item", entityId: it.id, newValue: { code: it.code, name: it.name } });
+  await recordAudit({ ctx: auditCtx, action: "ITEM_CREATED", module: "inventory", entity: "item", entityId: it.id, newValue: { code: it.code, name: it.name } });
   return it;
 }
 
-export async function updateInventoryItem(id: string, input: any, auditCtx?: { userId?: string }) {
+export async function updateInventoryItem(id: string, input: any, auditCtx?: AuditContext) {
   const existing = await prisma.inventoryItem.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw Errors.notFound("Inventory item", id);
   const it = await prisma.inventoryItem.update({ where: { id }, data: input, include: { category: true, uom: true } });
   // Editing reorderLevel moves the low-stock threshold, so the derived status
   // has to be recomputed even though no stock moved.
   if (input.reorderLevel !== undefined) await refreshItemStatus(prisma, id);
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ITEM_UPDATED", module: "inventory", entity: "item", entityId: id, oldValue: existing, newValue: input });
+  await recordAudit({ ctx: auditCtx, action: "ITEM_UPDATED", module: "inventory", entity: "item", entityId: id, oldValue: existing, newValue: input });
   return it;
 }
 
-export async function deleteInventoryItem(id: string, auditCtx?: { userId?: string }) {
+export async function deleteInventoryItem(id: string, auditCtx?: AuditContext) {
   const existing = await prisma.inventoryItem.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw Errors.notFound("Inventory item", id);
   await prisma.inventoryItem.update({ where: { id }, data: { deletedAt: new Date(), status: "DISPOSED" } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "ITEM_DELETED", module: "inventory", entity: "item", entityId: id });
+  await recordAudit({ ctx: auditCtx, action: "ITEM_DELETED", module: "inventory", entity: "item", entityId: id });
   return true;
 }
