@@ -2,15 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Plus, Package, Eye, Download } from "lucide-react";
-import { useInventory, useCreateItem, useCategoriesAndUoms, useInventoryItem } from "@/lib/api/hooks";
+import { Plus, Package, Eye, Download, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { useInventory, useCreateItem, useUpdateItem, useDeleteItem, useCategoriesAndUoms, useInventoryItem } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable } from "@/components/ui/data-table";
 import { PageHeader, SectionError, SectionLoading, EmptyState, AstuAction, AstuCardTable, MobileCard, StatusPill } from "@/components/app/section-utils";
 import { useUIStore } from "@/stores/ui-store";
@@ -20,7 +20,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { InventoryItem } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 const CreateItemSchema = z.object({
   code: z.string().min(2, "Code is required"),
@@ -28,11 +27,18 @@ const CreateItemSchema = z.object({
   description: z.string().optional(),
   categoryId: z.string().min(1, "Category is required"),
   uomId: z.string().min(1, "Unit is required"),
-  minStock: z.coerce.number().min(0).default(0),
-  maxStock: z.coerce.number().min(0).default(0),
-  safetyStock: z.coerce.number().min(0).default(0),
-  reorderLevel: z.coerce.number().min(0).default(0),
+  // A number typed into an <input> arrives as a string, so these coerce. No
+  // .default() — that would make the field optional on the input side only, and
+  // every one of these inputs is always rendered and seeded from defaultValues.
+  minStock: z.coerce.number().min(0),
+  maxStock: z.coerce.number().min(0),
+  safetyStock: z.coerce.number().min(0),
+  reorderLevel: z.coerce.number().min(0),
 });
+// Coercion means the form reads different types than it produces: the four
+// numeric fields go in as strings and come out as numbers. useForm has to be
+// told both, otherwise the resolver's input type will not match its own values.
+type CreateItemInput = z.input<typeof CreateItemSchema>;
 type CreateItemForm = z.infer<typeof CreateItemSchema>;
 
 /* ── CSV export helper ────────────────────────────────────────────── */
@@ -64,7 +70,9 @@ export function InventorySection() {
   const [search, setSearch]       = useState("");
   const [status, setStatus]       = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [createOpen, setCreateOpen] = useState(false);
+  const [formOpen, setFormOpen]   = useState(false);
+  const [editing, setEditing]     = useState<InventoryItem | null>(null);
+  const [deleting, setDeleting]   = useState<InventoryItem | null>(null);
   const setSelectedItemId = useUIStore((s) => s.setSelectedItemId);
 
   const { data, isLoading, isError, refetch } = useInventory({
@@ -76,21 +84,66 @@ export function InventorySection() {
   });
   const cats = useCategoriesAndUoms();
   const createItem = useCreateItem();
+  const updateItem = useUpdateItem();
+  const deleteItem = useDeleteItem();
 
-  const form = useForm<CreateItemForm>({
+  const form = useForm<CreateItemInput, unknown, CreateItemForm>({
     resolver: zodResolver(CreateItemSchema),
     defaultValues: { code: "", name: "", description: "", categoryId: "", uomId: "", minStock: 0, maxStock: 0, safetyStock: 0, reorderLevel: 0 },
   });
 
+  const openCreate = () => {
+    setEditing(null);
+    form.reset({ code: "", name: "", description: "", categoryId: "", uomId: "", minStock: 0, maxStock: 0, safetyStock: 0, reorderLevel: 0 });
+    setFormOpen(true);
+  };
+
+  const openEdit = (it: InventoryItem) => {
+    setEditing(it);
+    form.reset({
+      code: it.code,
+      name: it.name,
+      description: it.description ?? "",
+      categoryId: it.category.id,
+      uomId: it.uom.id,
+      minStock: it.minStock,
+      maxStock: it.maxStock,
+      safetyStock: it.safetyStock,
+      reorderLevel: it.reorderLevel,
+    });
+    setFormOpen(true);
+  };
+
   const onSubmit = async (values: CreateItemForm) => {
     try {
-      await createItem.mutateAsync(values);
-      toast.success("Item created successfully");
-      setCreateOpen(false);
+      if (editing) {
+        // `code` is deliberately left out: it identifies the item on every GRN
+        // and issue voucher already printed, so it is shown read-only instead.
+        const { code: _code, ...editable } = values;
+        await updateItem.mutateAsync({ id: editing.id, ...editable });
+        toast.success("Item updated");
+      } else {
+        await createItem.mutateAsync(values);
+        toast.success("Item created successfully");
+      }
+      setFormOpen(false);
+      setEditing(null);
       form.reset();
       refetch();
     } catch (e) {
-      toast.error(e instanceof ApiClientError ? e.message : "Failed to create item");
+      toast.error(e instanceof ApiClientError ? e.message : `Failed to ${editing ? "update" : "create"} item`);
+    }
+  };
+
+  const onDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteItem.mutateAsync(deleting.id);
+      toast.success(`${deleting.code} removed from the catalogue`);
+      setDeleting(null);
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof ApiClientError ? e.message : "Failed to delete item");
     }
   };
 
@@ -178,13 +231,21 @@ export function InventorySection() {
       enableSorting: false,
       enableHiding: false,
       cell: ({ row }) => (
-        <AstuAction onClick={() => setSelectedItemId(row.original.id)}>
-          <Eye className="h-3 w-3" /> View
-        </AstuAction>
+        <div className="flex items-center gap-1.5">
+          <AstuAction onClick={() => setSelectedItemId(row.original.id)}>
+            <Eye className="h-3 w-3" /> View
+          </AstuAction>
+          <AstuAction onClick={() => openEdit(row.original)}>
+            <Pencil className="h-3 w-3" /> Edit
+          </AstuAction>
+          <AstuAction onClick={() => setDeleting(row.original)}>
+            <Trash2 className="h-3 w-3" /> Delete
+          </AstuAction>
+        </div>
       ),
-      size: 70,
+      size: 190,
     },
-  ], [setSelectedItemId]);
+  ], [setSelectedItemId, openEdit]);
 
   return (
     <div>
@@ -193,75 +254,7 @@ export function InventorySection() {
         description="Manage stock items, categories, reorder levels, and current quantities"
         icon={Package}
         action={
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm"><Plus className="h-4 w-4" /> New Item</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-primary">Create Inventory Item</DialogTitle>
-                <DialogDescription>Register a new stockable item with reorder rules</DialogDescription>
-              </DialogHeader>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Item Code *</Label>
-                    <Input {...form.register("code")} placeholder="e.g. IT-LP-001" />
-                    {form.formState.errors.code && <p className="text-xs text-destructive">{form.formState.errors.code.message}</p>}
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Name *</Label>
-                    <Input {...form.register("name")} placeholder="e.g. Dell Latitude 5520" />
-                    {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs font-semibold">Description</Label>
-                  <Input {...form.register("description")} placeholder="Optional description" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Category *</Label>
-                    <Select onValueChange={(v) => form.setValue("categoryId", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                      <SelectContent>
-                        {cats.data?.categories.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.categoryId && <p className="text-xs text-destructive">{form.formState.errors.categoryId.message}</p>}
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs font-semibold">Unit *</Label>
-                    <Select onValueChange={(v) => form.setValue("uomId", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger>
-                      <SelectContent>
-                        {cats.data?.uoms.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>{u.code} — {u.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.uomId && <p className="text-xs text-destructive">{form.formState.errors.uomId.message}</p>}
-                  </div>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {(["minStock", "maxStock", "safetyStock", "reorderLevel"] as const).map((f) => (
-                    <div key={f} className="space-y-1">
-                      <Label className="text-xs font-semibold capitalize">{f.replace(/([A-Z])/g, " $1").trim()}</Label>
-                      <Input type="number" step="any" {...form.register(f)} />
-                    </div>
-                  ))}
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={createItem.isPending} className="bg-primary hover:bg-primary-strong text-primary-foreground">
-                    {createItem.isPending ? "Creating..." : "Create Item"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4" /> New Item</Button>
         }
       />
 
@@ -298,7 +291,7 @@ export function InventorySection() {
           title="No inventory items yet"
           description="Add your first stock item to start tracking quantities, values, and reorder levels."
           actionLabel="New Item"
-          onAction={() => setCreateOpen(true)}
+          onAction={openCreate}
         />
        ) : (
         <>
@@ -317,9 +310,17 @@ export function InventorySection() {
                   { label: "Reorder",  value: formatNumber(it.reorderLevel) },
                 ]}
                 action={
-                  <AstuAction onClick={() => setSelectedItemId(it.id)}>
-                    <Eye className="h-3 w-3" /> View
-                  </AstuAction>
+                  <div className="flex items-center gap-1.5">
+                    <AstuAction onClick={() => setSelectedItemId(it.id)}>
+                      <Eye className="h-3 w-3" /> View
+                    </AstuAction>
+                    <AstuAction onClick={() => openEdit(it)}>
+                      <Pencil className="h-3 w-3" /> Edit
+                    </AstuAction>
+                    <AstuAction onClick={() => setDeleting(it)}>
+                      <Trash2 className="h-3 w-3" /> Delete
+                    </AstuAction>
+                  </div>
                 }
               />
             ))}
@@ -342,7 +343,7 @@ export function InventorySection() {
                 onPageSize: (s) => { setPageSize(s); setPage(1); },
               }}
               toolbarRight={
-                <Button size="sm" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
+                <Button size="sm" className="h-8 text-xs" onClick={openCreate}>
                   <Plus className="h-3.5 w-3.5" /> New
                 </Button>
               }
@@ -370,6 +371,125 @@ export function InventorySection() {
       )}
 
       <ItemDetailDrawer />
+
+      {/* Create / edit — one dialog, because the fields are identical apart from
+          the item code, which is immutable once documents reference it. */}
+      <Dialog
+        open={formOpen}
+        onOpenChange={(open) => { setFormOpen(open); if (!open) setEditing(null); }}
+      >
+        <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-primary">
+              {editing ? "Edit Inventory Item" : "Create Inventory Item"}
+            </DialogTitle>
+            <DialogDescription>
+              {editing ? `Editing ${editing.code}` : "Register a new stockable item with reorder rules"}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Item Code {editing ? "" : "*"}</Label>
+                <Input {...form.register("code")} placeholder="e.g. IT-LP-001" disabled={!!editing} />
+                {editing
+                  ? <p className="text-[10px] text-muted-foreground">Codes cannot change — documents already reference this one.</p>
+                  : form.formState.errors.code && <p className="text-xs text-destructive">{form.formState.errors.code.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Name *</Label>
+                <Input {...form.register("name")} placeholder="e.g. Dell Latitude 5520" />
+                {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">Description</Label>
+              <Input {...form.register("description")} placeholder="Optional description" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Category *</Label>
+                <Select value={form.watch("categoryId")} onValueChange={(v) => form.setValue("categoryId", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {cats.data?.categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.categoryId && <p className="text-xs text-destructive">{form.formState.errors.categoryId.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Unit *</Label>
+                <Select value={form.watch("uomId")} onValueChange={(v) => form.setValue("uomId", v)}>
+                  <SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger>
+                  <SelectContent>
+                    {cats.data?.uoms.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>{u.code} — {u.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.uomId && <p className="text-xs text-destructive">{form.formState.errors.uomId.message}</p>}
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {(["minStock", "maxStock", "safetyStock", "reorderLevel"] as const).map((f) => (
+                <div key={f} className="space-y-1">
+                  <Label className="text-xs font-semibold capitalize">{f.replace(/([A-Z])/g, " $1").trim()}</Label>
+                  <Input type="number" step="any" {...form.register(f)} />
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setFormOpen(false)}>Cancel</Button>
+              <Button
+                type="submit"
+                disabled={createItem.isPending || updateItem.isPending}
+                className="bg-primary hover:bg-primary-strong text-primary-foreground"
+              >
+                {editing
+                  ? (updateItem.isPending ? "Saving..." : "Save Changes")
+                  : (createItem.isPending ? "Creating..." : "Create Item")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-danger">
+              <AlertTriangle className="h-4 w-4" /> Delete item?
+            </DialogTitle>
+            <DialogDescription>
+              {deleting ? `${deleting.code} — ${deleting.name}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 text-xs text-muted-foreground">
+            <p>
+              The item is withdrawn from the catalogue and marked disposed. Its receipts, issues
+              and transaction history are kept, so past documents still read correctly.
+            </p>
+            {deleting && deleting.totalQuantity > 0 ? (
+              <p className="rounded border border-warning/30 bg-warning-subtle px-2.5 py-2 text-warning-strong">
+                This item still has {formatNumber(deleting.totalQuantity)} unit(s) on hand
+                worth {formatCurrency(deleting.totalValue)}. Consider issuing or transferring them first.
+              </p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleting(null)}>Cancel</Button>
+            <Button
+              onClick={onDelete}
+              disabled={deleteItem.isPending}
+              className="bg-danger hover:bg-danger-strong text-danger-foreground"
+            >
+              {deleteItem.isPending ? "Deleting..." : "Delete Item"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
