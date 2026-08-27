@@ -189,6 +189,33 @@ export type IssueDetail = Issue & {
   gatePass: { id: string; code: string; status: string } | null;
 };
 
+export type Transfer = {
+  id: string;
+  code: string;
+  fromStore: { id: string; code: string; name: string };
+  toStore: { id: string; code: string; name: string };
+  transferredBy: { id: string; fullName: string };
+  status: string;
+  totalQuantity: number;
+  itemCount: number;
+  transferDate: string;
+  notes: string | null;
+};
+
+export type TransferDetail = Omit<Transfer, "fromStore" | "toStore" | "itemCount"> & {
+  fromStore: Store;
+  toStore: Store;
+  items: Array<{
+    id: string;
+    itemId: string;
+    itemCode: string;
+    itemName: string;
+    uom: string;
+    quantity: number;
+    unitCost: number;
+  }>;
+};
+
 export type Requisition = {
   id: string;
   code: string;
@@ -328,4 +355,88 @@ export type Role = {
   description: string | null;
   userCount: number;
   permissions: string[];
+};
+
+/* ── Stock taking ──────────────────────────────────────────────────────── */
+
+export type StockTakeStatus = "DRAFT" | "IN_PROGRESS" | "COMPLETED" | "RECONCILED";
+
+export type StockTake = {
+  id: string;
+  code: string;
+  store: { id: string; code: string; name: string };
+  conductedBy: { id: string; fullName: string };
+  status: StockTakeStatus;
+  startDate: string;
+  endDate: string | null;
+  notes: string | null;
+  itemCount: number;
+  countedCount: number;
+  varianceCount: number;
+};
+
+export type StockTakeItem = {
+  id: string;
+  itemId: string;
+  itemCode: string;
+  itemName: string;
+  uom: string;
+  systemQty: number;
+  /** null until the line has actually been counted. */
+  physicalQty: number | null;
+  variance: number | null;
+  remarks: string | null;
+};
+
+export type StockTakeDetail = StockTake & {
+  /** Surplus and shortage are kept apart so they cannot cancel out in a summary. */
+  surplusQty: number;
+  shortageQty: number;
+  items: StockTakeItem[];
+};
+
+/* ── Damaged & obsolete stock ──────────────────────────────────────────── */
+
+export type DispositionKind = "damaged" | "obsolete";
+
+export type DispositionStatus = "REPORTED" | "APPROVED" | "DISPOSED" | "CANCELLED";
+
+export type Disposition = {
+  id: string;
+  item: { id: string; code: string; name: string; uom: string };
+  store: { id: string; code: string; name: string } | null;
+  quantity: number;
+  reason: string;
+  reportedBy: { id: string; fullName: string } | null;
+  status: DispositionStatus;
+  disposalDate: string | null;
+  disposalMethod: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/* ── Gate passes ───────────────────────────────────────────────────────── */
+
+export type GatePassStatus = "PENDING" | "APPROVED" | "EXIT_CONFIRMED" | "REJECTED" | "CANCELLED";
+
+export type GatePass = {
+  id: string;
+  code: string;
+  status: GatePassStatus;
+  requestedBy: { id: string; fullName: string; department: string | null };
+  securityOfficer: { id: string; fullName: string } | null;
+  issue: {
+    id: string;
+    code: string;
+    department: string;
+    totalQuantity: number;
+    issueDate: string;
+    sourceStore: { id: string; code: string; name: string };
+  } | null;
+  carrier: string | null;
+  vehiclePlate: string | null;
+  exitConfirmedAt: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
 };

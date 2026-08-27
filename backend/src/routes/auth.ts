@@ -1,7 +1,7 @@
 import { Router, Response, Request } from "express";
 import { ok, fail } from "../utils/response";
 import { asyncHandler, AuthedRequest } from "../middleware/auth";
-import { login, logout, changePassword } from "../services/auth";
+import { login, logout, changePassword, refreshSession } from "../services/auth";
 import { publicUser } from "../services/auth";
 import * as val from "../validators";
 import { Errors } from "../utils/errors";
@@ -10,9 +10,15 @@ const router = Router();
 
 router.post("/login", asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.loginSchema.parse(req.body);
-  const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? (req as any)._clientIp;
-  const result = await login(body.email, body.password, ip);
+  // attachAuth already resolved x-forwarded-for / socket address into clientIp.
+  const result = await login(body.email, body.password, req.clientIp ?? undefined);
   res.json(ok(result, "Login successful"));
+}));
+
+router.post("/refresh", asyncHandler(async (req: AuthedRequest, res: Response) => {
+  const body = val.refreshSchema.parse(req.body);
+  const result = await refreshSession(body.refresh, req.clientIp);
+  res.json(ok(result, "Session refreshed"));
 }));
 
 router.post("/logout", asyncHandler(async (req: Request, res: Response) => {
@@ -30,7 +36,7 @@ router.post("/change-password", asyncHandler(async (req: AuthedRequest, res: Res
   const body = val.changePasswordSchema.parse(req.body);
   const auth = req.headers.authorization || "";
   const currentToken = auth.startsWith("Bearer ") ? auth.slice(7) : undefined;
-  await changePassword(req.userId, body.currentPassword, body.newPassword, currentToken);
+  await changePassword(req.userId, body.currentPassword, body.newPassword, currentToken, req.clientIp);
   res.json(ok({ changed: true }, "Password changed successfully"));
 }));
 

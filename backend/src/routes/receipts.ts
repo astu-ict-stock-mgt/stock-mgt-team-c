@@ -1,7 +1,7 @@
 import { Router, Response } from "express";
 import { ok, paginate } from "../utils/response";
-import { asyncHandler, requirePermission, AuthedRequest } from "../middleware/auth";
-import { qp, qpInt } from "../utils/query";
+import { asyncHandler, actorOf, requirePermission, AuthedRequest } from "../middleware/auth";
+import { qp, qpPage, qpLimit } from "../utils/query";
 import * as svc from "../services/receipts";
 import * as val from "../validators";
 
@@ -9,7 +9,7 @@ const router = Router();
 
 router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const params = {
-    page: qpInt(req, "page", 1), limit: qpInt(req, "limit", 20),
+    page: qpPage(req), limit: qpLimit(req, 20),
     search: qp(req, "search"), supplierId: qp(req, "supplierId"),
     storeId: qp(req, "storeId"), status: qp(req, "status"),
   };
@@ -19,7 +19,7 @@ router.get("/", requirePermission("inventory.read"), asyncHandler(async (req: Au
 
 router.post("/", requirePermission("stock.receive"), asyncHandler(async (req: AuthedRequest, res: Response) => {
   const body = val.receiptSchema.parse(req.body);
-  const r = await svc.createReceipt({ ...body, receivedById: req.userId! }, { userId: req.userId, ip: (req as any)._clientIp });
+  const r = await svc.createReceipt({ ...body, receivedById: req.userId! }, actorOf(req));
   res.status(201).json(ok(r, "Stock received successfully"));
 }));
 

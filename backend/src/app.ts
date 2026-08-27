@@ -22,6 +22,10 @@ import reportsRoutes from "./routes/reports";
 import notificationsRoutes from "./routes/notifications";
 import dashboardRoutes from "./routes/dashboard";
 import requisitionsRoutes from "./routes/requisitions";
+import stockTakesRoutes from "./routes/stocktakes";
+import gatePassesRoutes from "./routes/gate-passes";
+import printRoutes from "./routes/print";
+import { dispositionRouter } from "./routes/dispositions";
 
 const app = express();
 
@@ -32,12 +36,24 @@ app.set("trust proxy", 1);
 app.use(helmet());
 app.use(compression());
 
+// Login attempts are counted per IP *and* email, not per IP alone. ASTU users
+// share one public address through NAT, so a flat per-IP cap of 5 meant the whole
+// campus was locked out for the window after five sign-ins anywhere. Per-account
+// brute force is already handled by the lockout in services/auth.ts.
 const loginRateLimit = rateLimit({
   windowMs: config.rateLimit.windowMs,
-  max: 5,
+  max: config.rateLimit.loginMax,
   standardHeaders: true,
   legacyHeaders: false,
-  message: fail("RATE_LIMIT_EXCEEDED", "Too many login attempts, please try again later"),
+  keyGenerator: (req) => {
+    // An IPv6 client can rotate freely inside its own /64, so the address is
+    // truncated to that prefix before it becomes part of the key.
+    const raw = req.ip ?? "";
+    const ip = raw.includes(":") ? raw.split(":").slice(0, 4).join(":") : raw;
+    const email = typeof req.body?.email === "string" ? req.body.email.toLowerCase().trim() : "";
+    return email ? `${ip}:${email}` : ip;
+  },
+  message: fail("RATE_LIMIT_EXCEEDED", "Too many login attempts for this account, please try again later"),
 });
 
 const apiRateLimit = rateLimit({
@@ -56,13 +72,14 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 }));
 
-// Rate limiting
-app.use("/api/v1/auth/login", loginRateLimit);
-app.use("/api/v1", apiRateLimit);
-
 // Body parsing
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting — must sit after body parsing, because the login limiter keys
+// on req.body.email and would otherwise see an unparsed body every time.
+app.use("/api/v1/auth/login", loginRateLimit);
+app.use("/api/v1", apiRateLimit);
 
 // Logging
 app.use(morgan(config.isProd ? "combined" : "dev"));
@@ -100,6 +117,13 @@ app.use("/api/v1/reports", reportsRoutes);
 app.use("/api/v1/notifications", notificationsRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/requisitions", requisitionsRoutes);
+app.use("/api/v1/stocktakes", stockTakesRoutes);
+app.use("/api/v1/gate-passes", gatePassesRoutes);
+// Damaged and obsolete stock are the same table shape, so one router factory
+// serves both under its own permission.
+app.use("/api/v1/damaged", dispositionRouter("damaged", "damaged.manage"));
+app.use("/api/v1/obsolete", dispositionRouter("obsolete", "obsolete.manage"));
+app.use("/api/v1/print", printRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -122,8 +146,15 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   if (err.code === "P2025") {
     return res.status(404).json(fail("NOT_FOUND", "Record not found"));
   }
+  // Never echo raw error text to the client — Prisma messages embed absolute
+  // server paths and source snippets. The full error goes to the server log;
+  // outside production the client gets the error name only, as a hint.
   console.error("[unhandled]", err);
-  res.status(500).json(fail("INTERNAL_ERROR", config.isProd ? "Internal server error" : err.message));
+  res.status(500).json(fail(
+    "INTERNAL_ERROR",
+    "Internal server error",
+    config.isProd ? undefined : { type: err?.name ?? "Error" }
+  ));
 });
 
 export default app;

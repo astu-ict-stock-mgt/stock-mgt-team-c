@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { type ColumnDef } from "@tanstack/react-table";
 import { ScrollText } from "lucide-react";
 import { useAuditLogs } from "@/lib/api/hooks";
@@ -28,8 +28,9 @@ export function AuditLogsSection() {
     module: module || undefined,
   });
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   /* Handle deep-link from notification bell */
-  useEffect(() => {
+  useLayoutEffect(() => {
     const filters: Record<string, string> = {
       "gate-pass":    "GATE_PASS",
       "stock-take":   "STOCK_TAKE",
@@ -39,6 +40,7 @@ export function AuditLogsSection() {
     setSearch(filters[notificationTarget]);
     setModule("");
     setPage(1);
+  /* eslint-enable react-hooks/set-state-in-effect */
     setNotificationTarget(null);
   }, [notificationTarget, setNotificationTarget]);
 

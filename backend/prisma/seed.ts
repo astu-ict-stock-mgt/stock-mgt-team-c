@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PERMISSIONS, ROLE_PERMISSIONS, RoleName } from "../src/config/permissions";
 import { hashPassword } from "../src/utils/crypto";
+import { refreshAllItemStatuses } from "../src/services/item-status";
 
 const prisma = new PrismaClient();
 const DEFAULT_PASSWORD = "Password@123";
@@ -139,8 +140,12 @@ async function main() {
     for (const approval of seed.approvals) await prisma.requisitionApproval.create({ data: { requisitionId: req.id, ...approval } });
   }
 
+  console.log("• Refreshing item statuses...");
+  const status = await refreshAllItemStatuses();
+
   console.log("");
   console.log("✅ Backend seed complete.");
+  console.log(`   Item statuses: ${status.scanned} scanned, ${status.updated} updated`);
   console.log(`   Demo password for all users: ${DEFAULT_PASSWORD}`);
   console.log("   Login: admin@sms.et / pao@sms.et / storekeeper@sms.et / etc.");
 }

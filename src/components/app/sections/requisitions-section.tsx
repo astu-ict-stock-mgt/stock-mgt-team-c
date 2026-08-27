@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Clock, FileText, Plus, Search, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,6 +21,7 @@ import {
   MobileCard,
   StatusPill,
 } from "@/components/app/section-utils";
+import { PrintDocumentButton } from "@/components/app/print-button";
 import { useCreateRequisition, useDecisionRequisition, useInventory, useMe, useRequisitions, useSubmitRequisition } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
 import { formatDate, statusColor } from "@/lib/utils/format";
@@ -387,6 +388,7 @@ export function RequisitionsSection() {
                       </Button>
                     </>
                   ) : null}
+                  <PrintDocumentButton kind="requisitions" id={requisition.id} label="Print Form" />
                 </div>
               }
             />
@@ -495,6 +497,7 @@ export function RequisitionsSection() {
                           </Button>
                         </>
                       ) : null}
+                      <PrintDocumentButton kind="requisitions" id={requisition.id} label="Print" />
                     </div>
                   </td>
                 </tr>

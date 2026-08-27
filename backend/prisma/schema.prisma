@@ -53,6 +53,10 @@ model UserSession {
   token     String   @unique
   refresh   String   @unique
   expiresAt DateTime
+  // Absolute ceiling on how long this session may be refreshed for. The access
+  // token in `expiresAt` is short-lived and rotated by POST /auth/refresh;
+  // once this passes, the user must sign in again.
+  refreshExpiresAt DateTime?
   createdAt DateTime @default(now())
   ip        String?
   userAgent String?
@@ -60,6 +64,7 @@ model UserSession {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([refreshExpiresAt])
 }
 
 enum UserStatus {
@@ -275,12 +280,15 @@ model FifoLayer {
   originalQty  Float
   remainingQty Float
   unitCost     Float
-  receiptId    String
+  // Optional: a layer is usually created by a receipt, but a transfer-in carries
+  // the source layer's receipt forward and a stock-take surplus has no receipt
+  // behind it at all — the goods were found on the shelf, not delivered.
+  receiptId    String?
   createdAt    DateTime @default(now())
 
   item    InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
   store   Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  receipt StockReceipt  @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  receipt StockReceipt? @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@index([itemId, storeId, createdAt])
   @@index([receiptId])

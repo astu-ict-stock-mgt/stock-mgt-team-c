@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 
 export async function listSuppliers(params: { page: number; limit: number; search?: string; status?: string }) {
   const where: Prisma.SupplierWhereInput = { deletedAt: null };
@@ -43,25 +43,25 @@ export async function getSupplier(id: string) {
   };
 }
 
-export async function createSupplier(input: { name: string; contactPerson?: string; email?: string; phone?: string; address?: string; status?: any }, auditCtx?: { userId?: string }) {
+export async function createSupplier(input: { name: string; contactPerson?: string; email?: string; phone?: string; address?: string; status?: any }, auditCtx?: AuditContext) {
   const code = `SUP-${String(await prisma.supplier.count() + 1).padStart(4, "0")}`;
   const s = await prisma.supplier.create({ data: { code, name: input.name, contactPerson: input.contactPerson ?? null, email: input.email ?? null, phone: input.phone ?? null, address: input.address ?? null, status: input.status ?? "ACTIVE" } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "SUPPLIER_CREATED", module: "suppliers", entity: "supplier", entityId: s.id, newValue: { code: s.code, name: s.name } });
+  await recordAudit({ ctx: auditCtx, action: "SUPPLIER_CREATED", module: "suppliers", entity: "supplier", entityId: s.id, newValue: { code: s.code, name: s.name } });
   return s;
 }
 
-export async function updateSupplier(id: string, input: any, auditCtx?: { userId?: string }) {
+export async function updateSupplier(id: string, input: any, auditCtx?: AuditContext) {
   const existing = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw Errors.notFound("Supplier", id);
   const s = await prisma.supplier.update({ where: { id }, data: input });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "SUPPLIER_UPDATED", module: "suppliers", entity: "supplier", entityId: id, oldValue: existing, newValue: input });
+  await recordAudit({ ctx: auditCtx, action: "SUPPLIER_UPDATED", module: "suppliers", entity: "supplier", entityId: id, oldValue: existing, newValue: input });
   return s;
 }
 
-export async function deleteSupplier(id: string, auditCtx?: { userId?: string }) {
+export async function deleteSupplier(id: string, auditCtx?: AuditContext) {
   const existing = await prisma.supplier.findFirst({ where: { id, deletedAt: null } });
   if (!existing) throw Errors.notFound("Supplier", id);
   await prisma.supplier.update({ where: { id }, data: { deletedAt: new Date(), status: "INACTIVE" } });
-  await recordAudit({ ctx: { userId: auditCtx?.userId }, action: "SUPPLIER_DELETED", module: "suppliers", entity: "supplier", entityId: id });
+  await recordAudit({ ctx: auditCtx, action: "SUPPLIER_DELETED", module: "suppliers", entity: "supplier", entityId: id });
   return true;
 }

@@ -1,14 +1,26 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { resolveSession, publicUser } from "../services/auth";
+import { AuditContext } from "../services/audit";
 import { Errors, AppError } from "../utils/errors";
+import { ROLES } from "../constants/roles";
 
 export type AuthedRequest = Request & {
   userId?: string;
   user?: ReturnType<typeof publicUser>;
   permissions: Set<string>;
   roles: Set<string>;
-  ip?: string;
+  // Express's own req.ip is read-only, so the resolved client address lives here.
+  clientIp?: string | null;
 };
+
+/**
+ * The actor behind the current request, in the shape every service and
+ * recordAudit() expects. Routes used to build this inline and most of them
+ * left the IP out, which is why audit rows had an empty ipAddress.
+ */
+export function actorOf(req: AuthedRequest): AuditContext {
+  return { userId: req.userId, ip: req.clientIp };
+}
 
 export async function attachAuth(req: Request, _res: Response, next: NextFunction) {
   const auth = req.headers.authorization || "";
@@ -16,8 +28,7 @@ export async function attachAuth(req: Request, _res: Response, next: NextFunctio
   const ip = (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ?? req.socket.remoteAddress ?? null;
   const session = await resolveSession(token);
   const r = req as AuthedRequest;
-  // Store ip on a custom property (req.ip is read-only in Express)
-  (r as any)._clientIp = ip;
+  r.clientIp = ip;
   if (!session) {
     r.permissions = new Set();
     r.roles = new Set();
@@ -48,7 +59,7 @@ export function requirePermission(...perms: string[]): RequestHandler {
   return (req, _res, next) => {
     const r = req as AuthedRequest;
     if (!r.userId) return next(Errors.unauthorized());
-    if (r.roles.has("ADMINISTRATOR")) return next();
+    if (r.roles.has(ROLES.ADMINISTRATOR)) return next();
     const hasAll = perms.every((p) => r.permissions.has(p));
     if (!hasAll) return next(Errors.forbidden());
     next();
@@ -59,7 +70,7 @@ export function requireAnyPermission(...perms: string[]): RequestHandler {
   return (req, _res, next) => {
     const r = req as AuthedRequest;
     if (!r.userId) return next(Errors.unauthorized());
-    if (r.roles.has("ADMINISTRATOR")) return next();
+    if (r.roles.has(ROLES.ADMINISTRATOR)) return next();
     const hasAny = perms.some((p) => r.permissions.has(p));
     if (!hasAny) return next(Errors.forbidden());
     next();

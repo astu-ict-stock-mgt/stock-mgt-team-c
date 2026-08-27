@@ -1,8 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 import { consumeFifoTx, nextTxnCode } from "./fifo-consume";
+import { refreshItemStatus } from "./item-status";
+import { nextDocumentCode, withUniqueRetry } from "../utils/document-code";
 
 export async function listTransfers(params: { page: number; limit: number; search?: string; fromStoreId?: string; toStoreId?: string; status?: string }) {
   const where: Prisma.StockTransferWhereInput = {};
@@ -47,19 +49,20 @@ export async function getTransfer(id: string) {
   };
 }
 
-export async function createTransfer(input: any, auditCtx?: { userId?: string; ip?: string }) {
+export async function createTransfer(input: any, auditCtx?: AuditContext) {
   if (input.fromStoreId === input.toStoreId) throw Errors.invalidStockTransfer("Source and destination stores must be different");
   if (!input.items.length) throw Errors.validation("Transfer must have at least one item");
   for (const it of input.items) {
     if (it.quantity <= 0) throw Errors.validation(`Quantity must be positive for item ${it.itemId}`);
   }
 
-  const today = new Date();
-  const ymd = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}${String(today.getUTCDate()).padStart(2, "0")}`;
-  const code = `TRF-${ymd}-${String(await prisma.stockTransfer.count({ where: { code: { startsWith: `TRF-${ymd}-` } } }) + 1).padStart(4, "0")}`;
   const totalQuantity = input.items.reduce((s: number, i: any) => s + i.quantity, 0);
 
-  const transfer = await prisma.$transaction(async (tx) => {
+  const transfer = await withUniqueRetry(() => prisma.$transaction(async (tx) => {
+    const code = await nextDocumentCode("TRF", (startsWith) =>
+      tx.stockTransfer.count({ where: { code: { startsWith } } })
+    );
+
     const tr = await tx.stockTransfer.create({
       data: {
         code, fromStoreId: input.fromStoreId, toStoreId: input.toStoreId,
@@ -83,11 +86,14 @@ export async function createTransfer(input: any, auditCtx?: { userId?: string; i
       if (!srcStock) throw Errors.insufficientStock(ti.itemId, ti.quantity, 0);
       await tx.storeStock.update({ where: { id: srcStock.id }, data: { quantity: srcStock.quantity - ti.quantity } });
 
-      // Create new FIFO layer at destination preserving the original cost
+      // Create new FIFO layer at destination preserving the original cost.
+      // The layer inherits the *receipt* the goods arrived on, not the id of the
+      // layer just consumed — that column is a foreign key onto StockReceipt, so
+      // writing a layer id there made every transfer fail with P2003.
       for (const c of consumptions) {
         await tx.fifoLayer.create({
           data: {
-            itemId: ti.itemId, storeId: input.toStoreId, receiptId: c.layerId,
+            itemId: ti.itemId, storeId: input.toStoreId, receiptId: c.receiptId,
             originalQty: c.quantity, remainingQty: c.quantity, unitCost: c.unitCost,
           },
         });
@@ -123,15 +129,19 @@ export async function createTransfer(input: any, auditCtx?: { userId?: string; i
           referenceType: "TRANSFER", referenceId: tr.id, userId: input.transferredById, remarks: `Transfer ${code} in`,
         },
       });
+
+      // Stock moved between stores, so the item's overall level may have crossed
+      // a reorder threshold in either direction.
+      await refreshItemStatus(tx, ti.itemId);
     }
 
     return tr;
-  });
+  }));
 
   await recordAudit({
-    ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
+    ctx: auditCtx,
     action: "STOCK_TRANSFERRED", module: "transfers", entity: "transfer", entityId: transfer.id,
-    newValue: { code, fromStoreId: input.fromStoreId, toStoreId: input.toStoreId, totalQuantity, itemCount: input.items.length },
+    newValue: { code: transfer.code, fromStoreId: input.fromStoreId, toStoreId: input.toStoreId, totalQuantity, itemCount: input.items.length },
   });
 
   return getTransfer(transfer.id);

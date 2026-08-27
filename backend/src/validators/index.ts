@@ -1,13 +1,33 @@
 import { z } from "zod";
 
+// Password validation schema - Relaxed but secure
+// Minimum 8 characters with uppercase, lowercase, and number OR special character
+const passwordSchema = z.string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128, "Password must not exceed 128 characters")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .refine(
+    (password) => /[0-9]/.test(password) || /[^A-Za-z0-9]/.test(password),
+    { message: "Password must contain at least one number or special character" }
+  );
+
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });
 
+export const refreshSchema = z.object({
+  refresh: z.string().min(1, "A refresh token is required"),
+});
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
-  newPassword: z.string().min(6),
+  newPassword: passwordSchema,
+});
+
+export const resetPasswordSchema = z.object({
+  newPassword: passwordSchema,
 });
 
 export const profileSchema = z.object({
@@ -20,7 +40,7 @@ export const createUserSchema = z.object({
   email: z.string().email(),
   username: z.string().min(3),
   fullName: z.string().min(2),
-  password: z.string().min(6),
+  password: passwordSchema,
   department: z.string().optional(),
   phoneNumber: z.string().optional(),
   roleIds: z.array(z.string()).default([]),
@@ -51,10 +71,25 @@ export const categorySchema = z.object({
   description: z.string().optional(),
 });
 
+// parentId is only editable, not settable at creation, so it lives here rather
+// than on categorySchema. `null` detaches the category from its parent.
+export const categoryUpdateSchema = categorySchema.partial().extend({
+  parentId: z.string().min(1).nullable().optional(),
+});
+
+export const uomSchema = z.object({
+  code: z.string().min(1).max(12),
+  name: z.string().min(2),
+});
+
 export const storeSchema = z.object({
   code: z.string().min(2),
   name: z.string().min(2),
   location: z.string().optional(),
+});
+
+export const storeUpdateSchema = storeSchema.partial().extend({
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
 });
 
 export const itemSchema = z.object({
@@ -109,7 +144,17 @@ export const requisitionSchema = z.object({
   })).min(1),
 });
 
+// Editing a draft replaces the whole requisition, lines included, so every
+// field stays optional but `items` (when given) must still be a real basket.
+export const requisitionUpdateSchema = requisitionSchema.partial();
+
 export const requisitionDecisionSchema = z.object({
+  // Was read straight off req.body and hand-checked; validated here so an
+  // invalid decision fails with the standard validation error shape.
+  decision: z.preprocess(
+    (v) => (typeof v === "string" ? v.toUpperCase() : v),
+    z.enum(["APPROVED", "REJECTED"])
+  ),
   comments: z.string().optional(),
 });
 
@@ -131,4 +176,52 @@ export const roleSchema = z.object({
 export const togglePermissionSchema = z.object({
   permission: z.string().min(1),
   enable: z.boolean(),
+});
+
+// ── Stock taking ───────────────────────────────────────────────────────
+// Omitting `itemIds` counts everything the store currently holds. Naming them
+// counts a subset, and may include items with no stock row in this store — their
+// system quantity is then 0, which is how misplaced stock gets found.
+export const stockTakeSchema = z.object({
+  storeId: z.string().min(1),
+  notes: z.string().optional(),
+  itemIds: z.array(z.string().min(1)).optional(),
+});
+
+export const stockTakeCountsSchema = z.object({
+  counts: z.array(z.object({
+    itemId: z.string().min(1),
+    physicalQty: z.coerce.number().min(0, "A physical count cannot be negative"),
+    remarks: z.string().optional(),
+  })).min(1, "Record at least one count"),
+});
+
+// ── Damaged / obsolete stock ───────────────────────────────────────────
+// storeId is required even though the column is nullable: disposal consumes FIFO
+// layers, and those are held per store, so there is nothing to remove without it.
+export const dispositionSchema = z.object({
+  itemId: z.string().min(1),
+  storeId: z.string().min(1),
+  quantity: z.coerce.number().positive("Quantity must be greater than zero"),
+  reason: z.string().min(3, "Give a reason of at least 3 characters"),
+});
+
+export const disposalSchema = z.object({
+  disposalMethod: z.string().min(2, "Record how the goods were disposed of"),
+});
+
+// ── Gate passes ────────────────────────────────────────────────────────
+export const gatePassSchema = z.object({
+  issueId: z.string().min(1).nullable().optional(),
+  carrier: z.string().optional(),
+  vehiclePlate: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const gatePassDecisionSchema = z.object({
+  decision: z.preprocess(
+    (v) => (typeof v === "string" ? v.toUpperCase() : v),
+    z.enum(["APPROVED", "REJECTED"])
+  ),
+  notes: z.string().optional(),
 });

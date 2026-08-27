@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 
 export type Theme = "light" | "dark";
 
@@ -16,9 +16,11 @@ export type Theme = "light" | "dark";
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>("light");
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   // After mount, read the real theme the pre-paint script already applied.
-  useEffect(() => {
+  useLayoutEffect(() => {
     setThemeState(document.documentElement.classList.contains("dark") ? "dark" : "light");
+  /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   const setTheme = useCallback((next: Theme) => {

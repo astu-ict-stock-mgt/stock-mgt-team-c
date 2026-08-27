@@ -1,8 +1,11 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { Errors } from "../utils/errors";
-import { recordAudit } from "./audit";
+import { recordAudit, AuditContext } from "./audit";
 import { consumeFifoTx, nextTxnCode } from "./fifo-consume";
+import { refreshItemStatus } from "./item-status";
+import { nextDocumentCode, withUniqueRetry } from "../utils/document-code";
+import { applyRequisitionFulfilment } from "./requisition-fulfilment";
 
 export async function listIssues(params: { page: number; limit: number; search?: string; storeId?: string; status?: string }) {
   const where: Prisma.StockIssueWhereInput = {};
@@ -48,19 +51,23 @@ export async function getIssue(id: string) {
   };
 }
 
-export async function createIssue(input: any, auditCtx?: { userId?: string; ip?: string }) {
+export async function createIssue(input: any, auditCtx?: AuditContext) {
   if (!input.items.length) throw Errors.validation("Issue must have at least one item");
   for (const it of input.items) {
     if (it.quantity <= 0) throw Errors.validation(`Quantity must be positive for item ${it.itemId}`);
   }
 
-  const today = new Date();
-  const ymd = `${today.getUTCFullYear()}${String(today.getUTCMonth() + 1).padStart(2, "0")}${String(today.getUTCDate()).padStart(2, "0")}`;
-  const code = `ISS-${ymd}-${String(await prisma.stockIssue.count({ where: { code: { startsWith: `ISS-${ymd}-` } } }) + 1).padStart(4, "0")}`;
   const totalQuantity = input.items.reduce((s: number, i: any) => s + i.quantity, 0);
   let totalCogs = 0;
 
-  const issue = await prisma.$transaction(async (tx) => {
+  // Code generated inside the transaction, whole operation retried on a unique
+  // clash — two concurrent issues can no longer share an ISS number.
+  const { issue, fulfilled } = await withUniqueRetry(() => prisma.$transaction(async (tx) => {
+    totalCogs = 0;
+    const code = await nextDocumentCode("ISS", (startsWith) =>
+      tx.stockIssue.count({ where: { code: { startsWith } } })
+    );
+
     const iss = await tx.stockIssue.create({
       data: {
         code, sourceStoreId: input.sourceStoreId, destStoreId: input.destStoreId ?? null,
@@ -94,16 +101,33 @@ export async function createIssue(input: any, auditCtx?: { userId?: string; ip?:
         },
       });
 
+      await refreshItemStatus(tx, ii.itemId);
+
       totalCogs += cogs;
     }
 
-    return tx.stockIssue.update({ where: { id: iss.id }, data: { totalCogs } });
-  });
+    // Fulfilment is applied inside the same transaction, so an over-issue or a
+    // requisition in the wrong state rolls the entire issue back.
+    const fulfilled = input.requisitionId
+      ? await applyRequisitionFulfilment(
+        tx,
+        input.requisitionId,
+        iss.items.map((ii) => ({ itemId: ii.itemId, quantity: ii.quantity }))
+      )
+      : null;
+
+    const updated = await tx.stockIssue.update({ where: { id: iss.id }, data: { totalCogs } });
+    return { issue: updated, fulfilled };
+  }));
 
   await recordAudit({
-    ctx: { userId: auditCtx?.userId, ipAddress: auditCtx?.ip },
+    ctx: auditCtx,
     action: "STOCK_ISSUED", module: "issues", entity: "issue", entityId: issue.id,
-    newValue: { code, sourceStoreId: input.sourceStoreId, department: input.department, totalQuantity, totalCogs, itemCount: input.items.length },
+    newValue: {
+      code: issue.code, sourceStoreId: input.sourceStoreId, department: input.department,
+      totalQuantity, totalCogs, itemCount: input.items.length,
+      requisition: fulfilled ? { code: fulfilled.code, status: fulfilled.status } : null,
+    },
   });
 
   return getIssue(issue.id);
