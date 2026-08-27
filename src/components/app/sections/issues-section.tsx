@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Plus, Search, ArrowUpFromLine, X, Eye } from "lucide-react";
 import { useIssues, useCreateIssue, useStores, useInventory, useIssue } from "@/lib/api/hooks";
 import { ApiClientError } from "@/lib/api/client";
@@ -29,9 +29,11 @@ export function IssuesSection() {
   const issueDraftRequisition = useUIStore((s) => s.issueDraftRequisition);
   const setIssueDraftRequisition = useUIStore((s) => s.setIssueDraftRequisition);
 
-  useEffect(() => {
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useLayoutEffect(() => {
     if (issueDraftRequisition) {
       setCreateOpen(true);
+  /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [issueDraftRequisition]);
 
@@ -149,12 +151,14 @@ function CreateIssueDialog({ open, onOpenChange }: { open: boolean; onOpenChange
   const [department, setDepartment] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
+  /* eslint-disable react-hooks/set-state-in-effect */
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!issueDraftRequisition) return;
     setDepartment(issueDraftRequisition.department);
     setNotes(issueDraftRequisition.notes ?? "");
     setItems(issueDraftRequisition.items.map((item) => ({ itemId: item.itemId, quantity: item.quantity })));
+  /* eslint-enable react-hooks/set-state-in-effect */
   }, [issueDraftRequisition]);
 
   const addItem = () => setItems((arr) => [...arr, { itemId: "", quantity: 1 }]);

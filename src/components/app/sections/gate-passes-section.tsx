@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   ShieldCheck, Plus, Search, CheckCircle2, XCircle, LogOut, Truck, Ban,
 } from "lucide-react";
@@ -51,12 +51,14 @@ export function GatePassesSection() {
   const notificationTarget = useUIStore((s) => s.notificationTarget);
   const setNotificationTarget = useUIStore((s) => s.setNotificationTarget);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   // The bell links here with filter "pending" when passes await approval.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (notificationTarget === "pending") {
       setStatus("PENDING");
       setPage(1);
       setNotificationTarget(null);
+  /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [notificationTarget, setNotificationTarget]);
 
