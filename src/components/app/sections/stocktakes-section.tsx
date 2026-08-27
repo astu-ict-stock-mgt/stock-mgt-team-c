@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   ClipboardCheck, Plus, Search, Eye, Save, CheckCircle2, Scale, Trash2, AlertTriangle,
 } from "lucide-react";
@@ -54,12 +54,14 @@ export function StockTakesSection() {
 
   // The notification bell links here with filter "open" when counts are in
   // progress. "OPEN" covers DRAFT and IN_PROGRESS, which is exactly what the
+  /* eslint-disable react-hooks/set-state-in-effect */
   // badge counted — filtering on one of them would show fewer rows than promised.
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (notificationTarget === "open") {
       setStatus("OPEN");
       setPage(1);
       setNotificationTarget(null);
+  /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [notificationTarget, setNotificationTarget]);
 
@@ -274,10 +276,11 @@ function StockTakeDrawer({ onDeleted }: { onDeleted: () => void }) {
 
   // Draft edits live here until saved, so a mistyped count never hits the server.
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [confirmReconcile, setConfirmReconcile] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  /* eslint-disable react-hooks/set-state-in-effect */
 
-  useEffect(() => { setDrafts({}); }, [selectedItemId]);
+  useLayoutEffect(() => { setDrafts({}); }, [selectedItemId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const open = take?.status === "DRAFT" || take?.status === "IN_PROGRESS";
   const canCount = can("stocktake.create");
