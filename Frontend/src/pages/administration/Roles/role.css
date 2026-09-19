@@ -1,0 +1,294 @@
+/* =====================================================
+   ROLES PAGE
+===================================================== */
+
+.roles-page {
+  width: 100%;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* =====================================================
+   PAGE HEADER
+===================================================== */
+
+.roles-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.roles-page-header h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.roles-page-header p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* =====================================================
+   PRIMARY BUTTON
+===================================================== */
+
+.roles-primary-button {
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.roles-primary-button:hover {
+  opacity: 0.9;
+}
+
+/* =====================================================
+   SUMMARY
+===================================================== */
+
+.roles-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.roles-summary-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.roles-summary-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.roles-summary-card strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+/* =====================================================
+   TOOLBAR
+===================================================== */
+
+.roles-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.roles-search-wrapper {
+  flex: 1;
+}
+
+.roles-search {
+  width: 100%;
+  max-width: 420px;
+  box-sizing: border-box;
+  padding: 11px 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+}
+
+.roles-search:focus {
+  border-color: #2563eb;
+}
+
+.roles-status-filter {
+  min-width: 150px;
+  padding: 11px 13px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 14px;
+  outline: none;
+}
+
+/* =====================================================
+   TABLE
+===================================================== */
+
+.roles-table-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.roles-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.roles-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 850px;
+}
+
+.roles-table th {
+  padding: 14px 16px;
+  text-align: left;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.roles-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+.roles-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.roles-table tbody tr:hover {
+  background: #fafafa;
+}
+
+/* =====================================================
+   ROLE CONTENT
+===================================================== */
+
+.role-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.role-description {
+  max-width: 300px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.permission-count {
+  color: #374151;
+  font-size: 13px;
+}
+
+/* =====================================================
+   STATUS
+===================================================== */
+
+.role-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-status.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.role-status.inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* =====================================================
+   ACTIONS
+===================================================== */
+
+.role-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.role-action-button {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.role-action-button:hover {
+  background: #f3f4f6;
+}
+
+.role-action-button.danger {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.role-action-button.success {
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+/* =====================================================
+   EMPTY STATE
+===================================================== */
+
+.roles-empty {
+  padding: 40px !important;
+  text-align: center !important;
+  color: #6b7280;
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width: 768px) {
+  .roles-page {
+    padding: 16px;
+  }
+
+  .roles-page-header {
+    flex-direction: column;
+  }
+
+  .roles-primary-button {
+    width: 100%;
+  }
+
+  .roles-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .roles-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .roles-search {
+    max-width: none;
+  }
+
+  .roles-status-filter {
+    width: 100%;
+  }
+}

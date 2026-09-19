@@ -1,0 +1,88 @@
+export const reportColumns = {
+  inventory: [
+    { header: "Item Code", accessor: (row) => row.itemCode },
+    { header: "Item Name", accessor: (row) => row.itemName },
+    { header: "Category", accessor: (row) => row.category },
+    { header: "Store", accessor: (row) => row.store },
+    { header: "Location", accessor: (row) => row.location },
+    { header: "Unit", accessor: (row) => row.unit },
+    { header: "Available Qty", accessor: (row) => row.availableQuantity },
+    { header: "Reserved Qty", accessor: (row) => row.reservedQuantity },
+    { header: "Total Qty", accessor: (row) => row.quantity },
+    { header: "Status", accessor: (row) => row.lowStock ? "Low Stock" : "Normal" },
+  ],
+  movements: [
+    { header: "Date", accessor: (row) => new Date(row.createdAt).toLocaleDateString() },
+    { header: "Type", accessor: (row) => row.type },
+    { header: "Item", accessor: (row) => row.item?.name || row.itemId },
+    { header: "Location", accessor: (row) => row.location?.code || row.locationId },
+    { header: "Qty", accessor: (row) => Number(row.quantity) },
+    { header: "Balance After", accessor: (row) => Number(row.balanceAfter) },
+    { header: "Reason", accessor: (row) => row.reason },
+    { header: "Performed By", accessor: (row) => row.performedBy?.fullName || row.performedBy?.username },
+  ],
+  receiving: [
+    { header: "Date", accessor: (row) => new Date(row.deliveryDate || row.createdAt).toLocaleDateString() },
+    { header: "Receipt No", accessor: (row) => row.receiptNumber },
+    { header: "Supplier", accessor: (row) => row.supplier?.name || "Unknown" },
+    { header: "Delivery Note", accessor: (row) => row.deliveryNoteNumber },
+    { header: "Items Count", accessor: (row) => row.items?.length || 0 },
+    { header: "Status", accessor: (row) => row.status },
+  ],
+  issues: [
+    { header: "Date", accessor: (row) => new Date(row.issueDate || row.createdAt).toLocaleDateString() },
+    { header: "Issue No", accessor: (row) => row.issueNo },
+    { header: "Issued By", accessor: (row) => row.issuedBy?.fullName || row.issuedBy?.username },
+    { header: "Items Count", accessor: (row) => row.items?.length || 0 },
+    { header: "Status", accessor: (row) => row.status },
+  ],
+  procurement: [
+    { header: "Date", accessor: (row) => new Date(row.createdAt).toLocaleDateString() },
+    { header: "PO Number", accessor: (row) => row.poNumber },
+    { header: "Supplier", accessor: (row) => row.supplier?.name || "Unknown" },
+    { header: "Items Count", accessor: (row) => row.items?.length || 0 },
+    { header: "Status", accessor: (row) => row.status },
+  ],
+  "stock-taking": [
+    { header: "Date", accessor: (row) => new Date(row.startedAt).toLocaleDateString() },
+    { header: "Session No", accessor: (row) => row.sessionNumber },
+    { header: "Counts", accessor: (row) => row.counts?.length || 0 },
+    { header: "Discrepancies", accessor: (row) => row.discrepancies?.length || 0 },
+    { header: "Status", accessor: (row) => row.status },
+  ],
+  disposals: [
+    { header: "Date", accessor: (row) => new Date(row.requestedAt).toLocaleDateString() },
+    { header: "Request No", accessor: (row) => row.requestNumber },
+    { header: "Item", accessor: (row) => row.item?.name || row.itemId },
+    { header: "Qty", accessor: (row) => Number(row.quantity) },
+    { header: "Method", accessor: (row) => row.disposalMethod || "N/A" },
+    { header: "Requested By", accessor: (row) => row.requestedBy?.fullName || row.requestedBy?.username },
+    { header: "Status", accessor: (row) => row.status },
+  ],
+  financial: [
+    { header: "Opening Value", accessor: (row) => Number(row.openingValue || 0).toLocaleString() },
+    { header: "Receipts Value", accessor: (row) => Number(row.receiptsValue || 0).toLocaleString() },
+    { header: "Adjustments Value", accessor: (row) => Number(row.adjustmentsValue || 0).toLocaleString() },
+    { header: "Issues Value", accessor: (row) => Number(row.issuesValue || 0).toLocaleString() },
+    { header: "Closing Value", accessor: (row) => Number(row.closingValue || 0).toLocaleString() },
+    { header: "Cost Complete", accessor: (row) => row.costDataComplete ? "Yes" : "No" }
+  ],
+  suppliers: [
+    { header: "Supplier Name", accessor: (row) => row.name },
+    { header: "Contact Person", accessor: (row) => row.contactPerson || "N/A" },
+    { header: "Phone", accessor: (row) => row.phone || "N/A" },
+    { header: "Email", accessor: (row) => row.email || "N/A" },
+    { header: "Total POs", accessor: (row) => row._count?.purchaseOrders || 0 },
+    { header: "Total GRNs", accessor: (row) => row._count?.goodsReceipts || 0 },
+    { header: "Status", accessor: (row) => row.isActive ? "Active" : "Inactive" },
+    { header: "Added On", accessor: (row) => new Date(row.createdAt).toLocaleDateString() }
+  ],
+  audit: [
+    { header: "Date", accessor: (row) => new Date(row.createdAt).toLocaleString() },
+    { header: "Actor", accessor: (row) => row.actor?.fullName || row.actor?.username || "System" },
+    { header: "Action", accessor: (row) => row.action },
+    { header: "Resource", accessor: (row) => row.resource || "N/A" },
+    { header: "Resource ID", accessor: (row) => row.resourceId || "N/A" },
+    { header: "IP Address", accessor: (row) => row.ipAddress || "N/A" }
+  ]
+};

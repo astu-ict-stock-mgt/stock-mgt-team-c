@@ -1,0 +1,352 @@
+/* =========================================================
+   STORES PAGE
+========================================================= */
+
+.master-page {
+  width: 100%;
+}
+
+
+/* =========================================================
+   MASTER TOOLBAR
+========================================================= */
+
+.master-toolbar {
+  width: 100%;
+  margin: 0 0 14px 0;
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.master-toolbar-left {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.master-toolbar-left .search-bar {
+  min-width: 280px;
+}
+
+
+/* =========================================================
+   FILTERS
+========================================================= */
+
+.master-toolbar-left .filter-select {
+  min-width: 150px;
+}
+
+
+/* =========================================================
+   RESULT SUMMARY
+========================================================= */
+
+.master-result-summary {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: 10px;
+
+  color: #64748b;
+
+  font-size: 13px;
+}
+
+.master-result-summary strong {
+  color: #1e293b;
+}
+
+
+/* =========================================================
+   DATA CARD
+========================================================= */
+
+.master-page .data-card {
+  margin-top: 0;
+}
+
+
+/* =========================================================
+   PRIMARY TABLE TEXT
+========================================================= */
+
+.primary-text {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+
+/* =========================================================
+   ACTION BUTTONS
+========================================================= */
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  flex-wrap: wrap;
+}
+
+.table-action {
+  border: 1px solid #dbe2ea;
+  background: #ffffff;
+  color: #334155;
+
+  padding: 6px 10px;
+
+  border-radius: 6px;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.table-action:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+
+/* =========================================================
+   STATUS ACTIONS
+========================================================= */
+
+.table-action.danger-action {
+  color: #b42318;
+  border-color: #f1c0bd;
+}
+
+.table-action.danger-action:hover {
+  background: #fff5f4;
+  border-color: #e4aaa6;
+}
+
+.table-action.success-action {
+  color: #067647;
+  border-color: #b7dfce;
+}
+
+.table-action.success-action:hover {
+  background: #f0fdf8;
+  border-color: #94d2ba;
+}
+
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 26px;
+
+  padding: 4px 9px;
+
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.status-badge.active {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.status-badge.inactive {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+
+/* =========================================================
+   DETAILS ACTION BAR
+========================================================= */
+
+.details-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 18px;
+}
+
+
+/* =========================================================
+   DETAILS EYEBROW
+========================================================= */
+
+.details-eyebrow {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #64748b;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.08em;
+}
+
+
+/* =========================================================
+   DETAIL VALUE
+========================================================= */
+
+.detail-value {
+  color: #1e293b;
+}
+
+
+/* =========================================================
+   FULL WIDTH DETAIL
+========================================================= */
+
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+
+/* =========================================================
+   DETAIL ACTION BUTTONS
+========================================================= */
+
+.danger-button,
+.success-button {
+  border: 1px solid transparent;
+
+  padding: 8px 13px;
+
+  border-radius: 6px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.danger-button {
+  background: #fff5f4;
+  border-color: #f1c0bd;
+  color: #b42318;
+}
+
+.danger-button:hover {
+  background: #feeceb;
+  border-color: #e4aaa6;
+}
+
+.success-button {
+  background: #ecfdf3;
+  border-color: #b7dfce;
+  color: #067647;
+}
+
+.success-button:hover {
+  background: #dff8eb;
+  border-color: #94d2ba;
+}
+
+
+/* =========================================================
+   FORM HELP
+========================================================= */
+
+.form-help {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+  .details-action-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .details-action-bar .action-buttons {
+    width: 100%;
+  }
+}
+
+
+@media (max-width: 700px) {
+
+  .master-toolbar-left {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .master-toolbar-left .search-bar,
+  .master-toolbar-left .filter-select {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .master-result-summary {
+    margin-top: 4px;
+  }
+
+  .details-action-bar .action-buttons {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .details-action-bar .secondary-button,
+  .details-action-bar .danger-button,
+  .details-action-bar .success-button {
+    width: 100%;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .table-action {
+    width: 100%;
+  }
+}

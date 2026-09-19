@@ -1,0 +1,443 @@
+.purchase-requisition-page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+  box-sizing: border-box;
+}
+
+.purchase-requisition-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.purchase-requisition-header h1 {
+  margin: 8px 0 6px;
+  font-size: 34px;
+  line-height: 1.15;
+}
+
+.purchase-requisition-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 16px;
+}
+
+.back-link-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font: inherit;
+}
+
+.purchase-requisition-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+.purchase-requisition-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.purchase-requisition-filters .search-box {
+  flex: 1;
+  max-width: 620px;
+}
+
+.purchase-requisition-count {
+  color: #64748b;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.purchase-requisition-panel,
+.purchase-requisition-action-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.purchase-requisition-panel + .purchase-requisition-panel,
+.purchase-requisition-action-panel + .purchase-requisition-panel {
+  margin-top: 20px;
+}
+
+.purchase-requisition-action-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.purchase-requisition-action-panel h2,
+.section-heading h2 {
+  margin: 0;
+  color: #0f2742;
+  font-size: 21px;
+}
+
+.section-heading p,
+.purchase-requisition-action-panel p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.section-heading-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.purchase-requisition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-field-wide {
+  grid-column: 1 / -1;
+}
+
+.form-field label,
+.action-editor label {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-field label span,
+.action-editor label span {
+  color: #dc2626;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea,
+.item-table input,
+.item-table select,
+.action-editor textarea,
+.action-editor select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #fff;
+  color: #0f172a;
+  font: inherit;
+  padding: 11px 12px;
+  outline: none;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus,
+.item-table input:focus,
+.item-table select:focus,
+.action-editor textarea:focus,
+.action-editor select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-field input[readonly] {
+  background: #f8fafc;
+}
+
+.form-field small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.item-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.item-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 850px;
+}
+
+.item-table th,
+.item-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.item-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.item-table td {
+  color: #334155;
+  font-size: 14px;
+}
+
+.purchase-requisition-list-table {
+  min-width: 1100px;
+}
+
+.purchase-requisition-actions,
+.purchase-requisition-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.purchase-requisition-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.purchase-requisition-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.purchase-requisition-state {
+  padding: 42px 20px;
+  text-align: center;
+  color: #64748b;
+}
+
+.purchase-requisition-alert {
+  margin-bottom: 18px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.purchase-requisition-alert.error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.purchase-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.purchase-status-draft { background: #e2e8f0; color: #334155; }
+.purchase-status-pending_approval { background: #fef3c7; color: #92400e; }
+.purchase-status-approved { background: #dcfce7; color: #166534; }
+.purchase-status-rejected { background: #fee2e2; color: #991b1b; }
+.purchase-status-ordered { background: #dbeafe; color: #1e40af; }
+.purchase-status-partially_received { background: #ede9fe; color: #5b21b6; }
+.purchase-status-received { background: #dcfce7; color: #166534; }
+.purchase-status-cancelled { background: #f1f5f9; color: #475569; }
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.detail-grid > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-grid span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.detail-grid strong {
+  color: #0f172a;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.detail-long-text {
+  margin: 18px 0 0;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.secondary-text {
+  color: #64748b;
+}
+
+.rejection-note {
+  margin-top: 20px;
+  padding: 14px;
+  border-left: 4px solid #dc2626;
+  background: #fef2f2;
+  color: #7f1d1d;
+}
+
+.rejection-note p {
+  margin: 6px 0 0;
+}
+
+.workflow-panel {
+  overflow-x: auto;
+}
+
+.workflow-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.workflow-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.workflow-step span {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #cbd5e1;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.workflow-step.current,
+.workflow-step.complete {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.workflow-step.current span,
+.workflow-step.complete span {
+  background: #2563eb;
+  color: #fff;
+}
+
+.action-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.action-editor h3 {
+  margin: 0 0 4px;
+}
+
+.table-danger-button,
+.danger-button,
+.secondary-button,
+.primary-button {
+  cursor: pointer;
+}
+
+.table-danger-button {
+  border: 0;
+  background: transparent;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.table-danger-button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1050px) {
+  .detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .purchase-requisition-action-panel {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 760px) {
+  .purchase-requisition-page {
+    padding: 20px 16px 36px;
+  }
+
+  .purchase-requisition-header,
+  .purchase-requisition-toolbar,
+  .section-heading-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .purchase-requisition-grid,
+  .detail-grid,
+  .workflow-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .purchase-requisition-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .purchase-requisition-filters .search-box {
+    max-width: none;
+  }
+}
